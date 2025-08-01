@@ -5,8 +5,8 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum PackageStatus {
     NotInstalled,
-    Installed,
     UpdateAvailable,
+    Installed,
     Broken,
 }
 
@@ -35,7 +35,7 @@ pub struct Package {
     #[serde(default)]
     pub replaces: Vec<String>,
     
-    #[serde(skip)]
+    #[serde(default)]
     pub status: PackageStatus,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub installed_size: Option<u64>,
@@ -47,7 +47,7 @@ pub struct Package {
     pub download_url: Option<String>,
     #[serde(skip)]
     pub file_path: Option<String>,
-    #[serde(skip)]
+    #[serde(default)]
     pub metadata: HashMap<String, String>,
 }
 
@@ -80,25 +80,109 @@ impl Package {
         }
     }
 
-    pub fn from_json(json: &str) -> Result<Self, serde_json::Error> {
+    pub fn from_repository_json(json: &str) -> Result<Self, serde_json::Error> {
         let mut package: Package = serde_json::from_str(json)?;
         package.status = PackageStatus::NotInstalled;
-        package.metadata = HashMap::new();
+        package.metadata.clear();
+        package.file_path = None;
         Ok(package)
     }
 
-    pub fn from_metadata_file(path: &str) -> Result<Self, Box<dyn std::error::Error>> {
-        let content = std::fs::read_to_string(path)?;
-        Ok(Self::from_json(&content)?)
+    pub fn from_complete_json(json: &str) -> Result<Self, serde_json::Error> {
+        serde_json::from_str(json)
     }
 
-    pub fn to_json(&self) -> Result<String, serde_json::Error> {
+    pub fn from_json_with_options(
+        json: &str, 
+        preserve_status: bool, 
+        preserve_metadata: bool
+    ) -> Result<Self, serde_json::Error> {
+        let mut package: Package = serde_json::from_str(json)?;
+        
+        if !preserve_status {
+            package.status = PackageStatus::NotInstalled;
+        }
+        
+        if !preserve_metadata {
+            package.metadata.clear();
+            package.file_path = None;
+        }
+        
+        Ok(package)
+    }
+
+    pub fn from_repository_file(path: &str) -> Result<Self, Box<dyn std::error::Error>> {
+        let content = std::fs::read_to_string(path)?;
+        Ok(Self::from_repository_json(&content)?)
+    }
+
+    pub fn from_complete_file(path: &str) -> Result<Self, Box<dyn std::error::Error>> {
+        let content = std::fs::read_to_string(path)?;
+        Ok(Self::from_complete_json(&content)?)
+    }
+
+    pub fn to_repository_json(&self) -> Result<String, serde_json::Error> {
+        let repo_package = Package {
+            name: self.name.clone(),
+            version: self.version.clone(),
+            architecture: self.architecture.clone(),
+            description: self.description.clone(),
+            maintainer: self.maintainer.clone(),
+            license: self.license.clone(),
+            homepage: self.homepage.clone(),
+            dependencies: self.dependencies.clone(),
+            conflicts: self.conflicts.clone(),
+            provides: self.provides.clone(),
+            replaces: self.replaces.clone(),
+            status: PackageStatus::NotInstalled,
+            installed_size: self.installed_size,
+            download_size: self.download_size,
+            checksum: self.checksum.clone(),
+            download_url: self.download_url.clone(),
+            file_path: None,
+            metadata: HashMap::new(),
+        };
+        serde_json::to_string_pretty(&repo_package)
+    }
+
+    pub fn to_complete_json(&self) -> Result<String, serde_json::Error> {
         serde_json::to_string_pretty(self)
     }
 
-    pub fn save_metadata(&self, path: &str) -> Result<(), Box<dyn std::error::Error>> {
-        let json = self.to_json()?;
+    pub fn save_repository_metadata(&self, path: &str) -> Result<(), Box<dyn std::error::Error>> {
+        let json = self.to_repository_json()?;
         std::fs::write(path, json)?;
+        Ok(())
+    }
+
+    pub fn save_complete_state(&self, path: &str) -> Result<(), Box<dyn std::error::Error>> {
+        let json = self.to_complete_json()?;
+        std::fs::write(path, json)?;
+        Ok(())
+    }
+
+    pub fn as_repository_package(&self) -> Self {
+        let mut repo_package = self.clone();
+        repo_package.status = PackageStatus::NotInstalled;
+        repo_package.metadata.clear();
+        repo_package.file_path = None;
+        repo_package
+    }
+
+    pub fn reset_local_state(&mut self) {
+        self.status = PackageStatus::NotInstalled;
+        self.metadata.clear();
+        self.file_path = None;
+    }
+
+    pub fn merge_local_state(&mut self, other: &Package) -> Result<(), String> {
+        if self.name != other.name || self.version != other.version {
+            return Err("Cannot merge state from different package".to_string());
+        }
+        
+        self.status = other.status.clone();
+        self.metadata = other.metadata.clone();
+        self.file_path = other.file_path.clone();
         Ok(())
     }
 
@@ -120,38 +204,6 @@ impl Package {
 
     pub fn is_proprietary(&self) -> bool {
         self.license.is_none()
-    }
-
-    pub fn add_dependency(&mut self, package_name: String) {
-        if !self.dependencies.contains(&package_name) {
-            self.dependencies.push(package_name);
-        }
-    }
-
-    pub fn remove_dependency(&mut self, package_name: &str) {
-        self.dependencies.retain(|dep| dep != package_name);
-    }
-
-    pub fn add_conflict(&mut self, package_name: String) {
-        if !self.conflicts.contains(&package_name) {
-            self.conflicts.push(package_name);
-        }
-    }
-
-    pub fn remove_conflict(&mut self, package_name: &str) {
-        self.conflicts.retain(|conflict| conflict != package_name);
-    }
-
-    pub fn add_provides(&mut self, capability: String) {
-        if !self.provides.contains(&capability) {
-            self.provides.push(capability);
-        }
-    }
-
-    pub fn add_replaces(&mut self, package_name: String) {
-        if !self.replaces.contains(&package_name) {
-            self.replaces.push(package_name);
-        }
     }
 
     pub fn set_status(&mut self, status: PackageStatus) {
@@ -188,6 +240,38 @@ impl Package {
         }
     }
 
+    pub fn add_dependency(&mut self, package_name: String) {
+        if !self.dependencies.contains(&package_name) {
+            self.dependencies.push(package_name);
+        }
+    }
+
+    pub fn remove_dependency(&mut self, package_name: &str) {
+        self.dependencies.retain(|dep| dep != package_name);
+    }
+
+    pub fn add_conflict(&mut self, package_name: String) {
+        if !self.conflicts.contains(&package_name) {
+            self.conflicts.push(package_name);
+        }
+    }
+
+    pub fn remove_conflict(&mut self, package_name: &str) {
+        self.conflicts.retain(|conflict| conflict != package_name);
+    }
+
+    pub fn add_provides(&mut self, capability: String) {
+        if !self.provides.contains(&capability) {
+            self.provides.push(capability);
+        }
+    }
+
+    pub fn add_replaces(&mut self, package_name: String) {
+        if !self.replaces.contains(&package_name) {
+            self.replaces.push(package_name);
+        }
+    }
+
     pub fn depends_on(&self, package_name: &str) -> bool {
         self.dependencies.contains(&package_name.to_string())
     }
@@ -212,10 +296,17 @@ impl fmt::Display for Package {
             None => " (all)".to_string(),
         };
         
+        let status_str = match self.status {
+            PackageStatus::Installed => " [installed]",
+            PackageStatus::UpdateAvailable => " [update available]",
+            PackageStatus::Broken => " [broken]",
+            PackageStatus::NotInstalled => "",
+        };
+        
         write!(
             f,
-            "{} {}{} - {}",
-            self.name, self.version, arch_str, self.description
+            "{} {}{} - {}{}",
+            self.name, self.version, arch_str, self.description, status_str
         )
     }
 }
@@ -235,77 +326,114 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_package_from_json() {
-        let json = r#"
+    fn test_explicit_deserialization_methods() {
+        let json_with_state = r#"
         {
-            "name": "apgexample",
-            "version": "0.0.0",
-            "architecture": "x86_64",
-            "description": "The example APG package for NurOS (Tulpar).",
-            "maintainer": "NurOS Developers",
-            "license": "MIT",
-            "homepage": "https://nuros.org",
-            "dependencies": ["testapg2"],
-            "conflicts": ["testapg3"],
-            "provides": ["libtaliildar-dev"],
-            "replaces": ["example-apg"]
+            "name": "test-package",
+            "version": "1.0.0",
+            "description": "Test package",
+            "maintainer": "test@example.com",
+            "status": "Installed",
+            "metadata": {
+                "install_reason": "manual"
+            }
         }
         "#;
 
-        let pkg = Package::from_json(json).unwrap();
-        assert_eq!(pkg.name, "apgexample");
-        assert_eq!(pkg.version, "0.0.0");
-        assert_eq!(pkg.architecture, Some("x86_64".to_string()));
-        assert_eq!(pkg.license, Some("MIT".to_string()));
-        assert_eq!(pkg.dependencies, vec!["testapg2"]);
-        assert_eq!(pkg.conflicts, vec!["testapg3"]);
-        assert_eq!(pkg.provides, vec!["libtaliildar-dev"]);
-        assert_eq!(pkg.replaces, vec!["example-apg"]);
+        let repo_package = Package::from_repository_json(json_with_state).unwrap();
+        assert_eq!(repo_package.status, PackageStatus::NotInstalled);
+        assert!(repo_package.metadata.is_empty());
+
+        let complete_package = Package::from_complete_json(json_with_state).unwrap();
+        assert_eq!(complete_package.status, PackageStatus::Installed);
+        assert_eq!(complete_package.get_metadata("install_reason"), Some(&"manual".to_string()));
     }
 
     #[test]
-    fn test_package_to_json() {
+    fn test_serialization_variants() {
         let mut pkg = Package::new(
-            "test-package".to_string(),
-            "1.0.0".to_string(),
-            "Test package".to_string(),
-            "test@example.com".to_string(),
+            "test".to_string(),
+            "1.0".to_string(),
+            "Test".to_string(),
+            "test@test.com".to_string(),
         );
         
-        pkg.set_architecture(Some("x86_64".to_string()));
-        pkg.set_license(Some("GPL-3.0".to_string()));
-        pkg.add_dependency("libc".to_string());
+        pkg.set_status(PackageStatus::Installed);
+        pkg.add_metadata("reason".to_string(), "manual".to_string());
 
-        let json = pkg.to_json().unwrap();
-        assert!(json.contains("\"name\": \"test-package\""));
-        assert!(json.contains("\"architecture\": \"x86_64\""));
-        assert!(json.contains("\"license\": \"GPL-3.0\""));
+        let repo_json = pkg.to_repository_json().unwrap();
+        assert!(!repo_json.contains("Installed"));
+        assert!(!repo_json.contains("reason"));
+
+        let complete_json = pkg.to_complete_json().unwrap();
+        assert!(complete_json.contains("Installed"));
+        assert!(complete_json.contains("reason"));
     }
 
     #[test]
-    fn test_proprietary_package() {
-        let pkg = Package::new(
-            "proprietary-pkg".to_string(),
+    fn test_state_management() {
+        let mut pkg1 = Package::new(
+            "test".to_string(),
             "1.0".to_string(),
-            "Proprietary software".to_string(),
-            "company@example.com".to_string(),
+            "Test".to_string(),
+            "test@test.com".to_string(),
         );
+        
+        let mut pkg2 = pkg1.clone();
+        pkg2.set_status(PackageStatus::Installed);
+        pkg2.add_metadata("custom".to_string(), "value".to_string());
 
-        assert!(pkg.is_proprietary());
+        pkg1.merge_local_state(&pkg2).unwrap();
+        assert_eq!(pkg1.status, PackageStatus::Installed);
+        assert_eq!(pkg1.get_metadata("custom"), Some(&"value".to_string()));
+
+        pkg1.reset_local_state();
+        assert_eq!(pkg1.status, PackageStatus::NotInstalled);
+        assert!(pkg1.metadata.is_empty());
     }
 
     #[test]
-    fn test_architecture_independent() {
-        let pkg = Package::new(
-            "arch-independent".to_string(),
+    fn test_repository_package_creation() {
+        let mut pkg = Package::new(
+            "test".to_string(),
             "1.0".to_string(),
-            "Architecture independent package".to_string(),
-            "dev@example.com".to_string(),
+            "Test".to_string(),
+            "test@test.com".to_string(),
         );
+        
+        pkg.set_status(PackageStatus::Installed);
+        pkg.add_metadata("local".to_string(), "data".to_string());
 
-        assert!(pkg.is_architecture_independent());
-        assert!(pkg.is_compatible_with("x86_64"));
-        assert!(pkg.is_compatible_with("arm64"));
+        let repo_pkg = pkg.as_repository_package();
+        assert_eq!(repo_pkg.name, pkg.name);
+        assert_eq!(repo_pkg.status, PackageStatus::NotInstalled);
+        assert!(repo_pkg.metadata.is_empty());
+    }
+
+    #[test]
+    fn test_flexible_deserialization() {
+        let json = r#"
+        {
+            "name": "test",
+            "version": "1.0",
+            "description": "Test",
+            "maintainer": "test@test.com",
+            "status": "Installed",
+            "metadata": {"key": "value"}
+        }
+        "#;
+
+        let pkg1 = Package::from_json_with_options(json, true, true).unwrap();
+        assert_eq!(pkg1.status, PackageStatus::Installed);
+        assert!(!pkg1.metadata.is_empty());
+
+        let pkg2 = Package::from_json_with_options(json, true, false).unwrap();
+        assert_eq!(pkg2.status, PackageStatus::Installed);
+        assert!(pkg2.metadata.is_empty());
+
+        let pkg3 = Package::from_json_with_options(json, false, false).unwrap();
+        assert_eq!(pkg3.status, PackageStatus::NotInstalled);
+        assert!(pkg3.metadata.is_empty());
     }
 
     #[test]
