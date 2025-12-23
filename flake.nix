@@ -30,6 +30,7 @@
           pkgs.lmdb
           pkgs.libarchive
           pkgs.cjson
+          pkgs.tree
           libiron
         ];
 
@@ -40,7 +41,6 @@
         installPhase = ''
           mkdir -p $out/lib $out/include/pkg-config
           cp libapg.so $out/lib/
-          cp -r include/apg $out/include/
         '';
       };
     };
