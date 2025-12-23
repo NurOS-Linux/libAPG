@@ -9,7 +9,9 @@
 #include <limits.h>
 #include <stdbool.h>
 #include <iron/logger.h>
-
+#include "../include/util.h"
+#include "../include/apg/package.h"
+#define PATH_MAX 256
 bool
 extract_to_dir(const char *archive_path, const char *path_dest)
 {
@@ -26,9 +28,8 @@ extract_to_dir(const char *archive_path, const char *path_dest)
     ext = archive_write_disk_new();
     archive_write_disk_set_options(ext, ARCHIVE_EXTRACT_TIME | ARCHIVE_EXTRACT_PERM);
 
-    if (archive_read_open_filename(a, archive_path, 10240) != ARCHIVE_OK) {
-        return 0;
-    }
+    if (archive_read_open_filename(a, archive_path, 10240) != ARCHIVE_OK)
+        return false;
 
     while (archive_read_next_header(a, &entry) == ARCHIVE_OK) {
         snprintf(full_path, sizeof(full_path), "%s/%s", path_dest, archive_entry_pathname(entry));
@@ -36,7 +37,10 @@ extract_to_dir(const char *archive_path, const char *path_dest)
 
         r = archive_write_header(ext, entry);
         if (r != ARCHIVE_OK) {
-            fprintf(stderr, "Header error: %s\n", archive_error_string(ext));
+            const char *err_msg = archive_error_string(ext);
+            char *full_err = concat("Header error: ", err_msg);
+            log_error(full_err);
+            free(full_err);
         } else {
             const void *buff;
             size_t size;
@@ -44,7 +48,10 @@ extract_to_dir(const char *archive_path, const char *path_dest)
 
             while ((r = archive_read_data_block(a, &buff, &size, &offset)) == ARCHIVE_OK) {
                 if (archive_write_data_block(ext, buff, size, offset) != ARCHIVE_OK) {
-                    fprintf(stderr, "Error while writing data: %s\n", archive_error_string(ext));
+                    const char *err_msg = archive_error_string(ext);
+                    char *full_err = concat("Error while writing data: ", err_msg);
+                    log_error(full_err);
+                    free(full_err);
                     break;
                 }
             }
@@ -56,7 +63,7 @@ extract_to_dir(const char *archive_path, const char *path_dest)
     archive_write_close(ext);
     archive_write_free(ext);
 
-    return 1;
+    return true;
 }
 
 bool

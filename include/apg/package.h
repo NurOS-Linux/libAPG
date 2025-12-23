@@ -33,7 +33,7 @@ struct package_metadata {
 
 struct package {
 	struct package_metadata *meta;
-	const char *pkg_path;
+	char *pkg_path;
 	struct str_list package_files;
 	bool installed_by_hand;
 };
@@ -44,7 +44,7 @@ void package_metadata_free(struct package_metadata *);
 
 void package_free(struct package *);
 
-package *package_new(void);
-package_metadata *package_metadata_new(void);
+struct package *package_new(void);
+struct package_metadata *package_metadata_new(void);
 
 #endif

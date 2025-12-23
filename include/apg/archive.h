@@ -3,6 +3,8 @@
 #ifndef APG_ARCHIVE_H
 #define APG_ARCHIVE_H
 
-void unarchive_package(const struct package *pkg, const char* path);
+#include "package.h"
+
+void unarchive_package(const struct package *pkg, const char *path);
 
 #endif

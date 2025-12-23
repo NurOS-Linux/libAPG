@@ -11,8 +11,14 @@ libapg_sources = files(
 
 libapg_inc = include_directories('include')
 
-libarchive_dep = dependency('libarchive', required: true)
-libiron_dep = dependency('libiron', required: true)
+libarchive_dep = dependency('libarchive', required: false)
+
+libiron_dep = dependency('libiron', required: false)
+
+if not libiron_dep.found()
+  cc = meson.get_compiler('c')
+  libiron_dep = cc.find_library('iron', required: true)
+endif
 
 if not libarchive_dep.found()
   cc = meson.get_compiler('c')

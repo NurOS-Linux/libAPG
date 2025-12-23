@@ -39,9 +39,8 @@
 
         installPhase = ''
           mkdir -p $out/lib $out/include/pkg-config
-          cp -r libapg/libapg.so $out/lib
-          cp -r libapg/libapg.pc $out/include/pkg-config
-          cp -r include/* $out/include/
+          cp libapg.so $out/lib/
+          cp -r include/apg $out/include/
         '';
       };
     };

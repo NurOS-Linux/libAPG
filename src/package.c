@@ -1,56 +1,48 @@
 // NurOS Ruzen42 2025 apg/package.h
 // Last change: Dec 21
 #include <stdlib.h>
+#include "../include/apg/archive.h"
+#include "../include/apg/package.h"
 
-package_metadata *
+struct package_metadata *
 package_metadata_new(void)
 {
-	package_metadata *meta;
-
-	meta = calloc(1, sizeof(*meta));
-	if (!meta)
-		return NULL;
-
-	return meta;
+    struct package_metadata *meta;
+    meta = calloc(1, sizeof(*meta));
+    if (!meta) return NULL;
+    return meta;
 }
 
-package *
+struct package *
 package_new(void)
 {
-    package *pkg;
-
+    struct package *pkg;
     pkg = calloc(1, sizeof(*pkg));
-    if (!pkg)
-		return NULL;
+    if (!pkg) return NULL;
 
     pkg->meta = package_metadata_new();
     if (!pkg->meta) {
         free(pkg);
         return NULL;
     }
-
     return pkg;
 }
 
 void
-str_list_free(str_list *list)
+str_list_free(struct str_list *list)
 {
-	if (!list)
-		return;
-
-	free(list->items);
+    if (!list) return;
+    free(list->items);
 }
 
 void
-package_metadata_free(package_metadata *meta)
+package_metadata_free(struct package_metadata *meta)
 {
-    if (!meta)
-        return;
+    if (!meta) return;
 
     free(meta->name);
     free(meta->version);
     free(meta->architecture);
-
     free(meta->maintainer);
     free(meta->license);
     free(meta->homepage);
@@ -65,21 +57,17 @@ package_metadata_free(package_metadata *meta)
 }
 
 void
-package_free(package *pkg)
+package_free(struct package *pkg)
 {
-    if (!pkg)
-        return;
-
+    if (!pkg) return;
     package_metadata_free(pkg->meta);
-    free(pkg->pkg_path);
-
+    free((void*)pkg->pkg_path);
     str_list_free(&pkg->package_files);
-
     free(pkg);
 }
 
 void
-install_package(package *pkg)
+install_package(struct package *pkg)
 {
-
+    (void)pkg;
 }
