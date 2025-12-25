@@ -12,6 +12,7 @@
 #include "../include/util.h"
 #include "../include/apg/package.h"
 #define PATH_MAX 256
+
 bool
 extract_to_dir(const char *archive_path, const char *path_dest)
 {

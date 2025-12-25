@@ -23,15 +23,15 @@
           pkgs.meson
           pkgs.ninja
           pkgs.pkg-config
+          libiron
+          pkgs.gcc
+          pkgs.tree
         ];
 
         buildInputs = [
-          pkgs.gcc
           pkgs.lmdb
           pkgs.libarchive
           pkgs.cjson
-          pkgs.tree
-          libiron
         ];
 
         mesonFlags = [

@@ -6,7 +6,8 @@ project('libapg', 'c',
 
 libapg_sources = files(
   'src/package.c',
-  'src/archive.c'
+  'src/archive.c',
+  'src/crc32.c'
 )
 
 libapg_inc = include_directories('include')
