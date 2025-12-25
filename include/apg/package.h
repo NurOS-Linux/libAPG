@@ -1,5 +1,6 @@
 // NurOS Ruzen42 2025 apg/package.h
-// Last change: Dec 21
+// Last change: Dec 25
+
 #ifndef APG_PACKAGE_H
 #define APG_PACKAGE_H
 
@@ -46,5 +47,6 @@ void package_free(struct package *);
 
 struct package *package_new(void);
 struct package_metadata *package_metadata_new(void);
+void install_package(struct package *pkg, char *path);
 
 #endif

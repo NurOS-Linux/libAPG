@@ -1,5 +1,5 @@
 // NurOS Ruzen42 2025 apg/archive.c
-// Last change: Dec 21
+// Last change: Dec 25
 
 #include <archive.h>
 #include <archive_entry.h>
@@ -38,10 +38,7 @@ extract_to_dir(const char *archive_path, const char *path_dest)
 
         r = archive_write_header(ext, entry);
         if (r != ARCHIVE_OK) {
-            const char *err_msg = archive_error_string(ext);
-            char *full_err = concat("Header error: ", err_msg);
-            log_error(full_err);
-            free(full_err);
+            log_two(ERR, "Header error:", archive_error_string(ext));
         } else {
             const void *buff;
             size_t size;
@@ -49,10 +46,7 @@ extract_to_dir(const char *archive_path, const char *path_dest)
 
             while ((r = archive_read_data_block(a, &buff, &size, &offset)) == ARCHIVE_OK) {
                 if (archive_write_data_block(ext, buff, size, offset) != ARCHIVE_OK) {
-                    const char *err_msg = archive_error_string(ext);
-                    char *full_err = concat("Error while writing data: ", err_msg);
-                    log_error(full_err);
-                    free(full_err);
+                    log_two(ERR, "Error while writing data: ", archive_error_string(ext));
                     break;
                 }
             }
@@ -71,10 +65,10 @@ bool
 unarchive_package(const struct package *pkg, const char *path)
 {
     if (!extract_to_dir(pkg->pkg_path, path)) {
-        log_error("Failed to extract package");
+        log_two(ERR, "Failed to extract package into: ", (char*)path);
         return false;
     }
-    log_info("Package extracted successfully");
+    log_two(WRN, "Package extracted successfully into: ", (char*)path);
     return true;
 }
 

@@ -1,8 +1,10 @@
 // NurOS Ruzen42 2025 apg/package.h
-// Last change: Dec 21
+// Last change: Dec 25
+
 #include <stdlib.h>
 #include "../include/apg/archive.h"
 #include "../include/apg/package.h"
+#include "../include/util.h"
 
 struct package_metadata *
 package_metadata_new(void)
@@ -67,7 +69,9 @@ package_free(struct package *pkg)
 }
 
 void
-install_package(struct package *pkg)
+install_package(struct package *pkg, char *path)
 {
-    (void)pkg;
+    log_two(INF, "Installing package into: ", path);
+
+
 }

@@ -1,6 +1,12 @@
+// NurOS Ruzen42 2025 apg/util.h
+// Last change: Dec 25
+
 #ifndef APG_UTIL_H
 #define APG_UTIL_H
 
-char *concat(char *str1, char *str2);
+enum log_level { INF, ERR, WRN, DBG, FTL };
+
+char *concat(const char *str1, const char *str2);
+void log_two(enum log_level level, char *str1, char *str2);
 
 #endif
