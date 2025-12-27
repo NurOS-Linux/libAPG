@@ -1,2 +1,48 @@
+# Build directories
+build/
+builddir/
+_build/
 /target
+
+# Compiled objects
+*.o
+*.so
+*.so.*
+*.a
+*.la
+*.lo
+
+# Meson
+meson-logs/
+meson-private/
+compile_commands.json
+
+# Nix
+result
+result-*
+.direnv/
+
+# IDEs and editors
 .idea/
+.vscode/
+*.swp
+*.swo
+*~
+.project
+.cproject
+.settings/
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Debug and profiling
+*.dSYM/
+*.gcno
+*.gcda
+*.gcov
+perf.data
+perf.data.old
+
+# pkg-config generated
+*.pc.in
