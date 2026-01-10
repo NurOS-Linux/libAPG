@@ -3,9 +3,9 @@ exec_prefix=${prefix}
 libdir=${exec_prefix}/lib
 includedir=${prefix}/include
 
-Name: libapg
+Name: libapg 
 Description: APG package management library for NurOS
 Version: 0.1.0
 Libs: -L${libdir} -lapg
 Cflags: -I${includedir}
-Requires: iron-log, libarchive, lmdb
+Requires: libiron, libarchive, lmdb
