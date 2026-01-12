@@ -1,7 +1,8 @@
-// NurOS Ruzen42 2025 apg/package.h
-// Last change: Dec 25
+// NurOS Ruzen42 2026 apg/package.c
+// Last change: Jan 11 
 
 #include <stdlib.h>
+
 #include "../include/apg/archive.h"
 #include "../include/apg/package.h"
 #include "../include/util.h"
