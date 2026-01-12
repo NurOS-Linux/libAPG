@@ -5,7 +5,7 @@
 #include <stdbool.h>
 
 #include "../include/apg/db.h"
-#include "../include/package.h"
+#include "../include/apg/package.h"
 
 bool 
 add_package(struct package *pkg, char *db_path)
