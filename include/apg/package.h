@@ -48,5 +48,6 @@ void package_free(struct package *);
 struct package *package_new(void);
 struct package_metadata *package_metadata_new(void);
 void install_package(struct package *pkg, char *path);
+void install_package_in_root(struct package *pkg, char *path, char *root_path);
 
 #endif

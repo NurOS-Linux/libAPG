@@ -4,22 +4,24 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include <iron/logger.h>
+#include <iron/logger_file.h>
 
 #include "../include/util.h"
 
+#include <iron/logger.h>
+
 char *
-concat(const char *s1, const char *s2)
+concat(const char *str1, const char *str2)
 {
     int len1 = 0;
     int len2 = 0;
     int i, j;
 
-    while (s1[len1] != '\0') {
+    while (str1[len1] != '\0') {
         len1++;
     }
 
-    while (s2[len2] != '\0') {
+    while (str2[len2] != '\0') {
         len2++;
     }
 
@@ -29,45 +31,43 @@ concat(const char *s1, const char *s2)
     }
 
     for (i = 0; i < len1; i++) {
-        result[i] = s1[i];
+        result[i] = str1[i];
     }
 
     for (j = 0; j < len2; j++, i++) {
-        result[i] = s2[j];
+        result[i] = str2[j];
     }
 
     result[i] = '\0';
 
     return result;
-    return result;
 }
 
 void
-log_two(enum log_level level, char *str1, char *str2)
+log_two(const enum log_level level, const char *str1, const char *str2, const FILE *file)
 {
     char *full_err = concat(str1, str2);
 
     switch (level) {
         case INF:
-            log_info(full_err);
+            log_info_to_file(full_err, file);
             break;
         case ERR:
-            log_error(full_err);
+            log_error_to_file(full_err, file);
             break;
         case WRN:
-            log_warn(full_err);
+            log_warn_to_file(full_err, file);
             break;
         case DBG:
-            log_debug(full_err);
+            log_debug_to_file(full_err, file);
             break;
         case FTL:
-            log_fatal(full_err);
+            log_fatal_to_file(full_err, file);
             break;
         default:
             log_info(full_err);
             break;
     }
-
 
     free(full_err);
 }

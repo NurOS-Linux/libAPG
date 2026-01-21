@@ -1,32 +1,29 @@
 // NurOS Ruzen42 2025 apg/archive.c
-// Last change: Dec 25
+// Last change: Dec 31
 
 #include <archive.h>
 #include <archive_entry.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <limits.h>
 #include <stdbool.h>
-#include <iron/logger.h>
+#include <stdio.h>
 #include "../include/util.h"
 #include "../include/apg/package.h"
+
 #define PATH_MAX 256
+
+const char *log_file_path = "/var/log/apg.log";
 
 bool
 extract_to_dir(const char *archive_path, const char *path_dest)
 {
-    struct archive *a;
-    struct archive *ext;
     struct archive_entry *entry;
-    int r;
     char full_path[PATH_MAX];
+    FILE *log_file = fopen(log_file_path, "a");
 
-    a = archive_read_new();
+    struct archive *a = archive_read_new();
     archive_read_support_filter_xz(a);
     archive_read_support_format_tar(a);
 
-    ext = archive_write_disk_new();
+    struct archive *ext = archive_write_disk_new();
     archive_write_disk_set_options(ext, ARCHIVE_EXTRACT_TIME | ARCHIVE_EXTRACT_PERM);
 
     if (archive_read_open_filename(a, archive_path, 10240) != ARCHIVE_OK)
@@ -36,9 +33,9 @@ extract_to_dir(const char *archive_path, const char *path_dest)
         snprintf(full_path, sizeof(full_path), "%s/%s", path_dest, archive_entry_pathname(entry));
         archive_entry_set_pathname(entry, full_path);
 
-        r = archive_write_header(ext, entry);
+        int r = archive_write_header(ext, entry);
         if (r != ARCHIVE_OK) {
-            log_two(ERR, "Header error:", archive_error_string(ext));
+            log_two(ERR, "Header error:", archive_error_string(ext), log_file);
         } else {
             const void *buff;
             size_t size;
@@ -46,7 +43,7 @@ extract_to_dir(const char *archive_path, const char *path_dest)
 
             while ((r = archive_read_data_block(a, &buff, &size, &offset)) == ARCHIVE_OK) {
                 if (archive_write_data_block(ext, buff, size, offset) != ARCHIVE_OK) {
-                    log_two(ERR, "Error while writing data: ", archive_error_string(ext));
+                    log_two(ERR, "Error while writing data: ", archive_error_string(ext), log_file);
                     break;
                 }
             }
@@ -64,11 +61,12 @@ extract_to_dir(const char *archive_path, const char *path_dest)
 bool
 unarchive_package(const struct package *pkg, const char *path)
 {
+    FILE *log_file = fopen(path, "a");
     if (!extract_to_dir(pkg->pkg_path, path)) {
-        log_two(ERR, "Failed to extract package into: ", (char*)path);
+        log_two(ERR, "Failed to extract package into: ", (char*)path, log_file);
         return false;
     }
-    log_two(WRN, "Package extracted successfully into: ", (char*)path);
+    log_two(WRN, "Package extracted successfully into: ", (char*)path, log_file);
     return true;
 }
 

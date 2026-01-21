@@ -6,5 +6,6 @@
 #include "package.h"
 
 void unarchive_package(const struct package *pkg, const char *path);
+void unarchive_package_in_root(const struct package *pkg, const char *path, const char *root);
 
 #endif

@@ -15,6 +15,7 @@ libapg_sources = files(
 libapg_inc = include_directories('include')
 
 libarchive_dep = dependency('libarchive', required: false)
+lmdb_dep = dependency('lmdb', required: false)
 
 libiron_dep = dependency('libiron', required: false)
 lmdb_dep = dependency('lmdb', required: false)

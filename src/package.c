@@ -72,7 +72,7 @@ package_free(struct package *pkg)
 void
 install_package(struct package *pkg, char *path)
 {
-    log_two(INF, "Installing package into: ", path);
+    log_two(INF, "Installing package into: ", path, stdout);
 
 
 }
