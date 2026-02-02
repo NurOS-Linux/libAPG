@@ -9,7 +9,8 @@ libapg_sources = files(
   'src/util.c',
   'src/archive.c',
   'src/crc32.c',
-  'src/db.c'
+  'src/db.c',
+  'src/repo/repo_fetch.c'
 )
 
 libapg_inc = include_directories('include')
@@ -22,6 +23,10 @@ lmdb_dep = dependency('lmdb', required: false)
 
 cc = meson.get_compiler('c')
 
+libcJSON_dep = dependency('cJSON', required: false)
+
+cc = meson.get_compiler('c')
+
 if not libiron_dep.found()
   libiron_dep = cc.find_library('iron', required: true)
 endif
@@ -30,8 +35,13 @@ if not libarchive_dep.found()
   libarchive_dep = cc.find_library('archive', required: true)
 endif
 
+<<<<<<< HEAD
 if not lmdb_dep.found()
   lmdb_dep = cc.find_library('lmdb', required: true)
+=======
+if not libcJSON_dep.found()
+  libarchive_dep = cc.find_library('cJSON', required: true)
+>>>>>>> e6395cd (feat(add db realization))
 endif
 
 libapg = library('apg', libapg_sources,
@@ -39,7 +49,11 @@ libapg = library('apg', libapg_sources,
   dependencies: [
     libarchive_dep,
     libiron_dep,
+<<<<<<< HEAD
     lmdb_dep
+=======
+    libcJSON_dep
+>>>>>>> 43585c5 (feat(add db realization))
   ],
   install: true,
 )

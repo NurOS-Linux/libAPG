@@ -6,8 +6,7 @@
 unsigned int
 crc32(const unsigned char *buffer, unsigned int len)
 {
-    unsigned int crc;
-    crc = 0;
+    unsigned int crc = 0;
     crc = crc ^ 0xffffffffL;
     while(len >= 8) {
         DO8(buffer);

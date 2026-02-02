@@ -10,8 +10,7 @@
 struct package_metadata *
 package_metadata_new(void)
 {
-    struct package_metadata *meta;
-    meta = calloc(1, sizeof(*meta));
+    struct package_metadata *meta = calloc(1, sizeof(*meta));
     if (!meta) return NULL;
     return meta;
 }
@@ -19,8 +18,7 @@ package_metadata_new(void)
 struct package *
 package_new(void)
 {
-    struct package *pkg;
-    pkg = calloc(1, sizeof(*pkg));
+    struct package *pkg = calloc(1, sizeof(*pkg));
     if (!pkg) return NULL;
 
     pkg->meta = package_metadata_new();
