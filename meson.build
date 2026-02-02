@@ -17,22 +17,28 @@ libapg_inc = include_directories('include')
 libarchive_dep = dependency('libarchive', required: false)
 
 libiron_dep = dependency('libiron', required: false)
+lmdb_dep = dependency('lmdb', required: false)
+
+cc = meson.get_compiler('c')
 
 if not libiron_dep.found()
-  cc = meson.get_compiler('c')
   libiron_dep = cc.find_library('iron', required: true)
 endif
 
 if not libarchive_dep.found()
-  cc = meson.get_compiler('c')
   libarchive_dep = cc.find_library('archive', required: true)
+endif
+
+if not lmdb_dep.found()
+  lmdb_dep = cc.find_library('lmdb', required: true)
 endif
 
 libapg = library('apg', libapg_sources,
   include_directories: libapg_inc,
   dependencies: [
     libarchive_dep,
-    libiron_dep
+    libiron_dep,
+    lmdb_dep
   ],
   install: true,
 )
