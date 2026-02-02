@@ -23,7 +23,7 @@ lmdb_dep = dependency('lmdb', required: false)
 
 cc = meson.get_compiler('c')
 
-libcJSON_dep = dependency('cJSON', required: false)
+libyyjson_dep = dependency('yyjson', required: false)
 
 cc = meson.get_compiler('c')
 
@@ -35,13 +35,12 @@ if not libarchive_dep.found()
   libarchive_dep = cc.find_library('archive', required: true)
 endif
 
-<<<<<<< HEAD
 if not lmdb_dep.found()
   lmdb_dep = cc.find_library('lmdb', required: true)
-=======
-if not libcJSON_dep.found()
-  libarchive_dep = cc.find_library('cJSON', required: true)
->>>>>>> e6395cd (feat(add db realization))
+endif
+
+if not libyyjson_dep.found()
+  libyyjson = cc.find_library('yyjson', required: true)
 endif
 
 libapg = library('apg', libapg_sources,
@@ -49,11 +48,8 @@ libapg = library('apg', libapg_sources,
   dependencies: [
     libarchive_dep,
     libiron_dep,
-<<<<<<< HEAD
     lmdb_dep
-=======
-    libcJSON_dep
->>>>>>> 43585c5 (feat(add db realization))
+    libyyjson_dep
   ],
   install: true,
 )

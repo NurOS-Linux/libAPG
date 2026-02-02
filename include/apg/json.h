@@ -1,13 +1,13 @@
-// NurOS Ruzen42 2025 apg/db.h
-// Last change: Dec 31
+// NurOS Ruzen42 2026 apg/json.h
+// Last change: Jan 21
 #pragma once
 
 #ifndef APG_JSON_H
 
-#include <cjson/cJSON.h>
+#include <yyjson/cJSON.h>
 #include "package.h"
 
-cJSON *package_to_json(struct package *);
+yy*package_to_json(struct package *);
 
 char *json_to_string(cJSON *);
 
