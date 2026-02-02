@@ -10,6 +10,7 @@ libapg_sources = files(
   'src/archive.c',
   'src/crc32.c',
   'src/db.c',
+  'src/json.c',
   'src/repo/repo_fetch.c'
 )
 
@@ -17,9 +18,9 @@ libapg_inc = include_directories('include')
 
 libarchive_dep = dependency('libarchive', required: false)
 lmdb_dep = dependency('lmdb', required: false)
-
 libiron_dep = dependency('libiron', required: false)
 lmdb_dep = dependency('lmdb', required: false)
+sodium_dep = dependency('sodium', required: false)
 
 cc = meson.get_compiler('c')
 
@@ -43,13 +44,18 @@ if not libyyjson_dep.found()
   libyyjson = cc.find_library('yyjson', required: true)
 endif
 
+if not libyyjson_dep.found()
+  sodium_dep = cc.find_library('sodium', required: true)
+endif
+
 libapg = library('apg', libapg_sources,
   include_directories: libapg_inc,
   dependencies: [
     libarchive_dep,
     libiron_dep,
-    lmdb_dep
-    libyyjson_dep
+    lmdb_dep,
+    libyyjson_dep,
+    sodium_dep
   ],
   install: true,
 )
