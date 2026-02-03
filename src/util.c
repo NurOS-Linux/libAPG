@@ -4,11 +4,13 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdbool.h>
 #include <iron/logger_file.h>
+#include <iron/logger.h>
+#include <sys/stat.h>
 
 #include "../include/util.h"
 
-#include <iron/logger.h>
 
 char *
 concat(const char *str1, const char *str2)
@@ -72,3 +74,17 @@ log_two(const enum log_level level, const char *str1, const char *str2, const FI
     free(full_err);
 }
 
+void
+create_directory(const char *path)
+{
+  struct stat stats;
+
+  if (stat(path, &stats) == 0) {
+    if (S_ISDIR(stats.st_mode)) {
+      return;
+    } else {
+
+    }
+    } else {
+    }
+}
