@@ -8,7 +8,7 @@
 #include "../include/util.h"
 #include "../include/apg/package.h"
 
-#define PATH_MAX 256
+#define PATH_MAX 4096
 
 const char *log_file_path = "/var/log/apg.log";
 
@@ -17,7 +17,7 @@ extract_to_dir(const char *archive_path, const char *path_dest)
 {
     struct archive_entry *entry;
     char full_path[PATH_MAX];
-    FILE *log_file = fopen(log_file_path, "a");
+    const FILE *log_file = fopen(log_file_path, "a");
 
     struct archive *a = archive_read_new();
     archive_read_support_filter_xz(a);

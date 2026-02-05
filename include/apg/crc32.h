@@ -1,7 +1,7 @@
-// NurOS Ruzen42 2025 apg/crc32.h
-// Last change: Dec 25
+// NurOS Ruzen42 2026 apg/crc32.h
+// Last change: Feb 5
+#pragma once
 
-#ifndef APG_CRC32_H
 // source: https://gist.github.com/xobs/91a84d29152161e973d717b9be84c4d0
 static const unsigned int
 crc_table[256] =
@@ -68,6 +68,3 @@ crc_table[256] =
 unsigned int crc32(const unsigned char *buffer, unsigned int len);
 unsigned int crc32_simple(const unsigned char *message, unsigned int len);
 
-#define APG_CRC32_H
-
-#endif //LIBAPG_CRC32_H

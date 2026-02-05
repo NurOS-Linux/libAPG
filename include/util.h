@@ -1,5 +1,5 @@
-// NurOS Ruzen42 2025 apg/util.h
-// Last change: Dec 25
+// NurOS Ruzen42 2026 apg/util.h
+// Last change: Feb 6
 
 #pragma once
 

@@ -1,11 +1,15 @@
 // NurOS Ruzen42 2026 apg/package.c
-// Last change: Jan 11 
+// Last change: Feb 5
 
+#include <limits.h>
+#include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 
-#include "../include/apg/archive.h"
 #include "../include/apg/package.h"
 #include "../include/util.h"
+#include "../include/apg/archive.h"
+#include "apg/json.h"
 
 static const char *tmp_path = "/tmp/apg/";
 
@@ -20,6 +24,7 @@ package_metadata_new(void)
 struct package *
 package_new(void)
 {
+    // ReSharper disable once CppDFAMemoryLeak
     struct package *pkg = calloc(1, sizeof(*pkg));
     if (!pkg) return NULL;
 
@@ -64,23 +69,45 @@ package_free(struct package *pkg)
 {
     if (!pkg) return;
     package_metadata_free(pkg->meta);
-    free((void*)pkg->pkg_path);
+    free((void *) pkg->pkg_path);
     str_list_free(&pkg->package_files);
     free(pkg);
 }
 
-void
-install_package(struct package *pkg, char *root_path)
+bool
+install_package(const struct package *pkg)
 {
-  log_two(INF, "Installing package into: ", root_path, stdout);
+    return install_package_in_root(pkg, "/");
+}
 
-  
+bool
+install_package_in_root(const struct package *pkg, const char *root_path)
+{
+    log_two(INF, "Installing package into: ", root_path, stdout);
 
-  create_dir(tmp_path);
-  
-  if(unarchive_package(pkg, concat_dirs(root_path, tmp_path)) == false)
-    log_two(ERR, "Error while extracting into", root_path, stderr);
-  
-   
+    // signing will be there
+    char *real_tmp = concat_dirs(root_path, tmp_path);
+    create_dir(real_tmp);
+    free(real_tmp);
 
+    return true;
+}
+
+struct package *
+parse_package(const char *path, const char *root_path)
+{
+    // ReSharper disable once CppDFAMemoryLeak
+    struct package *pkg = package_new();
+
+    pkg->pkg_path = realpath(path, NULL);
+
+    char *real_tmp = concat_dirs(root_path, path);
+    if (!unarchive_package_in_root(pkg, real_tmp)) return NULL;
+    free(real_tmp);
+
+    package_metadata_from_file()
+
+
+
+    return pkg;
 }

@@ -1,7 +1,6 @@
 # NurOS Ruzen42 2025
 project('libapg', 'c',
-  version: '1.1.0',
-  default_options: ['c_std=c11']
+  version: '1.1.0'
 )
 
 libapg_sources = files(
@@ -14,13 +13,15 @@ libapg_sources = files(
   'src/repo/repo_fetch.c'
 )
 
+add_project_arguments('-D_GNU_SOURCE', language: 'c')
+
 libapg_inc = include_directories('include')
 
 libarchive_dep = dependency('libarchive', required: false)
 lmdb_dep = dependency('lmdb', required: false)
 libiron_dep = dependency('libiron', required: false)
 lmdb_dep = dependency('lmdb', required: false)
-sodium_dep = dependency('sodium', required: false)
+sodium_dep = dependency('libsodium', required: false)
 
 cc = meson.get_compiler('c')
 

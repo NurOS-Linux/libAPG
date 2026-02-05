@@ -7,4 +7,6 @@
 
 yyjson_val *package_to_json(struct package *);
 
+struct package_metadata *package_metadata_from_file(const char *path);
+
 char *json_to_string(yyjson_val *);
