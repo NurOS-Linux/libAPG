@@ -74,17 +74,38 @@ log_two(const enum log_level level, const char *str1, const char *str2, const FI
     free(full_err);
 }
 
-void
-create_directory(const char *path)
+void 
+create_dir(const char *path)
 {
-  struct stat stats;
+  struct stat st = {0};
 
-  if (stat(path, &stats) == 0) {
-    if (S_ISDIR(stats.st_mode)) {
-      return;
-    } else {
+  if (stat(path, &st) == -1) {
+    mkdir(path, 0755);
+  }
+}
 
-    }
+char *
+concat_dirs(const char *path1, const char *path2)
+{
+  char *result = concat(path1, path2);
+  if (!result) return NULL;
+  
+  int i = 0, j = 0;
+
+  while (result[i] != '\0') {
+    result[j] = result[i];
+
+    if (result[i] == '/') {
+      while (result[i] == '/') {
+        ++i;
+      }
     } else {
+      i++;
     }
+    j++;
+  }
+
+  result[j] = '\0';
+
+  return result;
 }

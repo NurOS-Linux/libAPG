@@ -7,6 +7,8 @@
 #include "../include/apg/package.h"
 #include "../include/util.h"
 
+static const char *tmp_path = "/tmp/apg/";
+
 struct package_metadata *
 package_metadata_new(void)
 {
@@ -68,9 +70,17 @@ package_free(struct package *pkg)
 }
 
 void
-install_package(struct package *pkg, char *path)
+install_package(struct package *pkg, char *root_path)
 {
-    log_two(INF, "Installing package into: ", path, stdout);
+  log_two(INF, "Installing package into: ", root_path, stdout);
 
+  
+
+  create_dir(tmp_path);
+  
+  if(unarchive_package(pkg, concat_dirs(root_path, tmp_path)) == false)
+    log_two(ERR, "Error while extracting into", root_path, stderr);
+  
+   
 
 }

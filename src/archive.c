@@ -61,12 +61,11 @@ extract_to_dir(const char *archive_path, const char *path_dest)
 bool
 unarchive_package(const struct package *pkg, const char *path)
 {
-    FILE *log_file = fopen(path, "a");
     if (!extract_to_dir(pkg->pkg_path, path)) {
-        log_two(ERR, "Failed to extract package into: ", (char*)path, log_file);
+        log_two(ERR, "Failed to extract package into: ", (char*)path, stdout);
         return false;
     }
-    log_two(WRN, "Package extracted successfully into: ", (char*)path, log_file);
+    log_two(WRN, "Package extracted successfully into: ", (char*)path, stdout);
     return true;
 }
 

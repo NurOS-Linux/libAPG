@@ -1,10 +1,12 @@
-// NurOS Ruzen42 2025 apg/archive.h
-// Last change: Dec 21
+// NurOS Ruzen42 2026 apg/archive.h
+// Last change: Feb 5
 
 #pragma once
 
 #include "package.h"
 
-void unarchive_package(const struct package *pkg, const char *path);
-void unarchive_package_in_root(const struct package *pkg, const char *path, const char *root);
+#include <stdbool.h>
+
+bool unarchive_package(const struct package *pkg, const char *path);
+bool unarchive_package_in_root(const struct package *pkg, const char *path, const char *root);
 
