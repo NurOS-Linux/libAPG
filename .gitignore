@@ -31,6 +31,7 @@ result-*
 .project
 .cproject
 .settings/
+.cache/
 
 # System files
 .DS_Store

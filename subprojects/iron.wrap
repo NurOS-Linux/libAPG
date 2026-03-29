@@ -1,0 +1,4 @@
+[wrap-git]
+url = https://github.com/ruzen42/iron-log
+revision = HEAD
+depth = 1
