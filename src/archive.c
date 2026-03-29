@@ -17,7 +17,7 @@ extract_to_dir(const char *archive_path, const char *path_dest)
 {
     struct archive_entry *entry;
     char full_path[PATH_MAX];
-    const FILE *log_file = fopen(log_file_path, "a");
+    FILE *log_file = fopen(log_file_path, "a");
 
     struct archive *a = archive_read_new();
     archive_read_support_filter_xz(a);
@@ -26,8 +26,10 @@ extract_to_dir(const char *archive_path, const char *path_dest)
     struct archive *ext = archive_write_disk_new();
     archive_write_disk_set_options(ext, ARCHIVE_EXTRACT_TIME | ARCHIVE_EXTRACT_PERM);
 
-    if (archive_read_open_filename(a, archive_path, 10240) != ARCHIVE_OK)
+    if (archive_read_open_filename(a, archive_path, 10240) != ARCHIVE_OK) {
+        if (log_file) fclose(log_file);
         return false;
+    }
 
     while (archive_read_next_header(a, &entry) == ARCHIVE_OK) {
         snprintf(full_path, sizeof(full_path), "%s/%s", path_dest, archive_entry_pathname(entry));
@@ -55,17 +57,24 @@ extract_to_dir(const char *archive_path, const char *path_dest)
     archive_write_close(ext);
     archive_write_free(ext);
 
+    if (log_file) fclose(log_file);
     return true;
 }
 
 bool
-unarchive_package(const struct package *pkg, const char *path)
+unarchive_package_in_root(const struct package *pkg, const char *root)
 {
-    if (!extract_to_dir(pkg->pkg_path, path)) {
-        log_two(ERR, "Failed to extract package into: ", (char*)path, stdout);
+    if (!extract_to_dir(pkg->pkg_path, root)) {
+        log_two(ERR, "Failed to extract package into: ", root, stdout);
         return false;
     }
-    log_two(WRN, "Package extracted successfully into: ", (char*)path, stdout);
+    log_two(INF, "Package extracted successfully into: ", root, stdout);
     return true;
+}
+
+bool
+unarchive_package(const struct package *pkg)
+{
+    return unarchive_package_in_root(pkg, "/tmp/apg/");
 }
 
