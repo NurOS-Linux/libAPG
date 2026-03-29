@@ -65,3 +65,5 @@ libapg_dep = declare_dependency(
   link_with: libapg,
   include_directories: libapg_inc,
 )
+
+subdir('test')

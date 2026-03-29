@@ -9,8 +9,14 @@ yyjson_val
   return NULL; // is a stub, type actually incorrect
 }
 
-char 
+char
 *json_to_string(yyjson_val *)
 {
   return NULL;
+}
+
+struct package_metadata *
+package_metadata_from_file(const char *path)
+{
+  return NULL; // stub
 }

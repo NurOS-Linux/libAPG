@@ -4,7 +4,7 @@
 #pragma once
 
 #include <stdbool.h>
-#include <stdio.h>
 
-bool sign_file(FILE *); 
+bool sign_file(const char *pkg_path);
+bool sign_file_by_key(const char *path, const char *sig_path, const unsigned char *public_key);
 
