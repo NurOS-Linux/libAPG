@@ -10,7 +10,6 @@ libapg_sources = files(
   'src/crc32.c',
   'src/db.c',
   'src/json.c',
-  'src/repo/repo_fetch.c'
 )
 
 add_project_arguments('-D_GNU_SOURCE', language: 'c')
