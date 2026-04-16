@@ -1,8 +1,6 @@
 # Contributing to libapg
 
-Thank you for your interest in contributing to libapg!
-
-## Getting Started
+## Getting started
 
 1. Fork the [repository](https://github.com/NurOS-Linux/libAPG)
 2. Clone your fork:
@@ -10,70 +8,49 @@ Thank you for your interest in contributing to libapg!
    git clone https://github.com/NurOS-Linux/libAPG.git
    cd libAPG
    ```
-3. Set up the development environment (see [README.md](README.md) for dependencies)
+3. Install dependencies (see [README.md](README.md))
 
-## Development Workflow
-
-### Building
+## Building for development
 
 ```bash
 meson setup build --buildtype=debug
 meson compile -C build
 ```
 
-### Running Tests
+## Submitting changes
 
-```bash
-meson test -C build
-```
-
-## Submitting Changes
-
-1. Create a new branch for your changes:
+1. Create a branch:
    ```bash
-   git checkout -b feature/your-feature-name
+   git checkout -b feat/your-feature
    ```
+2. Commit using [Conventional Commits](https://www.conventionalcommits.org/):
+   - `feat:` — new feature
+   - `fix:` — bug fix
+   - `docs:` — documentation only
+   - `refactor:` — restructuring without behaviour change
+   - `test:` — adding or updating tests
+   - `chore:` — maintenance
+3. Push and open a Pull Request at https://github.com/NurOS-Linux/libAPG
 
-2. Make your changes and commit them:
-   ```bash
-   git add .
-   git commit -m "feat: add your feature description"
-   ```
+## Code style
 
-3. Push to your fork:
-   ```bash
-   git push origin feature/your-feature-name
-   ```
+- Indentation: 4 spaces
+- All identifiers in English
+- No decorative comment separators (`// ---`, `/* === */`, etc.)
 
-4. Open a Pull Request at https://github.com/NurOS-Linux/libAPG
+## Signing backend
 
-## Commit Message Format
+If you contribute to signing code, keep both backends (`src/sign/pgp/` and `src/sign/sodium/`) in sync. The public interface is defined in `include/apg/sign.h` and must not diverge between backends.
 
-We follow [Conventional Commits](https://www.conventionalcommits.org/):
+## Reporting issues
 
-- `feat:` - new feature
-- `fix:` - bug fix
-- `docs:` - documentation changes
-- `refactor:` - code refactoring
-- `test:` - adding or updating tests
-- `chore:` - maintenance tasks
-
-## Code Style
-
-- Use consistent indentation (4 spaces)
-- Follow existing code patterns in the project
-- Write clear, descriptive variable and function names
-- Add comments for complex logic
-
-## Reporting Issues
-
-When reporting issues at https://github.com/NurOS-Linux/libAPG/issues, please include:
+Open an issue at https://github.com/NurOS-Linux/libAPG/issues and include:
 
 - Operating system and version
 - Steps to reproduce the problem
 - Expected vs actual behavior
-- Relevant error messages or logs
+- Relevant error output
 
 ## License
 
-By contributing, you agree that your contributions will be licensed under the [GPL-3.0](LICENSE) license.
+By contributing, you agree that your contributions will be licensed under [GPL-3.0](LICENSE).
