@@ -1,10 +1,8 @@
-// NurOS Ruzen42 2026 apg/sign.h
-// Last change: Feb 5
-
+// Author: AnmiTaliDev <anmitalidev@nuros.org>
 #pragma once
 
 #include <stdbool.h>
-#include <stdio.h>
 
-bool sign_file(FILE *); 
+bool sign_verify(const char *pkg_path, const char *sig_path, bool allow_rsa);
 
+bool sign_file(const char *pkg_path, const char *sig_path);
