@@ -10,14 +10,11 @@
 
 #define PATH_MAX 4096
 
-const char *log_file_path = "/var/log/apg.log";
-
 bool
 extract_to_dir(const char *archive_path, const char *path_dest)
 {
     struct archive_entry *entry;
     char full_path[PATH_MAX];
-    const FILE *log_file = fopen(log_file_path, "a");
 
     struct archive *a = archive_read_new();
     archive_read_support_filter_xz(a);
@@ -34,18 +31,14 @@ extract_to_dir(const char *archive_path, const char *path_dest)
         archive_entry_set_pathname(entry, full_path);
 
         int r = archive_write_header(ext, entry);
-        if (r != ARCHIVE_OK) {
-            log_two(ERR, "Header error:", archive_error_string(ext), log_file);
-        } else {
+        if (r == ARCHIVE_OK) {
             const void *buff;
             size_t size;
             la_int64_t offset;
 
             while ((r = archive_read_data_block(a, &buff, &size, &offset)) == ARCHIVE_OK) {
-                if (archive_write_data_block(ext, buff, size, offset) != ARCHIVE_OK) {
-                    log_two(ERR, "Error while writing data: ", archive_error_string(ext), log_file);
+                if (archive_write_data_block(ext, buff, size, offset) != ARCHIVE_OK)
                     break;
-                }
             }
         }
     }
@@ -61,11 +54,12 @@ extract_to_dir(const char *archive_path, const char *path_dest)
 bool
 unarchive_package(const struct package *pkg, const char *path)
 {
-    if (!extract_to_dir(pkg->pkg_path, path)) {
-        log_two(ERR, "Failed to extract package into: ", (char*)path, stdout);
-        return false;
-    }
-    log_two(WRN, "Package extracted successfully into: ", (char*)path, stdout);
-    return true;
+    return extract_to_dir(pkg->pkg_path, path);
+}
+
+bool
+unarchive_package_in_root(const struct package *pkg, const char *root)
+{
+    return extract_to_dir(pkg->pkg_path, root);
 }
 

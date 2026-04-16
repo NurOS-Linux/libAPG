@@ -1,16 +1,24 @@
-// NurOS Ruzen42 2026 apg/json.c
-// Last change: Feb 2 
+// AnmiTaliDev & Ruzen42 2026 apg/json.c
 
 #include "../include/apg/json.h"
 
-yyjson_val 
-*package_to_json(struct package *)
+yyjson_val *
+package_to_json(struct package *pkg)
 {
-  return NULL; // is a stub, type actually incorrect
+    (void)pkg;
+    return NULL;
 }
 
-char 
-*json_to_string(yyjson_val *)
+char *
+json_to_string(yyjson_val *val)
 {
-  return NULL;
+    (void)val;
+    return NULL;
+}
+
+struct package_metadata *
+package_metadata_from_file(const char *path)
+{
+    (void)path;
+    return NULL;
 }

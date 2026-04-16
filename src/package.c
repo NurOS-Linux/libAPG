@@ -83,8 +83,6 @@ install_package(const struct package *pkg)
 bool
 install_package_in_root(const struct package *pkg, const char *root_path)
 {
-    log_two(INF, "Installing package into: ", root_path, stdout);
-
     // signing will be there
     char *real_tmp = concat_dirs(root_path, tmp_path);
     create_dir(real_tmp);
@@ -96,18 +94,31 @@ install_package_in_root(const struct package *pkg, const char *root_path)
 struct package *
 parse_package(const char *path, const char *root_path)
 {
-    // ReSharper disable once CppDFAMemoryLeak
     struct package *pkg = package_new();
+    if (!pkg) return NULL;
 
     pkg->pkg_path = realpath(path, NULL);
 
-    char *real_tmp = concat_dirs(root_path, path);
-    if (!unarchive_package_in_root(pkg, real_tmp)) return NULL;
+    char *real_tmp = concat_dirs(root_path, tmp_path);
+    create_dir(real_tmp);
+
+    if (!unarchive_package_in_root(pkg, real_tmp)) {
+        free(real_tmp);
+        package_free(pkg);
+        return NULL;
+    }
+
+    char *meta_path = concat_dirs(real_tmp, "meta.json");
     free(real_tmp);
 
-    package_metadata_from_file()
+    package_metadata_free(pkg->meta);
+    pkg->meta = package_metadata_from_file(meta_path);
+    free(meta_path);
 
-
+    if (!pkg->meta) {
+        package_free(pkg);
+        return NULL;
+    }
 
     return pkg;
 }
