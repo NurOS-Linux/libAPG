@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 // SPDX-FileCopyrightText: 2025 Ruzen42
 
-#include "../include/apg/crc32.h"
+#include "../../include/apg/crc32.h"
 
 unsigned int
 crc32(const unsigned char *buffer, unsigned int len)

@@ -7,7 +7,9 @@ libapg_sources = files(
   'src/package.c',
   'src/util.c',
   'src/archive.c',
-  'src/crc32.c',
+  'src/checksum/crc32.c',
+  'src/checksum/md5.c',
+  'src/checksum/checksum.c',
   'src/db.c',
   'src/json.c',
 )
