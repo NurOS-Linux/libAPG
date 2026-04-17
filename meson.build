@@ -9,6 +9,7 @@ libapg_sources = files(
   'src/archive.c',
   'src/checksum/crc32.c',
   'src/checksum/md5.c',
+  'src/checksum/sha256.c',
   'src/checksum/checksum.c',
   'src/install/copy.c',
   'src/install/install.c',
