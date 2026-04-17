@@ -20,9 +20,9 @@ parse_str_array(yyjson_val *arr)
     list.items = malloc(count * sizeof(char *));
     if (!list.items) return list;
 
-    size_t idx;
+    size_t idx, max;
     yyjson_val *val;
-    yyjson_arr_foreach(arr, idx, val) {
+    yyjson_arr_foreach(arr, idx, max, val) {
         list.items[idx] = yyjson_is_str(val) ? strdup(yyjson_get_str(val)) : NULL;
     }
     list.count = (int)count;

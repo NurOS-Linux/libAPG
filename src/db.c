@@ -44,17 +44,7 @@ add_package(struct package *pkg, MDB_env *env)
     mdb_put(txn, dbi, &key, &data, 0);
     mdb_txn_commit(txn);
 
-    // read
-    mdb_txn_begin(env, NULL, MDB_RDONLY, &txn);
-    if (mdb_get(txn, dbi, &key, &data) == MDB_SUCCESS) {
-        printf("Key: %.*s, Value: %.*s\n",
-               (int)key.mv_size, (char *)key.mv_data,
-               (int)data.mv_size, (char *)data.mv_data);
-    }
-    mdb_txn_abort(txn);
-
     mdb_dbi_close(env, dbi);
-    mdb_env_close(env);
 
     return true;
 }
