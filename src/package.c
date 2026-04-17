@@ -8,9 +8,11 @@
 #include <unistd.h>
 
 #include "../include/apg/package.h"
-#include "../include/util.h"
+#include "../include/apg/install.h"
+#include "../include/apg/checksum.h"
 #include "../include/apg/archive.h"
-#include "apg/json.h"
+#include "../include/apg/json.h"
+#include "../include/util.h"
 
 static const char *tmp_path = "/tmp/apg/";
 
@@ -89,11 +91,28 @@ install_package(const struct package *pkg)
 bool
 install_package_in_root(const struct package *pkg, const char *root_path)
 {
-    // signing will be there
     char *real_tmp = concat_dirs(root_path, tmp_path);
+    if (!real_tmp) return false;
     create_dir(real_tmp);
-    free(real_tmp);
 
+    if (!unarchive_package_in_root(pkg, real_tmp)) {
+        free(real_tmp);
+        return false;
+    }
+
+    if (!verify_checksums(real_tmp)) {
+        free(real_tmp);
+        return false;
+    }
+
+    if (!install_data_dir(real_tmp, root_path)) {
+        free(real_tmp);
+        return false;
+    }
+
+    install_home_dir(real_tmp);
+
+    free(real_tmp);
     return true;
 }
 
