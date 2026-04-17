@@ -1,5 +1,6 @@
-// NurOS Ruzen42 2026 apg/package.c
-// Last change: Feb 5
+// SPDX-License-Identifier: GPL-3.0-only
+// SPDX-FileCopyrightText: 2026 Ruzen42
+// SPDX-FileCopyrightText: 2026 AnmiTaliDev <anmitalidev@nuros.org>
 
 #include <limits.h>
 #include <stdio.h>
@@ -40,6 +41,8 @@ void
 str_list_free(struct str_list *list)
 {
     if (!list) return;
+    for (int i = 0; i < list->count; i++)
+        free(list->items[i]);
     free(list->items);
 }
 
@@ -50,16 +53,19 @@ package_metadata_free(struct package_metadata *meta)
 
     free(meta->name);
     free(meta->version);
+    free(meta->type);
     free(meta->architecture);
+    free(meta->description);
     free(meta->maintainer);
     free(meta->license);
     free(meta->homepage);
 
+    str_list_free(&meta->tags);
     str_list_free(&meta->dependencies);
     str_list_free(&meta->conflicts);
     str_list_free(&meta->provides);
     str_list_free(&meta->replaces);
-    str_list_free(&meta->tags);
+    str_list_free(&meta->conf);
 
     free(meta);
 }

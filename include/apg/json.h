@@ -1,12 +1,9 @@
-// NurOS Ruzen42 2026 apg/json.h
-// Last change: Feb 2
+// Author: AnmiTaliDev <anmitalidev@nuros.org>
 #pragma once
 
-#include <yyjson.h>
 #include "package.h"
 
-yyjson_val *package_to_json(struct package *);
+// Returns a heap-allocated JSON string. Caller must free().
+char *package_to_json(struct package *pkg);
 
 struct package_metadata *package_metadata_from_file(const char *path);
-
-char *json_to_string(yyjson_val *);

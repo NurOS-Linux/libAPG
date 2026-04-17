@@ -1,5 +1,6 @@
-// NurOS Ruzen42 2026 apg/db.c
-// Last change: Feb 2 
+// SPDX-License-Identifier: GPL-3.0-only
+// SPDX-FileCopyrightText: 2026 Ruzen42
+// SPDX-FileCopyrightText: 2026 AnmiTaliDev <anmitalidev@nuros.org>
 
 #include <lmdb.h>
 #include <stdbool.h>
@@ -33,7 +34,7 @@ add_package(struct package *pkg, MDB_env *env)
 
     // write
     char *s_key = pkg->meta->name;
-    char *s_value = json_to_string(package_to_json(pkg));
+    char *s_value = package_to_json(pkg);
     key.mv_size = strlen(s_key);
     key.mv_data = s_key;
     data.mv_size = strlen(s_value);

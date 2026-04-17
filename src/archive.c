@@ -1,5 +1,6 @@
-// NurOS Ruzen42 2025 apg/archive.c
-// Last change: Dec 31
+// SPDX-License-Identifier: GPL-3.0-only
+// SPDX-FileCopyrightText: 2025 Ruzen42
+// SPDX-FileCopyrightText: 2026 AnmiTaliDev <anmitalidev@nuros.org>
 
 #include <archive.h>
 #include <archive_entry.h>

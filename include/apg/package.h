@@ -18,16 +18,18 @@ struct str_list {
 struct package_metadata {
     char *name;
     char *version;
+    char *type;
     char *architecture;
-	char *description;
-	char *maintainer;
-	char *license;
-	char *homepage;
-	struct str_list dependencies;
-	struct str_list conflicts;
-	struct str_list provides;
-	struct str_list replaces;
-	struct str_list tags;
+    char *description;
+    char *maintainer;
+    char *license;
+    char *homepage;
+    struct str_list tags;
+    struct str_list dependencies;
+    struct str_list conflicts;
+    struct str_list provides;
+    struct str_list replaces;
+    struct str_list conf;
 };
 
 struct package {
