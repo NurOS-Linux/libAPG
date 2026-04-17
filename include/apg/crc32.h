@@ -1,5 +1,5 @@
-// NurOS Ruzen42 2026 apg/crc32.h
-// Last change: Feb 5
+// SPDX-License-Identifier: GPL-3.0-only
+// SPDX-FileCopyrightText: 2026 Ruzen42
 #pragma once
 
 // source: https://gist.github.com/xobs/91a84d29152161e973d717b9be84c4d0

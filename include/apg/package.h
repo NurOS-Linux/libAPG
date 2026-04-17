@@ -1,5 +1,6 @@
-// NurOS Ruzen42 2025 apg/package.h
-// Last change: Dec 25
+// SPDX-License-Identifier: GPL-3.0-only
+// SPDX-FileCopyrightText: 2025 Ruzen42
+// SPDX-FileCopyrightText: 2026 AnmiTaliDev <anmitalidev@nuros.org>
 
 #ifndef APG_PACKAGE_H
 #define APG_PACKAGE_H

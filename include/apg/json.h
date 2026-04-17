@@ -1,4 +1,6 @@
-// Author: AnmiTaliDev <anmitalidev@nuros.org>
+// SPDX-License-Identifier: GPL-3.0-only
+// SPDX-FileCopyrightText: 2026 Ruzen42
+// SPDX-FileCopyrightText: 2026 AnmiTaliDev <anmitalidev@nuros.org>
 #pragma once
 
 #include "package.h"

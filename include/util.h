@@ -1,5 +1,6 @@
-// NurOS Ruzen42 2026 apg/util.h
-// Last change: Feb 6
+// SPDX-License-Identifier: GPL-3.0-only
+// SPDX-FileCopyrightText: 2026 Ruzen42
+// SPDX-FileCopyrightText: 2026 AnmiTaliDev <anmitalidev@nuros.org>
 
 #pragma once
 

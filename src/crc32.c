@@ -1,5 +1,5 @@
-// NurOS Ruzen42 2025 apg/crc32.h
-// Last change: Dec 25
+// SPDX-License-Identifier: GPL-3.0-only
+// SPDX-FileCopyrightText: 2025 Ruzen42
 
 #include "../include/apg/crc32.h"
 

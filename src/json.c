@@ -1,4 +1,6 @@
-// AnmiTaliDev & Ruzen42 2026 apg/json.c
+// SPDX-License-Identifier: GPL-3.0-only
+// SPDX-FileCopyrightText: 2026 Ruzen42
+// SPDX-FileCopyrightText: 2026 AnmiTaliDev <anmitalidev@nuros.org>
 
 #include <yyjson.h>
 #include <stdlib.h>

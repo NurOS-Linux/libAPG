@@ -1,5 +1,5 @@
-// NurOS Ruzen42 2026 apg/db.h
-// Last change: Feb 2 
+// SPDX-License-Identifier: GPL-3.0-only
+// SPDX-FileCopyrightText: 2026 Ruzen42
 #pragma once
 
 #include <lmdb.h>
