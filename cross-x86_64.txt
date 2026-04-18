@@ -1,0 +1,13 @@
+[binaries]
+c = 'gcc'
+ar = 'ar'
+strip = 'strip'
+
+[host_machine]
+system = 'linux'
+cpu_family = 'x86_64'
+cpu = 'x86_64'
+endian = 'little'
+
+[properties]
+c_args = ['-march=x86-64-v2', '-msha', '-msse4.1']

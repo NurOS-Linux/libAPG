@@ -1,0 +1,13 @@
+[binaries]
+c = 'riscv64-linux-gnu-gcc'
+ar = 'riscv64-linux-gnu-ar'
+strip = 'riscv64-linux-gnu-strip'
+
+[host_machine]
+system = 'linux'
+cpu_family = 'riscv64'
+cpu = 'riscv64'
+endian = 'little'
+
+[properties]
+c_args = ['-march=rv64gc_zknh']
