@@ -23,15 +23,18 @@
           pkgs.meson
           pkgs.ninja
           pkgs.pkg-config
-          libiron
           pkgs.gcc
-          pkgs.tree
+          pkgs.nasm        # assembler for x86_64 SHA-NI ASM
+          pkgs.binutils    # gas (as) for .S files
+          libiron
         ];
 
         buildInputs = [
           pkgs.lmdb
           pkgs.libarchive
-          pkgs.cjson
+          pkgs.yyjson
+          pkgs.libsodium   # for package signing (sodium backend)
+          # pkgs.gpgme     # alternative signing backend
         ];
 
         mesonFlags = [
@@ -39,9 +42,16 @@
         ];
 
         installPhase = ''
-          mkdir -p $out/lib $out/include/pkg-config
-          cp libapg.so $out/lib/
+          ninja install
         '';
+      };
+
+      devShells.${system}.default = pkgs.mkShell {
+        inputsFrom = [ self.packages.${system}.default ];
+        packages = [
+          pkgs.gdb
+          pkgs.valgrind
+        ];
       };
     };
 }

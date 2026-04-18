@@ -1,5 +1,5 @@
 # NurOS Ruzen42 2025
-project('libapg', 'c',
+project('libapg', ['c', 'nasm'],
   version: '1.1.0'
 )
 
@@ -25,6 +25,24 @@ add_project_arguments('-D_GNU_SOURCE', language: 'c')
 libapg_inc = include_directories('include')
 
 cc = meson.get_compiler('c')
+cpu = host_machine.cpu_family()
+
+# Hardware-accelerated SHA-256 ASM
+sha256_hw_args = []
+if cpu == 'x86_64'
+  libapg_sources += files('arch/x86_64/sha256.S')
+  sha256_hw_args = ['-DAPG_SHA256_HW_AVAILABLE=1', '-msha', '-msse4.1']
+elif cpu == 'aarch64'
+  libapg_sources += files('arch/aarch64/sha256.S')
+  sha256_hw_args = ['-DAPG_SHA256_HW_AVAILABLE=1', '-march=armv8-a+crypto']
+elif cpu == 'riscv64'
+  libapg_sources += files('arch/riscv64/sha256.S')
+  sha256_hw_args = ['-DAPG_SHA256_HW_AVAILABLE=1', '-march=rv64gc_zknh']
+endif
+
+if sha256_hw_args.length() > 0
+  add_project_arguments(sha256_hw_args, language: 'c')
+endif
 
 libarchive_dep = dependency('libarchive', required: false)
 lmdb_dep = dependency('lmdb', required: false)

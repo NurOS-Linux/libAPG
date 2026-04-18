@@ -3,12 +3,13 @@
 // SPDX-FileCopyrightText: 2026 AnmiTaliDev <anmitalidev@nuros.org>
 //
 // SHA-256 implementation (FIPS 180-4).
+// Hardware acceleration via SHA-NI (x86_64), ARMv8 Crypto (aarch64),
+// or RISC-V Zknh (riscv64) when available; falls back to portable C.
 
 #include "../../include/apg/sha256.h"
 #include <stdio.h>
 #include <string.h>
 
-// SHA-256 constants (first 32 bits of fractional parts of cube roots of primes)
 static const uint32_t K[64] = {
     0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5,
     0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
@@ -36,9 +37,28 @@ static const uint32_t K[64] = {
 #define SIG0(x)    (ROTR(x,7)  ^ ROTR(x,18) ^ ((x) >> 3))
 #define SIG1(x)    (ROTR(x,17) ^ ROTR(x,19) ^ ((x) >> 10))
 
+#ifdef APG_SHA256_HW_AVAILABLE
+extern int  apg_sha256_hw_supported(void);
+extern void apg_sha256_transform_hw(uint32_t state[8], const uint8_t data[64]);
+
+static int hw_ok = -1;
+
+static inline int use_hw(void) {
+    if (__builtin_expect(hw_ok < 0, 0))
+        hw_ok = apg_sha256_hw_supported() ? 1 : 0;
+    return hw_ok;
+}
+#endif
+
 static void
 sha256_transform(sha256_ctx *ctx, const uint8_t data[64])
 {
+#ifdef APG_SHA256_HW_AVAILABLE
+    if (use_hw()) {
+        apg_sha256_transform_hw(ctx->state, data);
+        return;
+    }
+#endif
     uint32_t a, b, c, d, e, f, g, h, t1, t2, m[64];
     int i;
 
