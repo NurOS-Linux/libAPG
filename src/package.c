@@ -9,6 +9,7 @@
 
 #include "../include/apg/package.h"
 #include "../include/apg/install.h"
+#include "../include/apg/scripts.h"
 #include "../include/apg/checksum.h"
 #include "../include/apg/archive.h"
 #include "../include/apg/json.h"
@@ -105,12 +106,22 @@ install_package_in_root(const struct package *pkg, const char *root_path)
         return false;
     }
 
+    if (!run_script(real_tmp, "pre-install")) {
+        free(real_tmp);
+        return false;
+    }
+
     if (!install_data_dir(real_tmp, root_path)) {
         free(real_tmp);
         return false;
     }
 
     install_home_dir(real_tmp);
+
+    if (!run_script(real_tmp, "post-install")) {
+        free(real_tmp);
+        return false;
+    }
 
     free(real_tmp);
     return true;

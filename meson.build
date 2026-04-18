@@ -13,6 +13,7 @@ libapg_sources = files(
   'src/checksum/checksum.c',
   'src/install/copy.c',
   'src/install/install.c',
+  'src/install/scripts.c',
   'src/db/db.c',
   'src/db/write.c',
   'src/db/read.c',
