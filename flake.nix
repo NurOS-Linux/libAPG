@@ -24,7 +24,6 @@
           pkgs.ninja
           pkgs.pkg-config
           pkgs.gcc
-          pkgs.nasm        # assembler for x86_64 SHA-NI ASM
           pkgs.binutils    # gas (as) for .S files
           libiron
         ];

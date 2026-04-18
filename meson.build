@@ -1,5 +1,5 @@
 # NurOS Ruzen42 2025
-project('libapg', ['c', 'nasm'],
+project('libapg', 'c',
   version: '1.1.0'
 )
 
