@@ -9,3 +9,4 @@
 char *package_to_json(struct package *pkg);
 
 struct package_metadata *package_metadata_from_file(const char *path);
+struct package_metadata *package_metadata_from_json(const char *json, size_t len);

@@ -40,23 +40,11 @@ add_str_array(yyjson_mut_doc *doc, yyjson_mut_val *obj, const char *key, struct 
     yyjson_mut_obj_add_val(doc, obj, key, arr);
 }
 
-struct package_metadata *
-package_metadata_from_file(const char *path)
+static struct package_metadata *
+parse_metadata_from_root(yyjson_val *root)
 {
-    yyjson_doc *doc = yyjson_read_file(path, 0, NULL, NULL);
-    if (!doc) return NULL;
-
-    yyjson_val *root = yyjson_doc_get_root(doc);
-    if (!yyjson_is_obj(root)) {
-        yyjson_doc_free(doc);
-        return NULL;
-    }
-
     struct package_metadata *meta = package_metadata_new();
-    if (!meta) {
-        yyjson_doc_free(doc);
-        return NULL;
-    }
+    if (!meta) return NULL;
 
     yyjson_val *v;
 
@@ -90,6 +78,35 @@ package_metadata_from_file(const char *path)
     meta->provides     = parse_str_array(yyjson_obj_get(root, "provides"));
     meta->replaces     = parse_str_array(yyjson_obj_get(root, "replaces"));
     meta->conf         = parse_str_array(yyjson_obj_get(root, "conf"));
+
+    return meta;
+}
+
+struct package_metadata *
+package_metadata_from_file(const char *path)
+{
+    yyjson_doc *doc = yyjson_read_file(path, 0, NULL, NULL);
+    if (!doc) return NULL;
+
+    yyjson_val *root = yyjson_doc_get_root(doc);
+    struct package_metadata *meta = yyjson_is_obj(root)
+        ? parse_metadata_from_root(root)
+        : NULL;
+
+    yyjson_doc_free(doc);
+    return meta;
+}
+
+struct package_metadata *
+package_metadata_from_json(const char *json, size_t len)
+{
+    yyjson_doc *doc = yyjson_read(json, len, 0);
+    if (!doc) return NULL;
+
+    yyjson_val *root = yyjson_doc_get_root(doc);
+    struct package_metadata *meta = yyjson_is_obj(root)
+        ? parse_metadata_from_root(root)
+        : NULL;
 
     yyjson_doc_free(doc);
     return meta;
