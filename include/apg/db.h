@@ -7,7 +7,7 @@
 
 #include "package.h"
 
-MDB_env *init_db(char *db_path);
+MDB_env *init_db(const char *db_path);
 bool add_package(struct package *pkg, MDB_env *env);
 bool remove_package(char *pkg_name, MDB_env *env);
 struct package *get_all_packages(MDB_env *env);
