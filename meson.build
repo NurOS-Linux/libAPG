@@ -1,5 +1,5 @@
 # NurOS Ruzen42 2025
-project('libapg', ['c', 'nasm'],
+project('libapg', 'c',
   version: '1.1.0'
 )
 
@@ -28,26 +28,22 @@ cc = meson.get_compiler('c')
 cpu = host_machine.cpu_family()
 
 # Hardware-accelerated SHA-256 ASM
-# Assembled with Clang IAS (-masm=intel) — compatible with NASM/FASM syntax.
+# Assembled via Clang IAS: .S files compiled with -masm=intel (Intel syntax).
+# Compatible with NASM/FASM syntax on x86_64; Clang IAS handles all arches.
 sha256_hw_args = []
-sha256_asm_args = []
 if cpu == 'x86_64'
   libapg_sources += files('arch/x86_64/sha256.S')
-  sha256_hw_args  = ['-DAPG_SHA256_HW_AVAILABLE=1', '-msha', '-msse4.1']
-  sha256_asm_args = ['-masm=intel', '-msha', '-msse4.1']
+  sha256_hw_args = ['-DAPG_SHA256_HW_AVAILABLE=1', '-msha', '-msse4.1', '-masm=intel']
 elif cpu == 'aarch64'
   libapg_sources += files('arch/aarch64/sha256.S')
-  sha256_hw_args  = ['-DAPG_SHA256_HW_AVAILABLE=1', '-march=armv8-a+crypto']
-  sha256_asm_args = ['-march=armv8-a+crypto']
+  sha256_hw_args = ['-DAPG_SHA256_HW_AVAILABLE=1', '-march=armv8-a+crypto']
 elif cpu == 'riscv64'
   libapg_sources += files('arch/riscv64/sha256.S')
-  sha256_hw_args  = ['-DAPG_SHA256_HW_AVAILABLE=1', '-march=rv64gc_zknh']
-  sha256_asm_args = ['-march=rv64gc_zknh']
+  sha256_hw_args = ['-DAPG_SHA256_HW_AVAILABLE=1', '-march=rv64gc_zknh']
 endif
 
 if sha256_hw_args.length() > 0
   add_project_arguments(sha256_hw_args, language: 'c')
-  add_project_arguments(sha256_asm_args, language: 'nasm')
 endif
 
 libarchive_dep = dependency('libarchive', required: false)
