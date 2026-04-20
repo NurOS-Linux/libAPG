@@ -9,7 +9,7 @@
     .text
 
     .globl apg_sha256_hw_supported
-    .type  apg_sha256_hw_supported, %function
+    .type  apg_sha256_hw_supported, @function
 apg_sha256_hw_supported:
     mov     w0, #1
     ret
@@ -18,7 +18,7 @@ apg_sha256_hw_supported:
 // void apg_sha256_transform_hw(uint32_t state[8], const uint8_t data[64])
 // x0 = state, x1 = data
     .globl apg_sha256_transform_hw
-    .type  apg_sha256_transform_hw, %function
+    .type  apg_sha256_transform_hw, @function
     .align 4
 apg_sha256_transform_hw:
     ld1     {v0.4s, v1.4s}, [x0]
