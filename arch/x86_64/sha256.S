@@ -1,35 +1,38 @@
-; SPDX-License-Identifier: GPL-3.0-only
-; SHA-256 via Intel SHA Extensions (SHA-NI + SSE4.1).
-; Syntax: Intel — compatible with NASM, FASM, Clang IAS (-masm=intel),
-;         and GAS (.intel_syntax noprefix / -masm=intel).
-;
-; int  apg_sha256_hw_supported(void)
-; void apg_sha256_transform_hw(uint32_t state[8], const uint8_t data[64])
+// SPDX-License-Identifier: GPL-3.0-only
+// SHA-256 via Intel SHA Extensions (SHA-NI + SSE4.1).
+// Syntax: Intel — compatible with Clang IAS (-masm=intel)
+//         and GAS (.intel_syntax noprefix / -masm=intel).
+//
+// int  apg_sha256_hw_supported(void)
+// void apg_sha256_transform_hw(uint32_t state[8], const uint8_t data[64])
 
-section .rodata
-align 16
+    .intel_syntax noprefix
+
+    .section .rodata
+    .align 16
 .Lbswap:
-    db 3,2,1,0, 7,6,5,4, 11,10,9,8, 15,14,13,12
-.LK0:  dd 0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5
-.LK1:  dd 0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5
-.LK2:  dd 0xd807aa98,0x12835b01,0x243185be,0x550c7dc3
-.LK3:  dd 0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174
-.LK4:  dd 0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc
-.LK5:  dd 0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da
-.LK6:  dd 0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7
-.LK7:  dd 0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967
-.LK8:  dd 0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13
-.LK9:  dd 0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85
-.LK10: dd 0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3
-.LK11: dd 0xd192e819,0xd6990624,0xf40e3585,0x106aa070
-.LK12: dd 0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5
-.LK13: dd 0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3
-.LK14: dd 0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208
-.LK15: dd 0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2
+    .byte 3,2,1,0, 7,6,5,4, 11,10,9,8, 15,14,13,12
+.LK0:  .long 0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5
+.LK1:  .long 0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5
+.LK2:  .long 0xd807aa98,0x12835b01,0x243185be,0x550c7dc3
+.LK3:  .long 0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174
+.LK4:  .long 0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc
+.LK5:  .long 0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da
+.LK6:  .long 0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7
+.LK7:  .long 0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967
+.LK8:  .long 0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13
+.LK9:  .long 0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85
+.LK10: .long 0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3
+.LK11: .long 0xd192e819,0xd6990624,0xf40e3585,0x106aa070
+.LK12: .long 0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5
+.LK13: .long 0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3
+.LK14: .long 0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208
+.LK15: .long 0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2
 
-section .text
+    .text
 
-global apg_sha256_hw_supported
+    .globl apg_sha256_hw_supported
+    .type  apg_sha256_hw_supported, @function
 apg_sha256_hw_supported:
     push    rbx
     mov     eax, 1
@@ -46,9 +49,11 @@ apg_sha256_hw_supported:
     mov     eax, ebx
     pop     rbx
     ret
+    .size apg_sha256_hw_supported, .-apg_sha256_hw_supported
 
-global apg_sha256_transform_hw
-align 16
+    .globl apg_sha256_transform_hw
+    .type  apg_sha256_transform_hw, @function
+    .align 16
 apg_sha256_transform_hw:
     sub     rsp, 96
     movdqu  [rsp +  0], xmm6
@@ -58,9 +63,9 @@ apg_sha256_transform_hw:
     movdqu  [rsp + 64], xmm10
     movdqu  [rsp + 80], xmm11
 
-    movdqu  xmm11, [rel .Lbswap]
+    movdqu  xmm11, [rip + .Lbswap]
 
-    ; Load state, reorder for SHA-NI: ABEF in xmm0, CDGH in xmm1
+    // Load state, reorder for SHA-NI: ABEF in xmm0, CDGH in xmm1
     movdqu  xmm0, [rdi]
     movdqu  xmm1, [rdi + 16]
     pshufd  xmm0, xmm0, 0xb1
@@ -72,7 +77,7 @@ apg_sha256_transform_hw:
     movdqa  xmm8,  xmm0
     movdqa  xmm10, xmm1
 
-    ; Load and byte-swap message
+    // Load and byte-swap message
     movdqu  xmm4, [rsi]
     movdqu  xmm5, [rsi + 16]
     movdqu  xmm6, [rsi + 32]
@@ -82,146 +87,146 @@ apg_sha256_transform_hw:
     pshufb  xmm6, xmm11
     pshufb  xmm7, xmm11
 
-    ; Rounds 0-3
+    // Rounds 0-3
     movdqa  xmm9, xmm4
-    paddd   xmm9, [rel .LK0]
+    paddd   xmm9, [rip + .LK0]
     sha256rnds2 xmm1, xmm0, xmm9
     pshufd  xmm9, xmm9, 0x0e
     sha256rnds2 xmm0, xmm1, xmm9
 
-    ; Rounds 4-7
+    // Rounds 4-7
     movdqa  xmm9, xmm5
-    paddd   xmm9, [rel .LK1]
+    paddd   xmm9, [rip + .LK1]
     sha256msg1 xmm4, xmm5
     sha256rnds2 xmm1, xmm0, xmm9
     pshufd  xmm9, xmm9, 0x0e
     sha256rnds2 xmm0, xmm1, xmm9
 
-    ; Rounds 8-11
+    // Rounds 8-11
     movdqa  xmm9, xmm6
-    paddd   xmm9, [rel .LK2]
+    paddd   xmm9, [rip + .LK2]
     sha256msg1 xmm5, xmm6
     sha256rnds2 xmm1, xmm0, xmm9
     pshufd  xmm9, xmm9, 0x0e
     sha256rnds2 xmm0, xmm1, xmm9
 
-    ; Rounds 12-15
+    // Rounds 12-15
     movdqa  xmm9, xmm7
-    paddd   xmm9, [rel .LK3]
+    paddd   xmm9, [rip + .LK3]
     sha256msg1 xmm6, xmm7
     sha256msg2 xmm4, xmm7
     sha256rnds2 xmm1, xmm0, xmm9
     pshufd  xmm9, xmm9, 0x0e
     sha256rnds2 xmm0, xmm1, xmm9
 
-    ; Rounds 16-19
+    // Rounds 16-19
     movdqa  xmm9, xmm4
-    paddd   xmm9, [rel .LK4]
+    paddd   xmm9, [rip + .LK4]
     sha256msg1 xmm7, xmm4
     sha256msg2 xmm5, xmm4
     sha256rnds2 xmm1, xmm0, xmm9
     pshufd  xmm9, xmm9, 0x0e
     sha256rnds2 xmm0, xmm1, xmm9
 
-    ; Rounds 20-23
+    // Rounds 20-23
     movdqa  xmm9, xmm5
-    paddd   xmm9, [rel .LK5]
+    paddd   xmm9, [rip + .LK5]
     sha256msg1 xmm4, xmm5
     sha256msg2 xmm6, xmm5
     sha256rnds2 xmm1, xmm0, xmm9
     pshufd  xmm9, xmm9, 0x0e
     sha256rnds2 xmm0, xmm1, xmm9
 
-    ; Rounds 24-27
+    // Rounds 24-27
     movdqa  xmm9, xmm6
-    paddd   xmm9, [rel .LK6]
+    paddd   xmm9, [rip + .LK6]
     sha256msg1 xmm5, xmm6
     sha256msg2 xmm7, xmm6
     sha256rnds2 xmm1, xmm0, xmm9
     pshufd  xmm9, xmm9, 0x0e
     sha256rnds2 xmm0, xmm1, xmm9
 
-    ; Rounds 28-31
+    // Rounds 28-31
     movdqa  xmm9, xmm7
-    paddd   xmm9, [rel .LK7]
+    paddd   xmm9, [rip + .LK7]
     sha256msg1 xmm6, xmm7
     sha256msg2 xmm4, xmm7
     sha256rnds2 xmm1, xmm0, xmm9
     pshufd  xmm9, xmm9, 0x0e
     sha256rnds2 xmm0, xmm1, xmm9
 
-    ; Rounds 32-35
+    // Rounds 32-35
     movdqa  xmm9, xmm4
-    paddd   xmm9, [rel .LK8]
+    paddd   xmm9, [rip + .LK8]
     sha256msg1 xmm7, xmm4
     sha256msg2 xmm5, xmm4
     sha256rnds2 xmm1, xmm0, xmm9
     pshufd  xmm9, xmm9, 0x0e
     sha256rnds2 xmm0, xmm1, xmm9
 
-    ; Rounds 36-39
+    // Rounds 36-39
     movdqa  xmm9, xmm5
-    paddd   xmm9, [rel .LK9]
+    paddd   xmm9, [rip + .LK9]
     sha256msg1 xmm4, xmm5
     sha256msg2 xmm6, xmm5
     sha256rnds2 xmm1, xmm0, xmm9
     pshufd  xmm9, xmm9, 0x0e
     sha256rnds2 xmm0, xmm1, xmm9
 
-    ; Rounds 40-43
+    // Rounds 40-43
     movdqa  xmm9, xmm6
-    paddd   xmm9, [rel .LK10]
+    paddd   xmm9, [rip + .LK10]
     sha256msg1 xmm5, xmm6
     sha256msg2 xmm7, xmm6
     sha256rnds2 xmm1, xmm0, xmm9
     pshufd  xmm9, xmm9, 0x0e
     sha256rnds2 xmm0, xmm1, xmm9
 
-    ; Rounds 44-47
+    // Rounds 44-47
     movdqa  xmm9, xmm7
-    paddd   xmm9, [rel .LK11]
+    paddd   xmm9, [rip + .LK11]
     sha256msg1 xmm6, xmm7
     sha256msg2 xmm4, xmm7
     sha256rnds2 xmm1, xmm0, xmm9
     pshufd  xmm9, xmm9, 0x0e
     sha256rnds2 xmm0, xmm1, xmm9
 
-    ; Rounds 48-51
+    // Rounds 48-51
     movdqa  xmm9, xmm4
-    paddd   xmm9, [rel .LK12]
+    paddd   xmm9, [rip + .LK12]
     sha256msg2 xmm5, xmm4
     sha256rnds2 xmm1, xmm0, xmm9
     pshufd  xmm9, xmm9, 0x0e
     sha256rnds2 xmm0, xmm1, xmm9
 
-    ; Rounds 52-55
+    // Rounds 52-55
     movdqa  xmm9, xmm5
-    paddd   xmm9, [rel .LK13]
+    paddd   xmm9, [rip + .LK13]
     sha256msg2 xmm6, xmm5
     sha256rnds2 xmm1, xmm0, xmm9
     pshufd  xmm9, xmm9, 0x0e
     sha256rnds2 xmm0, xmm1, xmm9
 
-    ; Rounds 56-59
+    // Rounds 56-59
     movdqa  xmm9, xmm6
-    paddd   xmm9, [rel .LK14]
+    paddd   xmm9, [rip + .LK14]
     sha256msg2 xmm7, xmm6
     sha256rnds2 xmm1, xmm0, xmm9
     pshufd  xmm9, xmm9, 0x0e
     sha256rnds2 xmm0, xmm1, xmm9
 
-    ; Rounds 60-63
+    // Rounds 60-63
     movdqa  xmm9, xmm7
-    paddd   xmm9, [rel .LK15]
+    paddd   xmm9, [rip + .LK15]
     sha256rnds2 xmm1, xmm0, xmm9
     pshufd  xmm9, xmm9, 0x0e
     sha256rnds2 xmm0, xmm1, xmm9
 
-    ; Add original state
+    // Add original state
     paddd   xmm0, xmm8
     paddd   xmm1, xmm10
 
-    ; Reorder back to state[0..7]
+    // Reorder back to state[0..7]
     pshufd  xmm0, xmm0, 0x1b
     pshufd  xmm1, xmm1, 0xb1
     movdqa  xmm9, xmm0
@@ -239,3 +244,6 @@ apg_sha256_transform_hw:
     movdqu  xmm11, [rsp + 80]
     add     rsp, 96
     ret
+    .size apg_sha256_transform_hw, .-apg_sha256_transform_hw
+
+    .section .note.GNU-stack,"",@progbits
