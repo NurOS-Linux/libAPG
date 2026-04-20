@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-only
 // SHA-256 via RISC-V Zknh scalar crypto (sha256sig0/1, sha256sum0/1).
-// Syntax: compatible with GAS and Clang IAS.
+// Syntax: RISC-V unified assembly — compatible with GAS, Clang IAS, and LLVM.
 //
 // int  apg_sha256_hw_supported(void)
 // void apg_sha256_transform_hw(uint32_t state[8], const uint8_t data[64])

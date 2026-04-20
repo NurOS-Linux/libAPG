@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-only
 // SHA-256 via ARMv8 Crypto Extensions (sha2).
-// Syntax: AT&T-style unified, compatible with GAS and Clang IAS.
+// Syntax: AArch64 unified assembly — compatible with GAS, Clang IAS, and LLVM.
 //
 // int  apg_sha256_hw_supported(void)
 // void apg_sha256_transform_hw(uint32_t state[8], const uint8_t data[64])
