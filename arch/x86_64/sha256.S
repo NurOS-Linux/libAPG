@@ -1,6 +1,7 @@
 ; SPDX-License-Identifier: GPL-3.0-only
 ; SHA-256 via Intel SHA Extensions (SHA-NI + SSE4.1).
-; Syntax: Intel, compatible with NASM, FASM, and Clang IAS (-masm=intel).
+; Syntax: Intel — compatible with NASM, FASM, Clang IAS (-masm=intel),
+;         and GAS (.intel_syntax noprefix / -masm=intel).
 ;
 ; int  apg_sha256_hw_supported(void)
 ; void apg_sha256_transform_hw(uint32_t state[8], const uint8_t data[64])
