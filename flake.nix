@@ -23,8 +23,8 @@
           pkgs.meson
           pkgs.ninja
           pkgs.pkg-config
-          pkgs.gcc
-          pkgs.binutils    # gas (as) for .S files
+          pkgs.llvmPackages.clang   # Clang IAS for .S files (replaces gas/binutils)
+          pkgs.llvmPackages.llvm    # llvm-ar, llvm-strip, llvm-objcopy
           libiron
         ];
 
@@ -32,8 +32,7 @@
           pkgs.lmdb
           pkgs.libarchive
           pkgs.yyjson
-          pkgs.libsodium   # for package signing (sodium backend)
-          # pkgs.gpgme     # alternative signing backend
+          pkgs.libsodium
         ];
 
         mesonFlags = [

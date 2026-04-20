@@ -1,13 +1,17 @@
 [binaries]
-c = 'gcc'
-ar = 'ar'
-strip = 'strip'
+c       = 'clang'
+cpp     = 'clang++'
+ar      = 'llvm-ar'
+strip   = 'llvm-strip'
+objcopy = 'llvm-objcopy'
+asm     = 'clang'
 
 [host_machine]
-system = 'linux'
+system     = 'linux'
 cpu_family = 'x86_64'
-cpu = 'x86_64'
-endian = 'little'
+cpu        = 'x86_64'
+endian     = 'little'
 
 [properties]
-c_args = ['-march=x86-64-v2', '-msha', '-msse4.1']
+c_args   = ['-march=x86-64-v2', '-msha', '-msse4.1']
+asm_args = ['-masm=intel', '-msha', '-msse4.1', '-target', 'x86_64-linux-gnu']

@@ -1,13 +1,17 @@
 [binaries]
-c = 'aarch64-linux-gnu-gcc'
-ar = 'aarch64-linux-gnu-ar'
-strip = 'aarch64-linux-gnu-strip'
+c       = 'clang'
+cpp     = 'clang++'
+ar      = 'llvm-ar'
+strip   = 'llvm-strip'
+objcopy = 'llvm-objcopy'
+asm     = 'clang'
 
 [host_machine]
-system = 'linux'
+system     = 'linux'
 cpu_family = 'aarch64'
-cpu = 'aarch64'
-endian = 'little'
+cpu        = 'aarch64'
+endian     = 'little'
 
 [properties]
-c_args = ['-march=armv8-a+crypto']
+c_args   = ['-march=armv8-a+crypto', '-target', 'aarch64-linux-gnu']
+asm_args = ['-target', 'aarch64-linux-gnu', '-march=armv8-a+crypto']
