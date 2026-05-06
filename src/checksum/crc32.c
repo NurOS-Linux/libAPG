@@ -1,21 +1,40 @@
 // SPDX-License-Identifier: GPL-3.0-only
 // SPDX-FileCopyrightText: 2025 Ruzen42
+// SPDX-FileCopyrightText: 2026 AnmiTaliDev <anmitalidev@nuros.org>
 
+#include <stdint.h>
+#include <stddef.h>
 #include "../../include/apg/crc32.h"
+
+#ifdef APG_CRC32_HW_AVAILABLE
+extern int      apg_crc32_hw_supported(void);
+extern uint32_t apg_crc32_update_hw(uint32_t crc, const uint8_t *buf, size_t len);
+
+static int hw_ok = -1;
+
+static inline int use_hw(void) {
+    if (__builtin_expect(hw_ok < 0, 0))
+        hw_ok = apg_crc32_hw_supported() ? 1 : 0;
+    return hw_ok;
+}
+#endif
 
 unsigned int
 crc32(const unsigned char *buffer, unsigned int len)
 {
-    unsigned int crc = 0;
-    crc = crc ^ 0xffffffffL;
-    while(len >= 8) {
+    unsigned int crc = 0xffffffffU;
+#ifdef APG_CRC32_HW_AVAILABLE
+    if (use_hw())
+        return apg_crc32_update_hw(crc, buffer, len) ^ 0xffffffffU;
+#endif
+    while (len >= 8) {
         DO8(buffer);
         len -= 8;
     }
-    if(len) do {
+    if (len) do {
         DO1(buffer);
-    } while(--len);
-    return crc ^ 0xffffffffL;
+    } while (--len);
+    return crc ^ 0xffffffffU;
 }
 
 unsigned int

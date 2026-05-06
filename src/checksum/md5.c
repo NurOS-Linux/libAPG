@@ -38,9 +38,28 @@ static const uint8_t S[64] = {
     6, 10, 15, 21, 6, 10, 15, 21, 6, 10, 15, 21, 6, 10, 15, 21
 };
 
+#ifdef APG_MD5_HW_AVAILABLE
+extern int  apg_md5_hw_supported(void);
+extern void apg_md5_transform_hw(uint32_t state[4], const uint8_t block[64]);
+
+static int hw_ok = -1;
+
+static inline int use_hw(void) {
+    if (__builtin_expect(hw_ok < 0, 0))
+        hw_ok = apg_md5_hw_supported() ? 1 : 0;
+    return hw_ok;
+}
+#endif
+
 static void
 md5_transform(uint32_t state[4], const uint8_t block[64])
 {
+#ifdef APG_MD5_HW_AVAILABLE
+    if (use_hw()) {
+        apg_md5_transform_hw(state, block);
+        return;
+    }
+#endif
     uint32_t a = state[0], b = state[1], c = state[2], d = state[3];
     uint32_t M[16];
 

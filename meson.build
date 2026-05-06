@@ -27,23 +27,49 @@ libapg_inc = include_directories('include')
 cc = meson.get_compiler('c')
 cpu = host_machine.cpu_family()
 
-# Hardware-accelerated SHA-256 ASM
-# Assembled via Clang IAS: .S files compiled with -masm=intel (Intel syntax).
-# Compatible with NASM/FASM syntax on x86_64; Clang IAS handles all arches.
-sha256_hw_args = []
+# Architecture-specific ASM: SHA-256 (hardware crypto), CRC-32 and MD5 (optimized scalar).
+# Assembled via Clang IAS: .S files compiled with -masm=intel on x86_64.
+hw_args = []
 if cpu == 'x86_64'
-  libapg_sources += files('arch/x86_64/sha256.S')
-  sha256_hw_args = ['-DAPG_SHA256_HW_AVAILABLE=1', '-msha', '-msse4.1', '-masm=intel']
+  libapg_sources += files(
+    'arch/x86_64/sha256.S',
+    'arch/x86_64/crc32.S',
+    'arch/x86_64/md5.S',
+  )
+  hw_args = [
+    '-DAPG_SHA256_HW_AVAILABLE=1',
+    '-DAPG_CRC32_HW_AVAILABLE=1',
+    '-DAPG_MD5_HW_AVAILABLE=1',
+    '-msha', '-msse4.1', '-masm=intel',
+  ]
 elif cpu == 'aarch64'
-  libapg_sources += files('arch/aarch64/sha256.S')
-  sha256_hw_args = ['-DAPG_SHA256_HW_AVAILABLE=1', '-march=armv8-a+crypto']
+  libapg_sources += files(
+    'arch/aarch64/sha256.S',
+    'arch/aarch64/crc32.S',
+    'arch/aarch64/md5.S',
+  )
+  hw_args = [
+    '-DAPG_SHA256_HW_AVAILABLE=1',
+    '-DAPG_CRC32_HW_AVAILABLE=1',
+    '-DAPG_MD5_HW_AVAILABLE=1',
+    '-march=armv8-a+crypto+crc',
+  ]
 elif cpu == 'riscv64'
-  libapg_sources += files('arch/riscv64/sha256.S')
-  sha256_hw_args = ['-DAPG_SHA256_HW_AVAILABLE=1', '-march=rv64gc_zknh']
+  libapg_sources += files(
+    'arch/riscv64/sha256.S',
+    'arch/riscv64/crc32.S',
+    'arch/riscv64/md5.S',
+  )
+  hw_args = [
+    '-DAPG_SHA256_HW_AVAILABLE=1',
+    '-DAPG_CRC32_HW_AVAILABLE=1',
+    '-DAPG_MD5_HW_AVAILABLE=1',
+    '-march=rv64gc_zknh',
+  ]
 endif
 
-if sha256_hw_args.length() > 0
-  add_project_arguments(sha256_hw_args, language: 'c')
+if hw_args.length() > 0
+  add_project_arguments(hw_args, language: 'c')
 endif
 
 libarchive_dep = dependency('libarchive', required: false)
