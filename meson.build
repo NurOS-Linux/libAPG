@@ -118,3 +118,5 @@ libapg_dep = declare_dependency(
 
 pkg = import('pkgconfig')
 pkg.generate(libapg)
+
+subdir('test')
