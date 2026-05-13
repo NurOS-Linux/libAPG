@@ -18,6 +18,9 @@ libapg_sources = files(
   'src/db/write.c',
   'src/db/read.c',
   'src/json.c',
+  'src/graph/graph.c',
+  'src/graph/resolve.c',
+  'src/graph/conflict.c',
 )
 
 add_project_arguments('-D_GNU_SOURCE', language: 'c')
