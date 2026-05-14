@@ -12,10 +12,10 @@
 
 ## v1.2 — Dependencies and conflicts
 
-- [ ] Dependency resolver (graph, topological sort)
-- [ ] Conflict and circular dependency detection at install time
-- [ ] `provides` / `replaces` support during resolution
-- [ ] API to query: what installing package X will break
+- [x] Dependency resolver (graph, topological sort)
+- [x] Conflict and circular dependency detection at install time
+- [x] `provides` / `replaces` support during resolution
+- [x] API to query: what installing package X will break
 
 ## v1.3 — Transactions and rollback
 
