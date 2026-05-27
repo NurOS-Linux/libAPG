@@ -10,6 +10,7 @@
 #include "../../include/apg/db.h"
 #include "../../include/apg/package.h"
 #include "../../include/apg/json.h"
+#include "../../include/apg/journal.h"
 
 bool
 add_package(struct package *pkg, MDB_env *env)
@@ -45,6 +46,9 @@ add_package(struct package *pkg, MDB_env *env)
         mdb_txn_abort(txn);
 
     mdb_dbi_close(env, dbi);
+
+    journal_write(env, JOURNAL_INSTALL, pkg->meta->name, pkg->meta->version,
+                  ok ? JOURNAL_STATUS_OK : JOURNAL_STATUS_FAILED);
     return ok;
 }
 
@@ -73,5 +77,8 @@ remove_package(char *pkg_name, MDB_env *env)
         mdb_txn_abort(txn);
 
     mdb_dbi_close(env, dbi);
+
+    journal_write(env, JOURNAL_REMOVE, pkg_name, NULL,
+                  ok ? JOURNAL_STATUS_OK : JOURNAL_STATUS_FAILED);
     return ok;
 }

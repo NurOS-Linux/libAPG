@@ -6,3 +6,4 @@
 
 bool install_data_dir(const char *pkg_dir, const char *root_path);
 bool install_home_dir(const char *pkg_dir);
+void rollback_install(const char *pkg_dir, const char *root_path);

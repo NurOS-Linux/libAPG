@@ -11,6 +11,7 @@ init_db(const char *db_path)
 {
     MDB_env *env;
     mdb_env_create(&env);
+    mdb_env_set_maxdbs(env, 2);
     mdb_env_set_mapsize(env, 10485760);
     mdb_env_open(env, db_path, 0, 0664);
     return env;

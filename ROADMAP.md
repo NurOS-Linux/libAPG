@@ -19,8 +19,8 @@
 
 ## v1.3 — Transactions and rollback
 
-- [ ] Rollback on post-install script failure
-- [ ] Transaction journal in the database
+- [x] Rollback on post-install script failure
+- [x] Transaction journal in the database
 
 ## v1.4 — Database API
 

@@ -119,6 +119,7 @@ install_package_in_root(const struct package *pkg, const char *root_path)
     install_home_dir(real_tmp);
 
     if (!run_script(real_tmp, "post-install")) {
+        rollback_install(real_tmp, root_path);
         free(real_tmp);
         return false;
     }
