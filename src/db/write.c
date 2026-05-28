@@ -2,83 +2,93 @@
 // SPDX-FileCopyrightText: 2026 Ruzen42
 // SPDX-FileCopyrightText: 2026 AnmiTaliDev <anmitalidev@nuros.org>
 
-#include <lmdb.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdbool.h>
+#include <pthread.h>
+#include <lmdb.h>
 
-#include "../../include/apg/db.h"
+#include "db_priv.h"
 #include "../../include/apg/package.h"
 #include "../../include/apg/json.h"
 #include "../../include/apg/journal.h"
 
 bool
-add_package(struct package *pkg, MDB_env *env)
+db_add(struct db_handle *db, struct package *pkg)
 {
-    MDB_dbi dbi;
-    MDB_val key, data;
+    if (!db || !pkg || !pkg->meta || db->readonly) return false;
+
+    if (db->hooks.pre)
+        db->hooks.pre(DB_OP_ADD, pkg->meta->name, db->hooks.userdata);
+
+    // Serialize concurrent writes from multiple threads within this process.
+    // Cross-process writes are serialized by LMDB's own file lock.
+    pthread_mutex_lock(&db->write_lock);
+
     MDB_txn *txn;
+    MDB_dbi dbi;
+    bool ok = false;
 
-    if (mdb_txn_begin(env, NULL, 0, &txn) != MDB_SUCCESS)
-        return false;
-    if (mdb_dbi_open(txn, NULL, 0, &dbi) != MDB_SUCCESS) {
-        mdb_txn_abort(txn);
-        return false;
+    if (mdb_txn_begin(db->env, NULL, 0, &txn) == MDB_SUCCESS) {
+        if (mdb_dbi_open(txn, NULL, 0, &dbi) == MDB_SUCCESS) {
+            char *json = package_to_json(pkg);
+            if (json) {
+                MDB_val key  = { strlen(pkg->meta->name), pkg->meta->name };
+                MDB_val data = { strlen(json), json };
+                ok = mdb_put(txn, dbi, &key, &data, 0) == MDB_SUCCESS;
+                free(json);
+            }
+            if (ok) mdb_txn_commit(txn);
+            else    mdb_txn_abort(txn);
+            mdb_dbi_close(db->env, dbi);
+        } else {
+            mdb_txn_abort(txn);
+        }
     }
 
-    char *s_value = package_to_json(pkg);
-    if (!s_value) {
-        mdb_txn_abort(txn);
-        return false;
-    }
+    pthread_mutex_unlock(&db->write_lock);
 
-    key.mv_size = strlen(pkg->meta->name);
-    key.mv_data = pkg->meta->name;
-    data.mv_size = strlen(s_value);
-    data.mv_data = s_value;
-
-    bool ok = mdb_put(txn, dbi, &key, &data, 0) == MDB_SUCCESS;
-    free(s_value);
-
-    if (ok)
-        mdb_txn_commit(txn);
-    else
-        mdb_txn_abort(txn);
-
-    mdb_dbi_close(env, dbi);
-
-    journal_write(env, JOURNAL_INSTALL, pkg->meta->name, pkg->meta->version,
+    journal_write(db->env, JOURNAL_INSTALL, pkg->meta->name, pkg->meta->version,
                   ok ? JOURNAL_STATUS_OK : JOURNAL_STATUS_FAILED);
+
+    if (db->hooks.post)
+        db->hooks.post(DB_OP_ADD, pkg->meta->name, db->hooks.userdata);
+
     return ok;
 }
 
 bool
-remove_package(char *pkg_name, MDB_env *env)
+db_remove(struct db_handle *db, const char *pkg_name)
 {
-    MDB_dbi dbi;
-    MDB_val key;
-    MDB_txn *txn;
+    if (!db || !pkg_name || db->readonly) return false;
 
-    if (mdb_txn_begin(env, NULL, 0, &txn) != MDB_SUCCESS)
-        return false;
-    if (mdb_dbi_open(txn, NULL, 0, &dbi) != MDB_SUCCESS) {
-        mdb_txn_abort(txn);
-        return false;
+    if (db->hooks.pre)
+        db->hooks.pre(DB_OP_REMOVE, pkg_name, db->hooks.userdata);
+
+    pthread_mutex_lock(&db->write_lock);
+
+    MDB_txn *txn;
+    MDB_dbi dbi;
+    bool ok = false;
+
+    if (mdb_txn_begin(db->env, NULL, 0, &txn) == MDB_SUCCESS) {
+        if (mdb_dbi_open(txn, NULL, 0, &dbi) == MDB_SUCCESS) {
+            MDB_val key = { strlen(pkg_name), (void *)pkg_name };
+            ok = mdb_del(txn, dbi, &key, NULL) == MDB_SUCCESS;
+            if (ok) mdb_txn_commit(txn);
+            else    mdb_txn_abort(txn);
+            mdb_dbi_close(db->env, dbi);
+        } else {
+            mdb_txn_abort(txn);
+        }
     }
 
-    key.mv_size = strlen(pkg_name);
-    key.mv_data = pkg_name;
+    pthread_mutex_unlock(&db->write_lock);
 
-    bool ok = mdb_del(txn, dbi, &key, NULL) == MDB_SUCCESS;
-
-    if (ok)
-        mdb_txn_commit(txn);
-    else
-        mdb_txn_abort(txn);
-
-    mdb_dbi_close(env, dbi);
-
-    journal_write(env, JOURNAL_REMOVE, pkg_name, NULL,
+    journal_write(db->env, JOURNAL_REMOVE, pkg_name, NULL,
                   ok ? JOURNAL_STATUS_OK : JOURNAL_STATUS_FAILED);
+
+    if (db->hooks.post)
+        db->hooks.post(DB_OP_REMOVE, pkg_name, db->hooks.userdata);
+
     return ok;
 }

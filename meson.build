@@ -77,6 +77,8 @@ if hw_args.length() > 0
   add_project_arguments(hw_args, language: 'c')
 endif
 
+threads_dep = dependency('threads')
+
 libarchive_dep = dependency('libarchive', required: false)
 lmdb_dep = dependency('lmdb', required: false)
 libyyjson_dep = dependency('yyjson', required: false)
@@ -112,6 +114,7 @@ libapg = library('apg', libapg_sources,
     libarchive_dep,
     lmdb_dep,
     libyyjson_dep,
+    threads_dep,
   ] + sign_dep,
   install: true,
 )

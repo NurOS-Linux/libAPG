@@ -24,10 +24,10 @@
 
 ## v1.4 — Database API
 
-- [ ] Public API for third-party tools to register installed packages
-- [ ] Conflict-free parallel installs: no "package not installed" or "file busy" errors when multiple tools write to the DB simultaneously
-- [ ] Lock-free read path for queries (list, search, get)
-- [ ] Hooks: pre/post DB write callbacks for tools like custom package helpers
+- [x] Public API for third-party tools to register installed packages
+- [x] Conflict-free parallel installs: no "package not installed" or "file busy" errors when multiple tools write to the DB simultaneously
+- [x] Lock-free read path for queries (list, search, get)
+- [x] Hooks: pre/post DB write callbacks for tools like custom package helpers
 
 ## v1.5 — Security
 
