@@ -99,10 +99,10 @@ endif
 
 sign_dep = []
 if gpgme_dep.found()
-  libapg_sources += files('src/sign/pgp/pgp.c')
+  libapg_sources += files('src/sign/pgp/pgp.c', 'src/sign/pgp/keyring.c')
   sign_dep = [gpgme_dep]
 elif sodium_dep.found()
-  libapg_sources += files('src/sign/sodium/sodium.c')
+  libapg_sources += files('src/sign/sodium/sodium.c', 'src/sign/sodium/keyring.c')
   sign_dep = [sodium_dep]
 else
   error('Either gpgme or libsodium is required for package signing')

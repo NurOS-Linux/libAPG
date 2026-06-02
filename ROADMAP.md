@@ -31,7 +31,7 @@
 
 ## v1.5 — Security
 
-- [ ] Trust chain verification (keyring)
+- [x] Trust chain verification (keyring)
 - [ ] Install policies: reject unsigned packages, trusted key list
 - [ ] Sandboxed execution of install scripts (seccomp / namespaces)
 - [ ] Audit log of all package operations
