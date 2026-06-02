@@ -23,6 +23,9 @@ libapg_sources = files(
   'src/graph/graph.c',
   'src/graph/resolve.c',
   'src/graph/conflict.c',
+  'src/transaction/transaction.c',
+  'src/transaction/prepare.c',
+  'src/transaction/commit.c',
 )
 
 add_project_arguments('-D_GNU_SOURCE', language: 'c')
