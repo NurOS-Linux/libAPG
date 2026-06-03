@@ -5,6 +5,7 @@
 #include <stdint.h>
 
 #include "graph_priv.h"
+#include "../../include/apg/version.h"
 
 #define STATE_UNVISITED 0
 #define STATE_VISITING  1
@@ -27,8 +28,15 @@ dfs(struct dfs_ctx *ctx, size_t idx)
 
     const struct package_metadata *pkg = ctx->g->nodes[idx]->pkg;
     for (int i = 0; i < pkg->dependencies.count; i++) {
-        size_t dep_idx = dep_graph_lookup(ctx->g, pkg->dependencies.items[i]);
+        const struct dep_constraint *c = &pkg->dependencies.items[i];
+        size_t dep_idx = dep_graph_lookup(ctx->g, c->name);
         if (dep_idx == SIZE_MAX) return DEP_ERR_MISSING;
+
+        if (c->op != VER_OP_ANY) {
+            const char *dep_ver = ctx->g->nodes[dep_idx]->pkg->version;
+            if (!ver_satisfies(dep_ver, c->op, c->version))
+                return DEP_ERR_VERSION;
+        }
 
         dep_error_t err = dfs(ctx, dep_idx);
         if (err != DEP_OK) return err;

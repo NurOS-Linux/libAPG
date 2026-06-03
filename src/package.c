@@ -8,6 +8,7 @@
 #include <unistd.h>
 
 #include "../include/apg/package.h"
+#include "../include/apg/version.h"
 #include "../include/apg/install.h"
 #include "../include/apg/scripts.h"
 #include "../include/apg/checksum.h"
@@ -64,7 +65,7 @@ package_metadata_free(struct package_metadata *meta)
     free(meta->homepage);
 
     str_list_free(&meta->tags);
-    str_list_free(&meta->dependencies);
+    dep_constraint_list_free(&meta->dependencies);
     str_list_free(&meta->conflicts);
     str_list_free(&meta->provides);
     str_list_free(&meta->replaces);

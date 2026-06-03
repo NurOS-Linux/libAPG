@@ -6,6 +6,7 @@
 #define APG_PACKAGE_H
 
 #include <stdbool.h>
+#include "version.h"
 
 /* items is an array of heap-allocated strings, not NULL-terminated.
  * Ownership belongs to package_metadata.
@@ -26,7 +27,7 @@ struct package_metadata {
     char *license;
     char *homepage;
     struct str_list tags;
-    struct str_list dependencies;
+    struct dep_constraint_list dependencies;
     struct str_list conflicts;
     struct str_list provides;
     struct str_list replaces;

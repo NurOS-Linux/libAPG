@@ -7,6 +7,7 @@
 #include <assert.h>
 
 #include "helpers.h"
+#include <apg/version.h>
 
 void
 test_linear_resolve(void)
@@ -213,4 +214,72 @@ test_replaces_resolution(void)
     package_metadata_free(app);
     package_metadata_free(pkg_new);
     printf("test_replaces_resolution: PASS\n");
+}
+
+void
+test_version_constraint_satisfied(void)
+{
+    struct package_metadata *a = make_pkg("a", (const char *[]){"b >= 1.0"}, 1, NOCONFLICTS, NOPROVIDES, NOREPLACES);
+    struct package_metadata *b = make_pkg("b", NODEPS, NOCONFLICTS, NOPROVIDES, NOREPLACES);
+    b->version = strdup("2.0");
+
+    struct dep_graph *g = dep_graph_new();
+    assert(dep_graph_add(g, a) == DEP_OK);
+    assert(dep_graph_add(g, b) == DEP_OK);
+
+    char **order = NULL;
+    size_t count = 0;
+    assert(dep_graph_resolve(g, "a", &order, &count) == DEP_OK);
+    assert(count == 2);
+    assert(strcmp(order[0], "b") == 0);
+    assert(strcmp(order[1], "a") == 0);
+    free(order);
+
+    dep_graph_free(g);
+    package_metadata_free(a);
+    package_metadata_free(b);
+    printf("test_version_constraint_satisfied: PASS\n");
+}
+
+void
+test_version_constraint_unsatisfied(void)
+{
+    struct package_metadata *a = make_pkg("a", (const char *[]){"b >= 3.0"}, 1, NOCONFLICTS, NOPROVIDES, NOREPLACES);
+    struct package_metadata *b = make_pkg("b", NODEPS, NOCONFLICTS, NOPROVIDES, NOREPLACES);
+    b->version = strdup("2.0");
+
+    struct dep_graph *g = dep_graph_new();
+    assert(dep_graph_add(g, a) == DEP_OK);
+    assert(dep_graph_add(g, b) == DEP_OK);
+
+    char **order = NULL;
+    size_t count = 0;
+    assert(dep_graph_resolve(g, "a", &order, &count) == DEP_ERR_VERSION);
+
+    dep_graph_free(g);
+    package_metadata_free(a);
+    package_metadata_free(b);
+    printf("test_version_constraint_unsatisfied: PASS\n");
+}
+
+void
+test_version_exact_match(void)
+{
+    struct package_metadata *a = make_pkg("a", (const char *[]){"b == 2.1.0"}, 1, NOCONFLICTS, NOPROVIDES, NOREPLACES);
+    struct package_metadata *b = make_pkg("b", NODEPS, NOCONFLICTS, NOPROVIDES, NOREPLACES);
+    b->version = strdup("2.1.0");
+
+    struct dep_graph *g = dep_graph_new();
+    assert(dep_graph_add(g, a) == DEP_OK);
+    assert(dep_graph_add(g, b) == DEP_OK);
+
+    char **order = NULL;
+    size_t count = 0;
+    assert(dep_graph_resolve(g, "a", &order, &count) == DEP_OK);
+    free(order);
+
+    dep_graph_free(g);
+    package_metadata_free(a);
+    package_metadata_free(b);
+    printf("test_version_exact_match: PASS\n");
 }

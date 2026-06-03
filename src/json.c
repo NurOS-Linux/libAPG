@@ -7,6 +7,7 @@
 #include <string.h>
 
 #include "../include/apg/json.h"
+#include "../include/apg/version.h"
 
 static struct str_list
 parse_str_array(yyjson_val *arr)
@@ -27,6 +28,44 @@ parse_str_array(yyjson_val *arr)
     }
     list.count = (int)count;
     return list;
+}
+
+static struct dep_constraint_list
+parse_dep_array(yyjson_val *arr)
+{
+    struct dep_constraint_list list = {0};
+    if (!yyjson_is_arr(arr)) return list;
+
+    size_t count = yyjson_arr_size(arr);
+    if (count == 0) return list;
+
+    list.items = malloc(count * sizeof(*list.items));
+    if (!list.items) return list;
+
+    size_t idx, max;
+    yyjson_val *val;
+    yyjson_arr_foreach(arr, idx, max, val) {
+        list.items[idx] = yyjson_is_str(val)
+            ? dep_constraint_parse(yyjson_get_str(val))
+            : (struct dep_constraint){ NULL, VER_OP_ANY, NULL };
+    }
+    list.count = (int)count;
+    return list;
+}
+
+static void
+add_dep_array(yyjson_mut_doc *doc, yyjson_mut_val *obj, const char *key,
+              struct dep_constraint_list *list)
+{
+    yyjson_mut_val *arr = yyjson_mut_arr(doc);
+    for (int i = 0; i < list->count; i++) {
+        char *s = dep_constraint_to_str(&list->items[i]);
+        if (s) {
+            yyjson_mut_arr_add_str(doc, arr, s);
+            free(s);
+        }
+    }
+    yyjson_mut_obj_add_val(doc, obj, key, arr);
 }
 
 static void
@@ -73,7 +112,7 @@ parse_metadata_from_root(yyjson_val *root)
     if (yyjson_is_str(v)) meta->homepage = strdup(yyjson_get_str(v));
 
     meta->tags         = parse_str_array(yyjson_obj_get(root, "tags"));
-    meta->dependencies = parse_str_array(yyjson_obj_get(root, "dependencies"));
+    meta->dependencies = parse_dep_array(yyjson_obj_get(root, "dependencies"));
     meta->conflicts    = parse_str_array(yyjson_obj_get(root, "conflicts"));
     meta->provides     = parse_str_array(yyjson_obj_get(root, "provides"));
     meta->replaces     = parse_str_array(yyjson_obj_get(root, "replaces"));
@@ -131,7 +170,7 @@ package_to_json(struct package *pkg)
     yyjson_mut_obj_add_str(doc, root, "homepage",     m->homepage     ? m->homepage     : "");
 
     add_str_array(doc, root, "tags",         &m->tags);
-    add_str_array(doc, root, "dependencies", &m->dependencies);
+    add_dep_array(doc, root, "dependencies", &m->dependencies);
     add_str_array(doc, root, "conflicts",    &m->conflicts);
     add_str_array(doc, root, "provides",     &m->provides);
     add_str_array(doc, root, "replaces",     &m->replaces);

@@ -16,6 +16,9 @@ main(void)
     test_provides_resolution();
     test_resolve_via_alias();
     test_replaces_resolution();
+    test_version_constraint_satisfied();
+    test_version_constraint_unsatisfied();
+    test_version_exact_match();
 
     test_self_cycle();
     test_two_node_cycle();
@@ -31,6 +34,6 @@ main(void)
     test_breaks_empty_installed();
     test_breaks_unknown_pkg();
 
-    printf("All 21 tests passed.\n");
+    printf("All 24 tests passed.\n");
     return 0;
 }

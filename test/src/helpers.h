@@ -8,6 +8,7 @@
 #include <assert.h>
 #include <apg/package.h>
 #include <apg/graph.h>
+#include <apg/version.h>
 
 #define NODEPS      NULL, 0
 #define NOCONFLICTS NULL, 0
@@ -27,9 +28,9 @@ make_pkg(const char *name,
 
     pkg->dependencies.count = dep_count;
     if (dep_count > 0) {
-        pkg->dependencies.items = malloc(dep_count * sizeof(char *));
+        pkg->dependencies.items = malloc(dep_count * sizeof(struct dep_constraint));
         for (int i = 0; i < dep_count; i++)
-            pkg->dependencies.items[i] = strdup(deps[i]);
+            pkg->dependencies.items[i] = dep_constraint_parse(deps[i]);
     }
 
     pkg->conflicts.count = conflict_count;

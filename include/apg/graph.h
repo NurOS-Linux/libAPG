@@ -13,6 +13,7 @@ typedef enum {
     DEP_ERR_CYCLE,
     DEP_ERR_MISSING,
     DEP_ERR_CONFLICT,
+    DEP_ERR_VERSION,
 } dep_error_t;
 
 struct dep_graph;

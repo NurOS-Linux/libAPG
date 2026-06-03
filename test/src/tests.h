@@ -12,6 +12,9 @@ void test_missing_transitive_dep(void);
 void test_provides_resolution(void);
 void test_resolve_via_alias(void);
 void test_replaces_resolution(void);
+void test_version_constraint_satisfied(void);
+void test_version_constraint_unsatisfied(void);
+void test_version_exact_match(void);
 
 void test_self_cycle(void);
 void test_two_node_cycle(void);
