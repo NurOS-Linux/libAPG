@@ -1,6 +1,5 @@
-# NurOS Ruzen42 2025
 project('libapg', 'c',
-  version: '1.1.0'
+  version: '1.4.0'
 )
 
 libapg_sources = files(
@@ -37,8 +36,6 @@ libapg_inc = include_directories('include')
 cc = meson.get_compiler('c')
 cpu = host_machine.cpu_family()
 
-# Architecture-specific ASM: SHA-256 (hardware crypto), CRC-32 and MD5 (optimized scalar).
-# Assembled via Clang IAS: .S files compiled with -masm=intel on x86_64.
 hw_args = []
 if cpu == 'x86_64'
   libapg_sources += files(
