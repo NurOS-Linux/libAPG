@@ -6,11 +6,34 @@
 #include <string.h>
 #include <pthread.h>
 #include <lmdb.h>
+#include <stdio.h>
 
 #include "db_priv.h"
 #include "../../include/apg/package.h"
 #include "../../include/apg/json.h"
 #include "../../include/apg/journal.h"
+
+static char *
+serialize_files(const struct str_list *files)
+{
+    size_t total = 1;
+    for (int i = 0; i < files->count; i++)
+        if (files->items[i])
+            total += strlen(files->items[i]) + 1;
+    char *buf = malloc(total);
+    if (!buf) return NULL;
+    char *p = buf;
+    for (int i = 0; i < files->count; i++) {
+        if (files->items[i]) {
+            size_t len = strlen(files->items[i]);
+            memcpy(p, files->items[i], len);
+            p += len;
+            *p++ = '\n';
+        }
+    }
+    *p = '\0';
+    return buf;
+}
 
 bool
 db_add(struct db_handle *db, struct package *pkg)
@@ -36,6 +59,15 @@ db_add(struct db_handle *db, struct package *pkg)
                 MDB_val data = { strlen(json), json };
                 ok = mdb_put(txn, dbi, &key, &data, 0) == MDB_SUCCESS;
                 free(json);
+            }
+            if (ok && db->files_dbi_open && pkg->package_files.count > 0) {
+                char *fdata = serialize_files(&pkg->package_files);
+                if (fdata) {
+                    MDB_val fkey = { strlen(pkg->meta->name), pkg->meta->name };
+                    MDB_val fval = { strlen(fdata), fdata };
+                    mdb_put(txn, db->files_dbi, &fkey, &fval, 0);
+                    free(fdata);
+                }
             }
             if (ok) mdb_txn_commit(txn);
             else    mdb_txn_abort(txn);
@@ -74,6 +106,8 @@ db_remove(struct db_handle *db, const char *pkg_name)
         if (mdb_dbi_open(txn, NULL, 0, &dbi) == MDB_SUCCESS) {
             MDB_val key = { strlen(pkg_name), (void *)pkg_name };
             ok = mdb_del(txn, dbi, &key, NULL) == MDB_SUCCESS;
+            if (ok && db->files_dbi_open)
+                mdb_del(txn, db->files_dbi, &key, NULL);
             if (ok) mdb_txn_commit(txn);
             else    mdb_txn_abort(txn);
             mdb_dbi_close(db->env, dbi);

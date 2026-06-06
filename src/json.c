@@ -121,6 +121,26 @@ parse_metadata_from_root(yyjson_val *root)
     return meta;
 }
 
+struct package *
+package_from_json(const char *json, size_t len)
+{
+    yyjson_doc *doc = yyjson_read(json, len, 0);
+    if (!doc) return NULL;
+
+    yyjson_val *root = yyjson_doc_get_root(doc);
+    if (!yyjson_is_obj(root)) { yyjson_doc_free(doc); return NULL; }
+
+    struct package *pkg = package_new();
+    if (!pkg) { yyjson_doc_free(doc); return NULL; }
+
+    package_metadata_free(pkg->meta);
+    pkg->meta = parse_metadata_from_root(root);
+    if (!pkg->meta) { yyjson_doc_free(doc); package_free(pkg); return NULL; }
+
+    yyjson_doc_free(doc);
+    return pkg;
+}
+
 struct package_metadata *
 package_metadata_from_file(const char *path)
 {

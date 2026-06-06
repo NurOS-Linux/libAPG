@@ -10,6 +10,7 @@
 #include "../include/apg/package.h"
 #include "../include/apg/version.h"
 #include "../include/apg/install.h"
+#include "../include/util.h"
 #include "../include/apg/scripts.h"
 #include "../include/apg/checksum.h"
 #include "../include/apg/archive.h"
@@ -85,13 +86,13 @@ package_free(struct package *pkg)
 }
 
 bool
-install_package(const struct package *pkg)
+install_package(struct package *pkg)
 {
     return install_package_in_root(pkg, "/");
 }
 
 bool
-install_package_in_root(const struct package *pkg, const char *root_path)
+install_package_in_root(struct package *pkg, const char *root_path)
 {
     char *real_tmp = concat_dirs(root_path, tmp_path);
     if (!real_tmp) return false;
@@ -115,6 +116,18 @@ install_package_in_root(const struct package *pkg, const char *root_path)
     if (!install_data_dir(real_tmp, root_path)) {
         free(real_tmp);
         return false;
+    }
+
+    char *data_src = concat_dirs(real_tmp, "data");
+    if (data_src) {
+        int file_count = 0;
+        char **files = collect_files(data_src, &file_count);
+        free(data_src);
+        if (files) {
+            str_list_free(&pkg->package_files);
+            pkg->package_files.items = files;
+            pkg->package_files.count = file_count;
+        }
     }
 
     install_home_dir(real_tmp);

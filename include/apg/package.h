@@ -50,9 +50,9 @@ void package_free(struct package *);
 struct package *package_new(void);
 struct package_metadata *package_metadata_new(void);
 
-bool install_package(const struct package *pkg);
+bool install_package(struct package *pkg);
 
-bool install_package_in_root(const struct package *pkg, const char *root_path);
+bool install_package_in_root(struct package *pkg, const char *root_path);
 
 struct package *parse_package(const char *path, const char *root_path);
 

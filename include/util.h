@@ -10,3 +10,5 @@ void create_dir(const char *path);
 
 char *concat_dirs(const char *path1, const char *path2);
 
+char **collect_files(const char *base, int *count);
+

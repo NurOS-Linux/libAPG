@@ -35,14 +35,34 @@ fail:
 struct db_handle *
 db_open(const char *path)
 {
-    return open_env(path, 0);
+    struct db_handle *db = open_env(path, 0);
+    if (!db) return NULL;
+
+    MDB_txn *txn;
+    if (mdb_txn_begin(db->env, NULL, 0, &txn) == MDB_SUCCESS) {
+        if (mdb_dbi_open(txn, "files", MDB_CREATE, &db->files_dbi) == MDB_SUCCESS) {
+            mdb_txn_commit(txn);
+            db->files_dbi_open = true;
+        } else {
+            mdb_txn_abort(txn);
+        }
+    }
+    return db;
 }
 
 struct db_handle *
 db_open_readonly(const char *path)
 {
     struct db_handle *db = open_env(path, MDB_RDONLY);
-    if (db) db->readonly = true;
+    if (!db) return NULL;
+    db->readonly = true;
+
+    MDB_txn *txn;
+    if (mdb_txn_begin(db->env, NULL, MDB_RDONLY, &txn) == MDB_SUCCESS) {
+        if (mdb_dbi_open(txn, "files", 0, &db->files_dbi) == MDB_SUCCESS)
+            db->files_dbi_open = true;
+        mdb_txn_abort(txn);
+    }
     return db;
 }
 

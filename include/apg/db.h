@@ -37,3 +37,7 @@ bool db_add(struct db_handle *db, struct package *pkg);
 bool db_remove(struct db_handle *db, const char *pkg_name);
 struct package *db_get(struct db_handle *db, const char *name);
 struct package **db_list(struct db_handle *db, int *count);
+
+// Returns the name of the package that owns path, or NULL if not found.
+// Returned string is heap-allocated; caller must free().
+char *db_owner(struct db_handle *db, const char *path);

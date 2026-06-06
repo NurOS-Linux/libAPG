@@ -8,5 +8,7 @@
 // Returns a heap-allocated JSON string. Caller must free().
 char *package_to_json(struct package *pkg);
 
+struct package *package_from_json(const char *json, size_t len);
+
 struct package_metadata *package_metadata_from_file(const char *path);
 struct package_metadata *package_metadata_from_json(const char *json, size_t len);

@@ -9,6 +9,45 @@
 #include "../../include/apg/package.h"
 #include "../../include/apg/json.h"
 
+static struct str_list
+deserialize_files(const char *data, size_t len)
+{
+    struct str_list list = {0};
+    if (!data || len == 0) return list;
+    int count = 0;
+    for (size_t i = 0; i < len; i++)
+        if (data[i] == '\n') count++;
+    if (count == 0) return list;
+    list.items = malloc(count * sizeof(char *));
+    if (!list.items) return list;
+    const char *p = data, *end = data + len;
+    int idx = 0;
+    while (p < end && idx < count) {
+        const char *nl = memchr(p, '\n', (size_t)(end - p));
+        if (!nl) break;
+        if (nl > p) list.items[idx++] = strndup(p, (size_t)(nl - p));
+        p = nl + 1;
+    }
+    list.count = idx;
+    return list;
+}
+
+static struct str_list
+load_package_files(struct db_handle *db, const char *pkg_name)
+{
+    struct str_list files = {0};
+    if (!db->files_dbi_open) return files;
+    MDB_txn *txn;
+    if (mdb_txn_begin(db->env, NULL, MDB_RDONLY, &txn) != MDB_SUCCESS)
+        return files;
+    MDB_val key  = { strlen(pkg_name), (void *)pkg_name };
+    MDB_val data;
+    if (mdb_get(txn, db->files_dbi, &key, &data) == MDB_SUCCESS)
+        files = deserialize_files(data.mv_data, data.mv_size);
+    mdb_txn_abort(txn);
+    return files;
+}
+
 // Read path acquires no write_lock — LMDB MVCC allows concurrent readers
 // regardless of any in-progress write transaction.
 
@@ -36,15 +75,9 @@ db_get(struct db_handle *db, const char *name)
         return NULL;
     }
 
-    struct package *pkg = package_new();
-    if (pkg) {
-        package_metadata_free(pkg->meta);
-        pkg->meta = package_metadata_from_json(data.mv_data, data.mv_size);
-        if (!pkg->meta) {
-            package_free(pkg);
-            pkg = NULL;
-        }
-    }
+    struct package *pkg = package_from_json(data.mv_data, data.mv_size);
+    if (pkg && pkg->meta && pkg->meta->name)
+        pkg->package_files = load_package_files(db, pkg->meta->name);
 
     mdb_txn_abort(txn);
     mdb_dbi_close(db->env, dbi);
@@ -80,12 +113,11 @@ db_list(struct db_handle *db, int *count)
 
     MDB_val key, data;
     while (mdb_cursor_get(cursor, &key, &data, MDB_NEXT) == MDB_SUCCESS) {
-        struct package *pkg = package_new();
+        struct package *pkg = package_from_json(data.mv_data, data.mv_size);
         if (!pkg) continue;
-
-        package_metadata_free(pkg->meta);
-        pkg->meta = package_metadata_from_json(data.mv_data, data.mv_size);
         if (!pkg->meta) { package_free(pkg); continue; }
+        if (pkg->meta->name)
+            pkg->package_files = load_package_files(db, pkg->meta->name);
 
         if (*count == cap) {
             cap *= 2;
