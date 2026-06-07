@@ -3,61 +3,157 @@
 
 #pragma once
 
+/**
+ * @file transaction.h
+ * @brief Atomic multi-package install/remove transactions.
+ *
+ * A transaction follows a strict lifecycle:
+ * 1. Create with trans_new().
+ * 2. Queue operations with trans_add_install() / trans_add_remove().
+ * 3. Prepare (resolve deps, detect conflicts) with trans_prepare().
+ * 4. Inspect the plan with trans_get_plan() or conflicts with trans_get_conflicts().
+ * 5. Execute with trans_commit().
+ * 6. Free with trans_free().
+ *
+ * trans_commit() may only be called once per transaction. On failure, already
+ * applied DB records are rolled back automatically.
+ */
+
 #include <stddef.h>
 #include <stdbool.h>
 #include "package.h"
 #include "db.h"
 
+/**
+ * @brief Operation type for a single transaction step.
+ */
 typedef enum {
-    TRANS_OP_INSTALL,
-    TRANS_OP_REMOVE,
+    TRANS_OP_INSTALL, /**< Install a package. */
+    TRANS_OP_REMOVE,  /**< Remove a package. */
 } trans_op_t;
 
+/**
+ * @brief Error codes returned by transaction functions.
+ */
 typedef enum {
-    TRANS_OK = 0,
-    TRANS_ERR_NOMEM,
-    TRANS_ERR_CONFLICT,
-    TRANS_ERR_MISSING_DEP,
-    TRANS_ERR_CYCLE,
-    TRANS_ERR_NOT_PREPARED,
-    TRANS_ERR_ALREADY_COMMITTED,
-    TRANS_ERR_INSTALL_FAILED,
+    TRANS_OK = 0,              /**< Success. */
+    TRANS_ERR_NOMEM,           /**< Memory allocation failure. */
+    TRANS_ERR_CONFLICT,        /**< One or more package conflicts detected. */
+    TRANS_ERR_MISSING_DEP,     /**< A required dependency is not available. */
+    TRANS_ERR_CYCLE,           /**< Circular dependency detected. */
+    TRANS_ERR_NOT_PREPARED,    /**< trans_commit() called without trans_prepare(). */
+    TRANS_ERR_ALREADY_COMMITTED, /**< trans_commit() called more than once. */
+    TRANS_ERR_INSTALL_FAILED,  /**< One or more packages failed to install. */
 } trans_error_t;
 
+/**
+ * @brief One step in the resolved execution plan.
+ *
+ * The array is owned by the transaction and valid until trans_free().
+ */
 struct trans_step {
-    trans_op_t op;
-    char *pkg_name;
-    char *pkg_version;
-    bool explicit;
+    trans_op_t op;    /**< Operation to perform. */
+    char *pkg_name;   /**< Package name. */
+    char *pkg_version;/**< Package version string. */
+    bool explicit;    /**< True when directly requested by the caller. */
 };
 
+/**
+ * @brief A detected conflict between two packages.
+ *
+ * The array is owned by the transaction and valid until trans_free().
+ */
 struct trans_conflict {
-    char *pkg_name;
-    char *conflicts_with;
+    char *pkg_name;      /**< Package being installed or removed. */
+    char *conflicts_with;/**< Existing package that conflicts with it. */
 };
 
+/**
+ * @brief Opaque transaction handle.
+ */
 struct apg_trans;
 
+/**
+ * @brief Create a new transaction backed by the given database.
+ *
+ * @param db Open database handle. The transaction borrows it; the caller
+ *           must keep it open for the lifetime of the transaction.
+ * @return Heap-allocated transaction, or NULL on allocation failure.
+ *         Free with trans_free().
+ */
 struct apg_trans *trans_new(struct db_handle *db);
+
+/**
+ * @brief Free a transaction and all its owned resources.
+ *
+ * @param trans Transaction to free. May be NULL.
+ */
 void trans_free(struct apg_trans *trans);
 
-// The transaction borrows pkg — the caller retains ownership.
+/**
+ * @brief Queue a package for installation.
+ *
+ * The transaction borrows @p pkg — the caller retains ownership and must not
+ * free it before trans_free().
+ *
+ * @param trans Transaction to modify.
+ * @param pkg   Package to install.
+ * @return @ref TRANS_OK, or an error code.
+ */
 trans_error_t trans_add_install(struct apg_trans *trans, struct package *pkg);
+
+/**
+ * @brief Queue a package for removal.
+ *
+ * @param trans    Transaction to modify.
+ * @param pkg_name Name of the installed package to remove.
+ * @return @ref TRANS_OK, or an error code.
+ */
 trans_error_t trans_add_remove(struct apg_trans *trans, const char *pkg_name);
 
-// Resolve dependencies, detect conflicts, and build the ordered execution plan.
-// Must be called before trans_get_plan or trans_commit.
-// Returns TRANS_ERR_CONFLICT if conflicts were found; call trans_get_conflicts to inspect them.
+/**
+ * @brief Resolve dependencies, detect conflicts, and build the execution plan.
+ *
+ * Must be called before trans_get_plan() or trans_commit(). If conflicts are
+ * found, @ref TRANS_ERR_CONFLICT is returned; call trans_get_conflicts() to
+ * inspect them.
+ *
+ * @param trans Transaction to prepare.
+ * @return @ref TRANS_OK on success, or an error code.
+ */
 trans_error_t trans_prepare(struct apg_trans *trans);
 
-// Inspect the plan after a successful trans_prepare call.
-// The returned array is owned by the transaction and is valid until trans_free.
+/**
+ * @brief Retrieve the ordered execution plan after a successful trans_prepare().
+ *
+ * The returned array is owned by the transaction and valid until trans_free().
+ *
+ * @param trans Transaction that has been successfully prepared.
+ * @param count Output parameter set to the number of steps.
+ * @return Pointer to the first step, or NULL if the plan is empty.
+ */
 const struct trans_step *trans_get_plan(const struct apg_trans *trans, size_t *count);
 
-// Inspect conflicts detected during trans_prepare.
-// The returned array is owned by the transaction and is valid until trans_free.
+/**
+ * @brief Retrieve the list of conflicts detected by trans_prepare().
+ *
+ * The returned array is owned by the transaction and valid until trans_free().
+ *
+ * @param trans Transaction after a trans_prepare() call that returned
+ *              @ref TRANS_ERR_CONFLICT.
+ * @param count Output parameter set to the number of conflicts.
+ * @return Pointer to the first conflict, or NULL if none.
+ */
 const struct trans_conflict *trans_get_conflicts(const struct apg_trans *trans, size_t *count);
 
-// Execute the plan. root_path is the filesystem root for installation.
-// On failure, DB records for already-committed installs are rolled back.
+/**
+ * @brief Execute the prepared plan.
+ *
+ * Must be called at most once. On failure, DB records for already-committed
+ * installs are rolled back automatically.
+ *
+ * @param trans     Transaction that has been successfully prepared.
+ * @param root_path Filesystem root for installation (e.g. @c "/").
+ * @return @ref TRANS_OK on success, or an error code.
+ */
 trans_error_t trans_commit(struct apg_trans *trans, const char *root_path);
