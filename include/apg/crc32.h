@@ -1,8 +1,18 @@
 // SPDX-License-Identifier: GPL-3.0-only
 // SPDX-FileCopyrightText: 2026 Ruzen42
+
 #pragma once
 
-// source: https://gist.github.com/xobs/91a84d29152161e973d717b9be84c4d0
+/**
+ * @file crc32.h
+ * @brief CRC-32 checksum implementation (streaming and one-shot API).
+ *
+ * On x86-64, aarch64, and riscv64, hardware acceleration is used when the
+ * @c APG_CRC32_HW_AVAILABLE preprocessor flag is set at build time.
+ *
+ * The lookup table is derived from
+ * https://gist.github.com/xobs/91a84d29152161e973d717b9be84c4d0
+ */
 static const unsigned int
 crc_table[256] =
 {
@@ -65,6 +75,24 @@ crc_table[256] =
 #define DO4(buf)  DO2(buf); DO2(buf);
 #define DO8(buf)  DO4(buf); DO4(buf);
 
+/**
+ * @brief Compute the CRC-32 checksum of a memory buffer.
+ *
+ * @param buffer Input data.
+ * @param len    Number of bytes in @p buffer.
+ * @return CRC-32 checksum.
+ */
 unsigned int crc32(const unsigned char *buffer, unsigned int len);
+
+/**
+ * @brief Compute the CRC-32 checksum of a message using the simple
+ *        (table-free) algorithm.
+ *
+ * Slower than crc32() but does not depend on the precomputed lookup table.
+ *
+ * @param message Input data.
+ * @param len     Number of bytes in @p message.
+ * @return CRC-32 checksum.
+ */
 unsigned int crc32_simple(const unsigned char *message, unsigned int len);
 
