@@ -129,4 +129,14 @@ libapg_dep = declare_dependency(
 pkg = import('pkgconfig')
 pkg.generate(libapg)
 
+doxygen = find_program('doxygen', required: false)
+if doxygen.found()
+  custom_target('doxygen',
+    input: 'Doxyfile',
+    output: 'xml',
+    command: [doxygen, '@INPUT@'],
+    build_by_default: false,
+  )
+endif
+
 subdir('test')
