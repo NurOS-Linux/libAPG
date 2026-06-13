@@ -32,7 +32,7 @@
 ## v1.5 — Security
 
 - [x] Trust chain verification (keyring)
-- [ ] Install policies: reject unsigned packages, trusted key list
+- [x] Install policies: reject unsigned packages, trusted key list
 - [ ] Sandboxed execution of install scripts (seccomp / namespaces)
 - [ ] Audit log of all package operations
 

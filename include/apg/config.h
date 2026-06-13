@@ -9,6 +9,20 @@
  * @brief Runtime configuration parsed from @c /etc/apg.conf.
  */
 
+#include <stdbool.h>
+
+/**
+ * @brief Install-time security policy.
+ *
+ * When @p require_signature is true, @c trans_commit() refuses to install
+ * packages whose detached signature at @c <pkg_path>.sig cannot be verified
+ * against the keys in @p keyring_dir.
+ */
+typedef struct {
+    bool require_signature; /**< Reject unsigned packages. */
+    char *keyring_dir;      /**< Trusted key directory; NULL → @c /etc/apg/trusted.d */
+} install_policy;
+
 /**
  * @brief Transport protocol used to fetch packages from a repository.
  */
@@ -37,6 +51,7 @@ typedef struct {
     char *tmp_dir;   /**< Temporary directory used during package operations. */
     int repo_count;  /**< Number of entries in @p repos. */
     repo *repos;     /**< Array of repository descriptors. */
+    install_policy policy; /**< Install-time security policy. */
 } config;
 
 /**

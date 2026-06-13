@@ -2,10 +2,15 @@
 // SPDX-FileCopyrightText: 2026 AnmiTaliDev <anmitalidev@nuros.org>
 
 #include <stdlib.h>
+#include <limits.h>
+#include <stdio.h>
 
 #include "trans_priv.h"
 #include "../../include/apg/package.h"
 #include "../../include/apg/db.h"
+#include "../../include/apg/keyring.h"
+
+#define DEFAULT_KEYRING_DIR "/etc/apg/trusted.d"
 
 trans_error_t
 trans_commit(struct apg_trans *trans, const char *root_path)
@@ -14,10 +19,20 @@ trans_commit(struct apg_trans *trans, const char *root_path)
     if (!trans->prepared) return TRANS_ERR_NOT_PREPARED;
     if (trans->committed) return TRANS_ERR_ALREADY_COMMITTED;
 
+    struct keyring *kr = NULL;
+    if (trans->require_signature) {
+        const char *kdir = trans->keyring_dir ? trans->keyring_dir : DEFAULT_KEYRING_DIR;
+        kr = keyring_load(kdir);
+        if (!kr) return TRANS_ERR_UNSIGNED;
+    }
+
     size_t *committed_idx = trans->plan_count > 0
         ? malloc(trans->plan_count * sizeof(*committed_idx))
         : NULL;
-    if (!committed_idx && trans->plan_count > 0) return TRANS_ERR_NOMEM;
+    if (!committed_idx && trans->plan_count > 0) {
+        keyring_free(kr);
+        return TRANS_ERR_NOMEM;
+    }
 
     size_t committed_count = 0;
 
@@ -27,10 +42,24 @@ trans_commit(struct apg_trans *trans, const char *root_path)
         if (step->op == TRANS_OP_INSTALL) {
             struct package *pkg = trans->plan_pkgs[i];
 
+            if (kr) {
+                char sig_path[PATH_MAX];
+                if (!pkg->pkg_path ||
+                    snprintf(sig_path, sizeof(sig_path), "%s.sig", pkg->pkg_path) >= (int)sizeof(sig_path) ||
+                    !keyring_verify(kr, pkg->pkg_path, sig_path)) {
+                    for (size_t j = committed_count; j-- > 0;)
+                        db_remove(trans->db, trans->plan[committed_idx[j]].pkg_name);
+                    free(committed_idx);
+                    keyring_free(kr);
+                    return TRANS_ERR_UNSIGNED;
+                }
+            }
+
             if (!install_package_in_root(pkg, root_path)) {
                 for (size_t j = committed_count; j-- > 0;)
                     db_remove(trans->db, trans->plan[committed_idx[j]].pkg_name);
                 free(committed_idx);
+                keyring_free(kr);
                 return TRANS_ERR_INSTALL_FAILED;
             }
 
@@ -42,6 +71,7 @@ trans_commit(struct apg_trans *trans, const char *root_path)
     }
 
     free(committed_idx);
+    keyring_free(kr);
     trans->committed = true;
     return TRANS_OK;
 }

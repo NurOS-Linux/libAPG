@@ -35,10 +35,26 @@ fail:
 }
 
 void
+trans_set_policy(struct apg_trans *trans, const install_policy *policy)
+{
+    if (!trans) return;
+    free(trans->keyring_dir);
+    trans->keyring_dir = NULL;
+    if (!policy) {
+        trans->require_signature = false;
+        return;
+    }
+    trans->require_signature = policy->require_signature;
+    if (policy->keyring_dir)
+        trans->keyring_dir = strdup(policy->keyring_dir);
+}
+
+void
 trans_free(struct apg_trans *trans)
 {
     if (!trans) return;
 
+    free(trans->keyring_dir);
     free(trans->install_pkgs);
 
     for (size_t i = 0; i < trans->remove_count; i++)

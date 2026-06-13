@@ -30,4 +30,7 @@ struct apg_trans {
 
     bool prepared;
     bool committed;
+
+    bool require_signature;
+    char *keyring_dir;
 };

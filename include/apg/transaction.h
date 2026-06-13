@@ -23,6 +23,7 @@
 #include <stdbool.h>
 #include "package.h"
 #include "db.h"
+#include "config.h"
 
 /**
  * @brief Operation type for a single transaction step.
@@ -44,6 +45,7 @@ typedef enum {
     TRANS_ERR_NOT_PREPARED,    /**< trans_commit() called without trans_prepare(). */
     TRANS_ERR_ALREADY_COMMITTED, /**< trans_commit() called more than once. */
     TRANS_ERR_INSTALL_FAILED,  /**< One or more packages failed to install. */
+    TRANS_ERR_UNSIGNED,        /**< Package rejected by signature policy. */
 } trans_error_t;
 
 /**
@@ -72,6 +74,19 @@ struct trans_conflict {
  * @brief Opaque transaction handle.
  */
 struct apg_trans;
+
+/**
+ * @brief Attach an install policy to a transaction.
+ *
+ * Must be called before trans_commit(). When @p policy->require_signature is
+ * true, commit rejects any package whose @c <pkg_path>.sig does not verify
+ * against the keys in @p policy->keyring_dir (default: @c /etc/apg/trusted.d).
+ * Pass NULL to clear a previously set policy.
+ *
+ * @param trans  Transaction to configure.
+ * @param policy Policy to apply, or NULL to disable.
+ */
+void trans_set_policy(struct apg_trans *trans, const install_policy *policy);
 
 /**
  * @brief Create a new transaction backed by the given database.
