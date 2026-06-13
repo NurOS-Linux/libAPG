@@ -26,25 +26,6 @@ typedef struct
 } install_policy;
 
 /**
- * @brief Transport protocol used to fetch packages from a repository.
- */
-typedef enum
-{
-    HTTP,  /**< Fetch via HTTP. */
-    FTP,   /**< Fetch via FTP. */
-    RSYNC, /**< Fetch via rsync. */
-} repo_type;
-
-/**
- * @brief A single package repository entry.
- */
-typedef struct
-{
-    const char *url; /**< Base URL of the repository. */
-    repo_type type;  /**< Transport protocol. */
-} repo;
-
-/**
  * @brief Global runtime configuration.
  *
  * Populated by parse_config() and applied globally with set_config().
@@ -52,10 +33,8 @@ typedef struct
  */
 typedef struct
 {
-    int db_size;    /**< Maximum size of the package database in bytes. */
-    char *tmp_dir;  /**< Temporary directory used during package operations. */
-    int repo_count; /**< Number of entries in @p repos. */
-    repo *repos;    /**< Array of repository descriptors. */
+    int db_size;           /**< Maximum size of the package database in bytes. */
+    char *tmp_dir;         /**< Temporary directory used during package operations. */
     install_policy policy; /**< Install-time security policy. */
 } config;
 
