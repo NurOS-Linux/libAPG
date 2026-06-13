@@ -5,7 +5,8 @@
 
 #include "../../include/apg/transaction.h"
 
-struct apg_trans {
+struct apg_trans
+{
     struct db_handle *db;
 
     struct package **install_pkgs;

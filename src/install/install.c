@@ -12,10 +12,12 @@ bool
 install_data_dir(const char *pkg_dir, const char *root_path)
 {
     char *data_src = concat_dirs(pkg_dir, "data");
-    if (!data_src) return false;
+    if (!data_src)
+        return false;
 
     struct stat st;
-    if (stat(data_src, &st) != 0 || !S_ISDIR(st.st_mode)) {
+    if (stat(data_src, &st) != 0 || !S_ISDIR(st.st_mode))
+    {
         free(data_src);
         return false;
     }
@@ -29,13 +31,16 @@ bool
 install_home_dir(const char *pkg_dir)
 {
     const char *home = getenv("HOME");
-    if (!home) return false;
+    if (!home)
+        return false;
 
     char *home_src = concat_dirs(pkg_dir, "home");
-    if (!home_src) return false;
+    if (!home_src)
+        return false;
 
     struct stat st;
-    if (stat(home_src, &st) != 0 || !S_ISDIR(st.st_mode)) {
+    if (stat(home_src, &st) != 0 || !S_ISDIR(st.st_mode))
+    {
         free(home_src);
         return true;
     }

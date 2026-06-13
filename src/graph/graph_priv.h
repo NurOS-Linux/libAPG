@@ -9,17 +9,20 @@
 
 #define GRAPH_INITIAL_CAP 16
 
-struct dep_node {
+struct dep_node
+{
     char *name;                         // owned copy
     const struct package_metadata *pkg; // not owned
 };
 
-struct alias_entry {
-    char *alias;    // owned copy (from provides/replaces)
+struct alias_entry
+{
+    char *alias; // owned copy (from provides/replaces)
     size_t node_idx;
 };
 
-struct dep_graph {
+struct dep_graph
+{
     struct dep_node **nodes;
     size_t count;
     size_t cap;

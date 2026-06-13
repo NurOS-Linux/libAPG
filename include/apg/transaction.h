@@ -11,7 +11,8 @@
  * 1. Create with trans_new().
  * 2. Queue operations with trans_add_install() / trans_add_remove().
  * 3. Prepare (resolve deps, detect conflicts) with trans_prepare().
- * 4. Inspect the plan with trans_get_plan() or conflicts with trans_get_conflicts().
+ * 4. Inspect the plan with trans_get_plan() or conflicts with
+ * trans_get_conflicts().
  * 5. Execute with trans_commit().
  * 6. Free with trans_free().
  *
@@ -28,7 +29,8 @@
 /**
  * @brief Operation type for a single transaction step.
  */
-typedef enum {
+typedef enum
+{
     TRANS_OP_INSTALL, /**< Install a package. */
     TRANS_OP_REMOVE,  /**< Remove a package. */
 } trans_op_t;
@@ -36,16 +38,18 @@ typedef enum {
 /**
  * @brief Error codes returned by transaction functions.
  */
-typedef enum {
-    TRANS_OK = 0,              /**< Success. */
-    TRANS_ERR_NOMEM,           /**< Memory allocation failure. */
-    TRANS_ERR_CONFLICT,        /**< One or more package conflicts detected. */
-    TRANS_ERR_MISSING_DEP,     /**< A required dependency is not available. */
-    TRANS_ERR_CYCLE,           /**< Circular dependency detected. */
-    TRANS_ERR_NOT_PREPARED,    /**< trans_commit() called without trans_prepare(). */
+typedef enum
+{
+    TRANS_OK = 0,           /**< Success. */
+    TRANS_ERR_NOMEM,        /**< Memory allocation failure. */
+    TRANS_ERR_CONFLICT,     /**< One or more package conflicts detected. */
+    TRANS_ERR_MISSING_DEP,  /**< A required dependency is not available. */
+    TRANS_ERR_CYCLE,        /**< Circular dependency detected. */
+    TRANS_ERR_NOT_PREPARED, /**< trans_commit() called without trans_prepare().
+                             */
     TRANS_ERR_ALREADY_COMMITTED, /**< trans_commit() called more than once. */
-    TRANS_ERR_INSTALL_FAILED,  /**< One or more packages failed to install. */
-    TRANS_ERR_UNSIGNED,        /**< Package rejected by signature policy. */
+    TRANS_ERR_INSTALL_FAILED,    /**< One or more packages failed to install. */
+    TRANS_ERR_UNSIGNED,          /**< Package rejected by signature policy. */
 } trans_error_t;
 
 /**
@@ -53,11 +57,12 @@ typedef enum {
  *
  * The array is owned by the transaction and valid until trans_free().
  */
-struct trans_step {
-    trans_op_t op;    /**< Operation to perform. */
-    char *pkg_name;   /**< Package name. */
-    char *pkg_version;/**< Package version string. */
-    bool explicit;    /**< True when directly requested by the caller. */
+struct trans_step
+{
+    trans_op_t op;     /**< Operation to perform. */
+    char *pkg_name;    /**< Package name. */
+    char *pkg_version; /**< Package version string. */
+    bool explicit;     /**< True when directly requested by the caller. */
 };
 
 /**
@@ -65,9 +70,10 @@ struct trans_step {
  *
  * The array is owned by the transaction and valid until trans_free().
  */
-struct trans_conflict {
-    char *pkg_name;      /**< Package being installed or removed. */
-    char *conflicts_with;/**< Existing package that conflicts with it. */
+struct trans_conflict
+{
+    char *pkg_name;       /**< Package being installed or removed. */
+    char *conflicts_with; /**< Existing package that conflicts with it. */
 };
 
 /**
@@ -139,7 +145,8 @@ trans_error_t trans_add_remove(struct apg_trans *trans, const char *pkg_name);
 trans_error_t trans_prepare(struct apg_trans *trans);
 
 /**
- * @brief Retrieve the ordered execution plan after a successful trans_prepare().
+ * @brief Retrieve the ordered execution plan after a successful
+ * trans_prepare().
  *
  * The returned array is owned by the transaction and valid until trans_free().
  *
@@ -147,7 +154,8 @@ trans_error_t trans_prepare(struct apg_trans *trans);
  * @param count Output parameter set to the number of steps.
  * @return Pointer to the first step, or NULL if the plan is empty.
  */
-const struct trans_step *trans_get_plan(const struct apg_trans *trans, size_t *count);
+const struct trans_step *trans_get_plan(const struct apg_trans *trans,
+                                        size_t *count);
 
 /**
  * @brief Retrieve the list of conflicts detected by trans_prepare().
@@ -159,7 +167,8 @@ const struct trans_step *trans_get_plan(const struct apg_trans *trans, size_t *c
  * @param count Output parameter set to the number of conflicts.
  * @return Pointer to the first conflict, or NULL if none.
  */
-const struct trans_conflict *trans_get_conflicts(const struct apg_trans *trans, size_t *count);
+const struct trans_conflict *trans_get_conflicts(const struct apg_trans *trans,
+                                                 size_t *count);
 
 /**
  * @brief Execute the prepared plan.

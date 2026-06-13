@@ -11,17 +11,23 @@
 struct apg_trans *
 trans_new(struct db_handle *db)
 {
-    if (!db) return NULL;
+    if (!db)
+        return NULL;
 
     struct apg_trans *trans = calloc(1, sizeof(*trans));
-    if (!trans) return NULL;
+    if (!trans)
+        return NULL;
 
-    trans->install_pkgs = malloc(TRANS_INITIAL_CAP * sizeof(*trans->install_pkgs));
-    if (!trans->install_pkgs) goto fail;
+    trans->install_pkgs =
+        malloc(TRANS_INITIAL_CAP * sizeof(*trans->install_pkgs));
+    if (!trans->install_pkgs)
+        goto fail;
     trans->install_cap = TRANS_INITIAL_CAP;
 
-    trans->remove_names = malloc(TRANS_INITIAL_CAP * sizeof(*trans->remove_names));
-    if (!trans->remove_names) goto fail;
+    trans->remove_names =
+        malloc(TRANS_INITIAL_CAP * sizeof(*trans->remove_names));
+    if (!trans->remove_names)
+        goto fail;
     trans->remove_cap = TRANS_INITIAL_CAP;
 
     trans->db = db;
@@ -37,10 +43,12 @@ fail:
 void
 trans_set_policy(struct apg_trans *trans, const install_policy *policy)
 {
-    if (!trans) return;
+    if (!trans)
+        return;
     free(trans->keyring_dir);
     trans->keyring_dir = NULL;
-    if (!policy) {
+    if (!policy)
+    {
         trans->require_signature = false;
         return;
     }
@@ -52,7 +60,8 @@ trans_set_policy(struct apg_trans *trans, const install_policy *policy)
 void
 trans_free(struct apg_trans *trans)
 {
-    if (!trans) return;
+    if (!trans)
+        return;
 
     free(trans->keyring_dir);
     free(trans->install_pkgs);
@@ -61,14 +70,16 @@ trans_free(struct apg_trans *trans)
         free(trans->remove_names[i]);
     free(trans->remove_names);
 
-    for (size_t i = 0; i < trans->plan_count; i++) {
+    for (size_t i = 0; i < trans->plan_count; i++)
+    {
         free(trans->plan[i].pkg_name);
         free(trans->plan[i].pkg_version);
     }
     free(trans->plan);
     free(trans->plan_pkgs);
 
-    for (size_t i = 0; i < trans->conflict_count; i++) {
+    for (size_t i = 0; i < trans->conflict_count; i++)
+    {
         free(trans->conflicts[i].pkg_name);
         free(trans->conflicts[i].conflicts_with);
     }
@@ -80,12 +91,16 @@ trans_free(struct apg_trans *trans)
 trans_error_t
 trans_add_install(struct apg_trans *trans, struct package *pkg)
 {
-    if (!trans || !pkg || !pkg->meta || !pkg->meta->name) return TRANS_ERR_NOMEM;
+    if (!trans || !pkg || !pkg->meta || !pkg->meta->name)
+        return TRANS_ERR_NOMEM;
 
-    if (trans->install_count == trans->install_cap) {
+    if (trans->install_count == trans->install_cap)
+    {
         size_t new_cap = trans->install_cap * 2;
-        struct package **tmp = realloc(trans->install_pkgs, new_cap * sizeof(*tmp));
-        if (!tmp) return TRANS_ERR_NOMEM;
+        struct package **tmp =
+            realloc(trans->install_pkgs, new_cap * sizeof(*tmp));
+        if (!tmp)
+            return TRANS_ERR_NOMEM;
         trans->install_pkgs = tmp;
         trans->install_cap = new_cap;
     }
@@ -97,18 +112,22 @@ trans_add_install(struct apg_trans *trans, struct package *pkg)
 trans_error_t
 trans_add_remove(struct apg_trans *trans, const char *pkg_name)
 {
-    if (!trans || !pkg_name) return TRANS_ERR_NOMEM;
+    if (!trans || !pkg_name)
+        return TRANS_ERR_NOMEM;
 
-    if (trans->remove_count == trans->remove_cap) {
+    if (trans->remove_count == trans->remove_cap)
+    {
         size_t new_cap = trans->remove_cap * 2;
         char **tmp = realloc(trans->remove_names, new_cap * sizeof(*tmp));
-        if (!tmp) return TRANS_ERR_NOMEM;
+        if (!tmp)
+            return TRANS_ERR_NOMEM;
         trans->remove_names = tmp;
         trans->remove_cap = new_cap;
     }
 
     char *dup = strdup(pkg_name);
-    if (!dup) return TRANS_ERR_NOMEM;
+    if (!dup)
+        return TRANS_ERR_NOMEM;
     trans->remove_names[trans->remove_count++] = dup;
     return TRANS_OK;
 }
@@ -116,7 +135,8 @@ trans_add_remove(struct apg_trans *trans, const char *pkg_name)
 const struct trans_step *
 trans_get_plan(const struct apg_trans *trans, size_t *count)
 {
-    if (!trans || !count) return NULL;
+    if (!trans || !count)
+        return NULL;
     *count = trans->plan_count;
     return trans->plan;
 }
@@ -124,7 +144,8 @@ trans_get_plan(const struct apg_trans *trans, size_t *count)
 const struct trans_conflict *
 trans_get_conflicts(const struct apg_trans *trans, size_t *count)
 {
-    if (!trans || !count) return NULL;
+    if (!trans || !count)
+        return NULL;
     *count = trans->conflict_count;
     return trans->conflicts;
 }

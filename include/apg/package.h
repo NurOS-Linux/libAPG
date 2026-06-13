@@ -19,7 +19,8 @@
  * Not NULL-terminated. Ownership belongs to the containing structure,
  * typically @ref package_metadata. Free with str_list_free().
  */
-struct str_list {
+struct str_list
+{
     char **items; /**< Array of string pointers. */
     int count;    /**< Number of elements in @p items. */
 };
@@ -30,21 +31,23 @@ struct str_list {
  * All string fields are heap-allocated and owned by this structure.
  * Free with package_metadata_free().
  */
-struct package_metadata {
-    char *name;          /**< Package name. */
-    char *version;       /**< Package version string. */
-    char *type;          /**< Package type identifier. */
-    char *architecture;  /**< Target architecture. */
-    char *description;   /**< Short human-readable description. */
-    char *maintainer;    /**< Maintainer contact string. */
-    char *license;       /**< SPDX license identifier. */
-    char *homepage;      /**< Upstream homepage URL. */
-    struct str_list tags;                    /**< Classification tags. */
+struct package_metadata
+{
+    char *name;           /**< Package name. */
+    char *version;        /**< Package version string. */
+    char *type;           /**< Package type identifier. */
+    char *architecture;   /**< Target architecture. */
+    char *description;    /**< Short human-readable description. */
+    char *maintainer;     /**< Maintainer contact string. */
+    char *license;        /**< SPDX license identifier. */
+    char *homepage;       /**< Upstream homepage URL. */
+    struct str_list tags; /**< Classification tags. */
     struct dep_constraint_list dependencies; /**< Required dependencies. */
-    struct str_list conflicts;               /**< Packages that conflict with this one. */
-    struct str_list provides;                /**< Virtual package names provided. */
-    struct str_list replaces;                /**< Packages superseded by this one. */
-    struct str_list conf;                    /**< Configuration file paths owned by this package. */
+    struct str_list conflicts; /**< Packages that conflict with this one. */
+    struct str_list provides;  /**< Virtual package names provided. */
+    struct str_list replaces;  /**< Packages superseded by this one. */
+    struct str_list
+        conf; /**< Configuration file paths owned by this package. */
 };
 
 /**
@@ -52,11 +55,13 @@ struct package_metadata {
  *
  * Free with package_free().
  */
-struct package {
-    struct package_metadata *meta; /**< Owned metadata. Never NULL on a valid package. */
-    char *pkg_path;                /**< Filesystem path to the package archive. */
+struct package
+{
+    struct package_metadata
+        *meta;      /**< Owned metadata. Never NULL on a valid package. */
+    char *pkg_path; /**< Filesystem path to the package archive. */
     struct str_list package_files; /**< Files contained in the archive. */
-    bool installed_by_hand;        /**< True when explicitly requested by the user. */
+    bool installed_by_hand; /**< True when explicitly requested by the user. */
 };
 
 /**

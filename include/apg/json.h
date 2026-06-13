@@ -47,4 +47,5 @@ struct package_metadata *package_metadata_from_file(const char *path);
  * @return Heap-allocated metadata on success, NULL on parse failure.
  *         Caller must call package_metadata_free() when done.
  */
-struct package_metadata *package_metadata_from_json(const char *json, size_t len);
+struct package_metadata *package_metadata_from_json(const char *json,
+                                                    size_t len);

@@ -8,7 +8,8 @@
 #include <stdbool.h>
 #include "../../include/apg/db.h"
 
-struct db_handle {
+struct db_handle
+{
     MDB_env *env;
     MDB_dbi files_dbi;
     bool files_dbi_open;

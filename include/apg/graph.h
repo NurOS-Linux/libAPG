@@ -15,7 +15,8 @@
 /**
  * @brief Error codes returned by dependency graph operations.
  */
-typedef enum {
+typedef enum
+{
     DEP_OK = 0,       /**< Success. */
     DEP_ERR_NOMEM,    /**< Memory allocation failure. */
     DEP_ERR_CYCLE,    /**< Circular dependency detected. */
@@ -53,7 +54,8 @@ void dep_graph_free(struct dep_graph *g);
  * @param pkg Package metadata to add. The graph borrows the pointer.
  * @return @ref DEP_OK, or @ref DEP_ERR_NOMEM on allocation failure.
  */
-dep_error_t dep_graph_add(struct dep_graph *g, const struct package_metadata *pkg);
+dep_error_t dep_graph_add(struct dep_graph *g,
+                          const struct package_metadata *pkg);
 
 /**
  * @brief Resolve the transitive install order for a package.
@@ -64,12 +66,13 @@ dep_error_t dep_graph_add(struct dep_graph *g, const struct package_metadata *pk
  *
  * @param g        Graph containing the available package pool.
  * @param pkg_name Name of the package to resolve.
- * @param order    Output: heap-allocated array of package names in install order.
+ * @param order    Output: heap-allocated array of package names in install
+ * order.
  * @param count    Output: number of entries in @p *order.
  * @return @ref DEP_OK on success, or an error code.
  */
 dep_error_t dep_graph_resolve(struct dep_graph *g, const char *pkg_name,
-                               char ***order, size_t *count);
+                              char ***order, size_t *count);
 
 /**
  * @brief Check whether the graph contains any circular dependency.
@@ -80,7 +83,8 @@ dep_error_t dep_graph_resolve(struct dep_graph *g, const char *pkg_name,
 bool dep_graph_has_cycle(struct dep_graph *g);
 
 /**
- * @brief Find which installed packages would break if a new package is installed.
+ * @brief Find which installed packages would break if a new package is
+ * installed.
  *
  * @p *breaks is set to a malloc'd array of pointers borrowed from @p installed.
  * The caller must free @p *breaks but must not free the individual strings.
@@ -94,9 +98,7 @@ bool dep_graph_has_cycle(struct dep_graph *g);
  * @return @ref DEP_OK if no conflicts, @ref DEP_ERR_CONFLICT if at least one
  *         conflict is found, or another error code on failure.
  */
-dep_error_t dep_graph_find_breaks(struct dep_graph *g,
-                                   const char *pkg_name,
-                                   const char **installed,
-                                   size_t installed_count,
-                                   char ***breaks,
-                                   size_t *break_count);
+dep_error_t dep_graph_find_breaks(struct dep_graph *g, const char *pkg_name,
+                                  const char **installed,
+                                  size_t installed_count, char ***breaks,
+                                  size_t *break_count);

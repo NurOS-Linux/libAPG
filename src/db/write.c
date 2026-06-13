@@ -21,10 +21,13 @@ serialize_files(const struct str_list *files)
         if (files->items[i])
             total += strlen(files->items[i]) + 1;
     char *buf = malloc(total);
-    if (!buf) return NULL;
+    if (!buf)
+        return NULL;
     char *p = buf;
-    for (int i = 0; i < files->count; i++) {
-        if (files->items[i]) {
+    for (int i = 0; i < files->count; i++)
+    {
+        if (files->items[i])
+        {
             size_t len = strlen(files->items[i]);
             memcpy(p, files->items[i], len);
             p += len;
@@ -38,7 +41,8 @@ serialize_files(const struct str_list *files)
 bool
 db_add(struct db_handle *db, struct package *pkg)
 {
-    if (!db || !pkg || !pkg->meta || db->readonly) return false;
+    if (!db || !pkg || !pkg->meta || db->readonly)
+        return false;
 
     if (db->hooks.pre)
         db->hooks.pre(DB_OP_ADD, pkg->meta->name, db->hooks.userdata);
@@ -51,28 +55,37 @@ db_add(struct db_handle *db, struct package *pkg)
     MDB_dbi dbi;
     bool ok = false;
 
-    if (mdb_txn_begin(db->env, NULL, 0, &txn) == MDB_SUCCESS) {
-        if (mdb_dbi_open(txn, NULL, 0, &dbi) == MDB_SUCCESS) {
+    if (mdb_txn_begin(db->env, NULL, 0, &txn) == MDB_SUCCESS)
+    {
+        if (mdb_dbi_open(txn, NULL, 0, &dbi) == MDB_SUCCESS)
+        {
             char *json = package_to_json(pkg);
-            if (json) {
-                MDB_val key  = { strlen(pkg->meta->name), pkg->meta->name };
-                MDB_val data = { strlen(json), json };
+            if (json)
+            {
+                MDB_val key = {strlen(pkg->meta->name), pkg->meta->name};
+                MDB_val data = {strlen(json), json};
                 ok = mdb_put(txn, dbi, &key, &data, 0) == MDB_SUCCESS;
                 free(json);
             }
-            if (ok && db->files_dbi_open && pkg->package_files.count > 0) {
+            if (ok && db->files_dbi_open && pkg->package_files.count > 0)
+            {
                 char *fdata = serialize_files(&pkg->package_files);
-                if (fdata) {
-                    MDB_val fkey = { strlen(pkg->meta->name), pkg->meta->name };
-                    MDB_val fval = { strlen(fdata), fdata };
+                if (fdata)
+                {
+                    MDB_val fkey = {strlen(pkg->meta->name), pkg->meta->name};
+                    MDB_val fval = {strlen(fdata), fdata};
                     mdb_put(txn, db->files_dbi, &fkey, &fval, 0);
                     free(fdata);
                 }
             }
-            if (ok) mdb_txn_commit(txn);
-            else    mdb_txn_abort(txn);
+            if (ok)
+                mdb_txn_commit(txn);
+            else
+                mdb_txn_abort(txn);
             mdb_dbi_close(db->env, dbi);
-        } else {
+        }
+        else
+        {
             mdb_txn_abort(txn);
         }
     }
@@ -91,7 +104,8 @@ db_add(struct db_handle *db, struct package *pkg)
 bool
 db_remove(struct db_handle *db, const char *pkg_name)
 {
-    if (!db || !pkg_name || db->readonly) return false;
+    if (!db || !pkg_name || db->readonly)
+        return false;
 
     if (db->hooks.pre)
         db->hooks.pre(DB_OP_REMOVE, pkg_name, db->hooks.userdata);
@@ -102,16 +116,22 @@ db_remove(struct db_handle *db, const char *pkg_name)
     MDB_dbi dbi;
     bool ok = false;
 
-    if (mdb_txn_begin(db->env, NULL, 0, &txn) == MDB_SUCCESS) {
-        if (mdb_dbi_open(txn, NULL, 0, &dbi) == MDB_SUCCESS) {
-            MDB_val key = { strlen(pkg_name), (void *)pkg_name };
+    if (mdb_txn_begin(db->env, NULL, 0, &txn) == MDB_SUCCESS)
+    {
+        if (mdb_dbi_open(txn, NULL, 0, &dbi) == MDB_SUCCESS)
+        {
+            MDB_val key = {strlen(pkg_name), (void *)pkg_name};
             ok = mdb_del(txn, dbi, &key, NULL) == MDB_SUCCESS;
             if (ok && db->files_dbi_open)
                 mdb_del(txn, db->files_dbi, &key, NULL);
-            if (ok) mdb_txn_commit(txn);
-            else    mdb_txn_abort(txn);
+            if (ok)
+                mdb_txn_commit(txn);
+            else
+                mdb_txn_abort(txn);
             mdb_dbi_close(db->env, dbi);
-        } else {
+        }
+        else
+        {
             mdb_txn_abort(txn);
         }
     }

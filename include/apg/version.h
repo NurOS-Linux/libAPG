@@ -13,7 +13,8 @@
 /**
  * @brief Version comparison operator used in dependency constraints.
  */
-typedef enum {
+typedef enum
+{
     VER_OP_ANY, /**< No version constraint — any version satisfies. */
     VER_OP_EQ,  /**< Exact version match. */
     VER_OP_NEQ, /**< Any version except the specified one. */
@@ -31,7 +32,8 @@ typedef enum {
  *
  * Free the heap-allocated fields with dep_constraint_free().
  */
-struct dep_constraint {
+struct dep_constraint
+{
     char *name;    /**< Required package name. Heap-allocated. */
     ver_op_t op;   /**< Comparison operator. */
     char *version; /**< Required version string. NULL when op == VER_OP_ANY. */
@@ -40,7 +42,8 @@ struct dep_constraint {
 /**
  * @brief An owned, growable list of dependency constraints.
  */
-struct dep_constraint_list {
+struct dep_constraint_list
+{
     struct dep_constraint *items; /**< Array of constraints. */
     int count;                    /**< Number of elements. */
 };
@@ -103,4 +106,5 @@ int ver_compare(const char *a, const char *b);
  *                           @p op is @ref VER_OP_ANY.
  * @return true if the installed version satisfies the constraint.
  */
-bool ver_satisfies(const char *pkg_version, ver_op_t op, const char *constraint_version);
+bool ver_satisfies(const char *pkg_version, ver_op_t op,
+                   const char *constraint_version);

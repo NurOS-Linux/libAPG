@@ -11,19 +11,25 @@
 char *
 db_owner(struct db_handle *db, const char *path)
 {
-    if (!db || !path) return NULL;
+    if (!db || !path)
+        return NULL;
 
     int count = 0;
     struct package **pkgs = db_list(db, &count);
-    if (!pkgs) return NULL;
+    if (!pkgs)
+        return NULL;
 
     char *owner = NULL;
-    for (int i = 0; i < count && !owner; i++) {
+    for (int i = 0; i < count && !owner; i++)
+    {
         struct package *pkg = pkgs[i];
-        if (!pkg->meta || !pkg->meta->name) continue;
-        for (int j = 0; j < pkg->package_files.count; j++) {
+        if (!pkg->meta || !pkg->meta->name)
+            continue;
+        for (int j = 0; j < pkg->package_files.count; j++)
+        {
             if (pkg->package_files.items[j] &&
-                strcmp(pkg->package_files.items[j], path) == 0) {
+                strcmp(pkg->package_files.items[j], path) == 0)
+            {
                 owner = strdup(pkg->meta->name);
                 break;
             }

@@ -18,15 +18,18 @@
  * packages whose detached signature at @c <pkg_path>.sig cannot be verified
  * against the keys in @p keyring_dir.
  */
-typedef struct {
+typedef struct
+{
     bool require_signature; /**< Reject unsigned packages. */
-    char *keyring_dir;      /**< Trusted key directory; NULL → @c /etc/apg/trusted.d */
+    char *
+        keyring_dir; /**< Trusted key directory; NULL → @c /etc/apg/trusted.d */
 } install_policy;
 
 /**
  * @brief Transport protocol used to fetch packages from a repository.
  */
-typedef enum {
+typedef enum
+{
     HTTP,  /**< Fetch via HTTP. */
     FTP,   /**< Fetch via FTP. */
     RSYNC, /**< Fetch via rsync. */
@@ -35,7 +38,8 @@ typedef enum {
 /**
  * @brief A single package repository entry.
  */
-typedef struct {
+typedef struct
+{
     const char *url; /**< Base URL of the repository. */
     repo_type type;  /**< Transport protocol. */
 } repo;
@@ -46,11 +50,12 @@ typedef struct {
  * Populated by parse_config() and applied globally with set_config().
  * Free with config_free().
  */
-typedef struct {
-    int db_size;     /**< Maximum size of the package database in bytes. */
-    char *tmp_dir;   /**< Temporary directory used during package operations. */
-    int repo_count;  /**< Number of entries in @p repos. */
-    repo *repos;     /**< Array of repository descriptors. */
+typedef struct
+{
+    int db_size;    /**< Maximum size of the package database in bytes. */
+    char *tmp_dir;  /**< Temporary directory used during package operations. */
+    int repo_count; /**< Number of entries in @p repos. */
+    repo *repos;    /**< Array of repository descriptors. */
     install_policy policy; /**< Install-time security policy. */
 } config;
 

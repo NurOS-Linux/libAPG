@@ -10,8 +10,10 @@
 
 static const char *key_path = "/etc/apg/keys/";
 
-// libsodium uses Ed25519, which is ECC. allow_rsa has no effect here but is kept for interface compatibility.
-bool sign_verify(const char *pkg_path, const char *sig_path, bool allow_rsa)
+// libsodium uses Ed25519, which is ECC. allow_rsa has no effect here but is
+// kept for interface compatibility.
+bool
+sign_verify(const char *pkg_path, const char *sig_path, bool allow_rsa)
 {
     (void)allow_rsa;
 
@@ -23,7 +25,8 @@ bool sign_verify(const char *pkg_path, const char *sig_path, bool allow_rsa)
         return false;
 
     unsigned char signature[crypto_sign_BYTES];
-    if (fread(signature, 1, crypto_sign_BYTES, sig_f) != crypto_sign_BYTES) {
+    if (fread(signature, 1, crypto_sign_BYTES, sig_f) != crypto_sign_BYTES)
+    {
         fclose(sig_f);
         return false;
     }
@@ -37,7 +40,9 @@ bool sign_verify(const char *pkg_path, const char *sig_path, bool allow_rsa)
         return false;
 
     unsigned char public_key[crypto_sign_PUBLICKEYBYTES];
-    if (fread(public_key, 1, crypto_sign_PUBLICKEYBYTES, key_f) != crypto_sign_PUBLICKEYBYTES) {
+    if (fread(public_key, 1, crypto_sign_PUBLICKEYBYTES, key_f) !=
+        crypto_sign_PUBLICKEYBYTES)
+    {
         fclose(key_f);
         return false;
     }
@@ -59,7 +64,8 @@ bool sign_verify(const char *pkg_path, const char *sig_path, bool allow_rsa)
     return crypto_sign_final_verify(&state, signature, public_key) == 0;
 }
 
-bool sign_file(const char *pkg_path, const char *sig_path)
+bool
+sign_file(const char *pkg_path, const char *sig_path)
 {
     if (sodium_init() < 0)
         return false;
@@ -72,7 +78,9 @@ bool sign_file(const char *pkg_path, const char *sig_path)
         return false;
 
     unsigned char secret_key[crypto_sign_SECRETKEYBYTES];
-    if (fread(secret_key, 1, crypto_sign_SECRETKEYBYTES, key_f) != crypto_sign_SECRETKEYBYTES) {
+    if (fread(secret_key, 1, crypto_sign_SECRETKEYBYTES, key_f) !=
+        crypto_sign_SECRETKEYBYTES)
+    {
         fclose(key_f);
         return false;
     }

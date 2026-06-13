@@ -15,7 +15,8 @@
 /**
  * @brief Operation type passed to database hook callbacks.
  */
-typedef enum {
+typedef enum
+{
     DB_OP_ADD,    /**< A package is being added to the database. */
     DB_OP_REMOVE, /**< A package is being removed from the database. */
 } db_op_t;
@@ -32,10 +33,11 @@ typedef void (*db_hook_fn)(db_op_t op, const char *pkg_name, void *userdata);
 /**
  * @brief Pre and post write callbacks registered on a database handle.
  */
-struct db_hooks {
-    db_hook_fn pre;   /**< Called before each write operation. May be NULL. */
-    db_hook_fn post;  /**< Called after each write operation. May be NULL. */
-    void *userdata;   /**< Opaque pointer forwarded to both callbacks. */
+struct db_hooks
+{
+    db_hook_fn pre;  /**< Called before each write operation. May be NULL. */
+    db_hook_fn post; /**< Called after each write operation. May be NULL. */
+    void *userdata;  /**< Opaque pointer forwarded to both callbacks. */
 };
 
 /**

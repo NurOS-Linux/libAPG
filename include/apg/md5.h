@@ -21,10 +21,11 @@
  * Initialise with md5_init(), feed data with md5_update(), and finalise
  * with md5_final().
  */
-typedef struct {
+typedef struct
+{
     uint32_t state[4]; /**< Intermediate hash state (A, B, C, D). */
     uint32_t count[2]; /**< Total bit count (low word, high word). */
-    uint8_t  buf[64];  /**< Partial-block buffer. */
+    uint8_t buf[64];   /**< Partial-block buffer. */
 } md5_ctx;
 
 /**

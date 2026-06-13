@@ -15,7 +15,8 @@
 /**
  * @brief Type of operation recorded in the journal.
  */
-typedef enum {
+typedef enum
+{
     JOURNAL_INSTALL, /**< A package was installed. */
     JOURNAL_REMOVE,  /**< A package was removed. */
 } journal_op_t;
@@ -23,7 +24,8 @@ typedef enum {
 /**
  * @brief Outcome of a journalled operation.
  */
-typedef enum {
+typedef enum
+{
     JOURNAL_STATUS_OK,     /**< The operation completed successfully. */
     JOURNAL_STATUS_FAILED, /**< The operation failed. */
 } journal_status_t;
@@ -34,12 +36,14 @@ typedef enum {
  * All heap-allocated fields are owned by this structure.
  * Free with journal_entry_free() or journal_free_all().
  */
-struct journal_entry {
-    journal_op_t op;        /**< Type of operation. */
-    char *pkg_name;         /**< Package name. Heap-allocated; may be NULL. */
-    char *pkg_version;      /**< Package version string. Heap-allocated; may be NULL. */
-    time_t timestamp;       /**< Unix timestamp of the operation. */
-    journal_status_t status;/**< Outcome of the operation. */
+struct journal_entry
+{
+    journal_op_t op;   /**< Type of operation. */
+    char *pkg_name;    /**< Package name. Heap-allocated; may be NULL. */
+    char *pkg_version; /**< Package version string. Heap-allocated; may be NULL.
+                        */
+    time_t timestamp;  /**< Unix timestamp of the operation. */
+    journal_status_t status; /**< Outcome of the operation. */
 };
 
 /**

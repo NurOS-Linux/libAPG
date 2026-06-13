@@ -22,10 +22,11 @@
  * Initialise with sha256_init(), feed data with sha256_update(), and finalise
  * with sha256_final().
  */
-typedef struct {
+typedef struct
+{
     uint32_t state[8]; /**< Intermediate hash state (H0–H7). */
     uint64_t count;    /**< Total number of bytes processed. */
-    uint8_t  buf[64];  /**< Partial-block buffer. */
+    uint8_t buf[64];   /**< Partial-block buffer. */
 } sha256_ctx;
 
 /**

@@ -23,7 +23,8 @@ struct package_metadata *
 package_metadata_new(void)
 {
     struct package_metadata *meta = calloc(1, sizeof(*meta));
-    if (!meta) return NULL;
+    if (!meta)
+        return NULL;
     return meta;
 }
 
@@ -32,10 +33,12 @@ package_new(void)
 {
     // ReSharper disable once CppDFAMemoryLeak
     struct package *pkg = calloc(1, sizeof(*pkg));
-    if (!pkg) return NULL;
+    if (!pkg)
+        return NULL;
 
     pkg->meta = package_metadata_new();
-    if (!pkg->meta) {
+    if (!pkg->meta)
+    {
         free(pkg);
         return NULL;
     }
@@ -45,7 +48,8 @@ package_new(void)
 void
 str_list_free(struct str_list *list)
 {
-    if (!list) return;
+    if (!list)
+        return;
     for (int i = 0; i < list->count; i++)
         free(list->items[i]);
     free(list->items);
@@ -54,7 +58,8 @@ str_list_free(struct str_list *list)
 void
 package_metadata_free(struct package_metadata *meta)
 {
-    if (!meta) return;
+    if (!meta)
+        return;
 
     free(meta->name);
     free(meta->version);
@@ -78,9 +83,10 @@ package_metadata_free(struct package_metadata *meta)
 void
 package_free(struct package *pkg)
 {
-    if (!pkg) return;
+    if (!pkg)
+        return;
     package_metadata_free(pkg->meta);
-    free((void *) pkg->pkg_path);
+    free((void *)pkg->pkg_path);
     str_list_free(&pkg->package_files);
     free(pkg);
 }
@@ -95,35 +101,42 @@ bool
 install_package_in_root(struct package *pkg, const char *root_path)
 {
     char *real_tmp = concat_dirs(root_path, tmp_path);
-    if (!real_tmp) return false;
+    if (!real_tmp)
+        return false;
     create_dir(real_tmp);
 
-    if (!unarchive_package_in_root(pkg, real_tmp)) {
+    if (!unarchive_package_in_root(pkg, real_tmp))
+    {
         free(real_tmp);
         return false;
     }
 
-    if (!verify_checksums(real_tmp)) {
+    if (!verify_checksums(real_tmp))
+    {
         free(real_tmp);
         return false;
     }
 
-    if (!run_script(real_tmp, "pre-install")) {
+    if (!run_script(real_tmp, "pre-install"))
+    {
         free(real_tmp);
         return false;
     }
 
-    if (!install_data_dir(real_tmp, root_path)) {
+    if (!install_data_dir(real_tmp, root_path))
+    {
         free(real_tmp);
         return false;
     }
 
     char *data_src = concat_dirs(real_tmp, "data");
-    if (data_src) {
+    if (data_src)
+    {
         int file_count = 0;
         char **files = collect_files(data_src, &file_count);
         free(data_src);
-        if (files) {
+        if (files)
+        {
             str_list_free(&pkg->package_files);
             pkg->package_files.items = files;
             pkg->package_files.count = file_count;
@@ -132,7 +145,8 @@ install_package_in_root(struct package *pkg, const char *root_path)
 
     install_home_dir(real_tmp);
 
-    if (!run_script(real_tmp, "post-install")) {
+    if (!run_script(real_tmp, "post-install"))
+    {
         rollback_install(real_tmp, root_path);
         free(real_tmp);
         return false;
@@ -146,14 +160,16 @@ struct package *
 parse_package(const char *path, const char *root_path)
 {
     struct package *pkg = package_new();
-    if (!pkg) return NULL;
+    if (!pkg)
+        return NULL;
 
     pkg->pkg_path = realpath(path, NULL);
 
     char *real_tmp = concat_dirs(root_path, tmp_path);
     create_dir(real_tmp);
 
-    if (!unarchive_package_in_root(pkg, real_tmp)) {
+    if (!unarchive_package_in_root(pkg, real_tmp))
+    {
         free(real_tmp);
         package_free(pkg);
         return NULL;
@@ -166,7 +182,8 @@ parse_package(const char *path, const char *root_path)
     pkg->meta = package_metadata_from_file(meta_path);
     free(meta_path);
 
-    if (!pkg->meta) {
+    if (!pkg->meta)
+    {
         package_free(pkg);
         return NULL;
     }
