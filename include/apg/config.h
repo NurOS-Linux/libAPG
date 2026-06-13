@@ -33,8 +33,8 @@ typedef struct
  */
 typedef struct
 {
-    int db_size;           /**< Maximum size of the package database in bytes. */
-    char *tmp_dir;         /**< Temporary directory used during package operations. */
+    int db_size;   /**< Maximum size of the package database in bytes. */
+    char *tmp_dir; /**< Temporary directory used during package operations. */
     install_policy policy; /**< Install-time security policy. */
 } config;
 

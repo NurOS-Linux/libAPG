@@ -9,7 +9,8 @@
 void
 test_self_cycle(void)
 {
-    struct package_metadata *a = make_pkg("a", (const char *[]){"a"}, 1, NOCONFLICTS, NOPROVIDES, NOREPLACES);
+    struct package_metadata *a = make_pkg("a", (const char *[]){"a"}, 1,
+                                          NOCONFLICTS, NOPROVIDES, NOREPLACES);
 
     struct dep_graph *g = dep_graph_new();
     assert(dep_graph_add(g, a) == DEP_OK);
@@ -27,8 +28,10 @@ test_self_cycle(void)
 void
 test_two_node_cycle(void)
 {
-    struct package_metadata *a = make_pkg("a", (const char *[]){"b"}, 1, NOCONFLICTS, NOPROVIDES, NOREPLACES);
-    struct package_metadata *b = make_pkg("b", (const char *[]){"a"}, 1, NOCONFLICTS, NOPROVIDES, NOREPLACES);
+    struct package_metadata *a = make_pkg("a", (const char *[]){"b"}, 1,
+                                          NOCONFLICTS, NOPROVIDES, NOREPLACES);
+    struct package_metadata *b = make_pkg("b", (const char *[]){"a"}, 1,
+                                          NOCONFLICTS, NOPROVIDES, NOREPLACES);
 
     struct dep_graph *g = dep_graph_new();
     assert(dep_graph_add(g, a) == DEP_OK);
@@ -49,9 +52,12 @@ void
 test_three_way_cycle(void)
 {
     // a -> b -> c -> a
-    struct package_metadata *a = make_pkg("a", (const char *[]){"b"}, 1, NOCONFLICTS, NOPROVIDES, NOREPLACES);
-    struct package_metadata *b = make_pkg("b", (const char *[]){"c"}, 1, NOCONFLICTS, NOPROVIDES, NOREPLACES);
-    struct package_metadata *c = make_pkg("c", (const char *[]){"a"}, 1, NOCONFLICTS, NOPROVIDES, NOREPLACES);
+    struct package_metadata *a = make_pkg("a", (const char *[]){"b"}, 1,
+                                          NOCONFLICTS, NOPROVIDES, NOREPLACES);
+    struct package_metadata *b = make_pkg("b", (const char *[]){"c"}, 1,
+                                          NOCONFLICTS, NOPROVIDES, NOREPLACES);
+    struct package_metadata *c = make_pkg("c", (const char *[]){"a"}, 1,
+                                          NOCONFLICTS, NOPROVIDES, NOREPLACES);
 
     struct dep_graph *g = dep_graph_new();
     assert(dep_graph_add(g, a) == DEP_OK);
@@ -83,10 +89,14 @@ void
 test_has_cycle_forest(void)
 {
     // Two independent DAGs in one graph — no cycle
-    struct package_metadata *a = make_pkg("a", (const char *[]){"b"}, 1, NOCONFLICTS, NOPROVIDES, NOREPLACES);
-    struct package_metadata *b = make_pkg("b", NODEPS, NOCONFLICTS, NOPROVIDES, NOREPLACES);
-    struct package_metadata *x = make_pkg("x", (const char *[]){"y"}, 1, NOCONFLICTS, NOPROVIDES, NOREPLACES);
-    struct package_metadata *y = make_pkg("y", NODEPS, NOCONFLICTS, NOPROVIDES, NOREPLACES);
+    struct package_metadata *a = make_pkg("a", (const char *[]){"b"}, 1,
+                                          NOCONFLICTS, NOPROVIDES, NOREPLACES);
+    struct package_metadata *b =
+        make_pkg("b", NODEPS, NOCONFLICTS, NOPROVIDES, NOREPLACES);
+    struct package_metadata *x = make_pkg("x", (const char *[]){"y"}, 1,
+                                          NOCONFLICTS, NOPROVIDES, NOREPLACES);
+    struct package_metadata *y =
+        make_pkg("y", NODEPS, NOCONFLICTS, NOPROVIDES, NOREPLACES);
 
     struct dep_graph *g = dep_graph_new();
     assert(dep_graph_add(g, a) == DEP_OK);

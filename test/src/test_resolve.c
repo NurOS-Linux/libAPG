@@ -13,9 +13,12 @@ void
 test_linear_resolve(void)
 {
     // a -> b -> c, expected install order: c, b, a
-    struct package_metadata *a = make_pkg("a", (const char *[]){"b"}, 1, NOCONFLICTS, NOPROVIDES, NOREPLACES);
-    struct package_metadata *b = make_pkg("b", (const char *[]){"c"}, 1, NOCONFLICTS, NOPROVIDES, NOREPLACES);
-    struct package_metadata *c = make_pkg("c", NODEPS, NOCONFLICTS, NOPROVIDES, NOREPLACES);
+    struct package_metadata *a = make_pkg("a", (const char *[]){"b"}, 1,
+                                          NOCONFLICTS, NOPROVIDES, NOREPLACES);
+    struct package_metadata *b = make_pkg("b", (const char *[]){"c"}, 1,
+                                          NOCONFLICTS, NOPROVIDES, NOREPLACES);
+    struct package_metadata *c =
+        make_pkg("c", NODEPS, NOCONFLICTS, NOPROVIDES, NOREPLACES);
 
     struct dep_graph *g = dep_graph_new();
     assert(g);
@@ -43,7 +46,8 @@ test_linear_resolve(void)
 void
 test_single_node_resolve(void)
 {
-    struct package_metadata *p = make_pkg("solo", NODEPS, NOCONFLICTS, NOPROVIDES, NOREPLACES);
+    struct package_metadata *p =
+        make_pkg("solo", NODEPS, NOCONFLICTS, NOPROVIDES, NOREPLACES);
 
     struct dep_graph *g = dep_graph_new();
     assert(dep_graph_add(g, p) == DEP_OK);
@@ -64,13 +68,20 @@ void
 test_diamond_resolve(void)
 {
     // app -> lib-a, lib-b -> base; base must appear exactly once, first
-    struct package_metadata *app  = make_pkg("app",   (const char *[]){"lib-a", "lib-b"}, 2, NOCONFLICTS, NOPROVIDES, NOREPLACES);
-    struct package_metadata *liba = make_pkg("lib-a", (const char *[]){"base"}, 1, NOCONFLICTS, NOPROVIDES, NOREPLACES);
-    struct package_metadata *libb = make_pkg("lib-b", (const char *[]){"base"}, 1, NOCONFLICTS, NOPROVIDES, NOREPLACES);
-    struct package_metadata *base = make_pkg("base",  NODEPS, NOCONFLICTS, NOPROVIDES, NOREPLACES);
+    struct package_metadata *app =
+        make_pkg("app", (const char *[]){"lib-a", "lib-b"}, 2, NOCONFLICTS,
+                 NOPROVIDES, NOREPLACES);
+    struct package_metadata *liba =
+        make_pkg("lib-a", (const char *[]){"base"}, 1, NOCONFLICTS, NOPROVIDES,
+                 NOREPLACES);
+    struct package_metadata *libb =
+        make_pkg("lib-b", (const char *[]){"base"}, 1, NOCONFLICTS, NOPROVIDES,
+                 NOREPLACES);
+    struct package_metadata *base =
+        make_pkg("base", NODEPS, NOCONFLICTS, NOPROVIDES, NOREPLACES);
 
     struct dep_graph *g = dep_graph_new();
-    assert(dep_graph_add(g, app)  == DEP_OK);
+    assert(dep_graph_add(g, app) == DEP_OK);
     assert(dep_graph_add(g, liba) == DEP_OK);
     assert(dep_graph_add(g, libb) == DEP_OK);
     assert(dep_graph_add(g, base) == DEP_OK);
@@ -94,12 +105,14 @@ test_diamond_resolve(void)
 void
 test_duplicate_add(void)
 {
-    struct package_metadata *a = make_pkg("a", NODEPS, NOCONFLICTS, NOPROVIDES, NOREPLACES);
-    struct package_metadata *b = make_pkg("b", (const char *[]){"a"}, 1, NOCONFLICTS, NOPROVIDES, NOREPLACES);
+    struct package_metadata *a =
+        make_pkg("a", NODEPS, NOCONFLICTS, NOPROVIDES, NOREPLACES);
+    struct package_metadata *b = make_pkg("b", (const char *[]){"a"}, 1,
+                                          NOCONFLICTS, NOPROVIDES, NOREPLACES);
 
     struct dep_graph *g = dep_graph_new();
     assert(dep_graph_add(g, a) == DEP_OK);
-    assert(dep_graph_add(g, a) == DEP_OK);  // second add must be a no-op
+    assert(dep_graph_add(g, a) == DEP_OK); // second add must be a no-op
     assert(dep_graph_add(g, b) == DEP_OK);
 
     char **order = NULL;
@@ -132,7 +145,8 @@ test_resolve_unknown_root(void)
 void
 test_missing_transitive_dep(void)
 {
-    struct package_metadata *a = make_pkg("a", (const char *[]){"missing"}, 1, NOCONFLICTS, NOPROVIDES, NOREPLACES);
+    struct package_metadata *a = make_pkg("a", (const char *[]){"missing"}, 1,
+                                          NOCONFLICTS, NOPROVIDES, NOREPLACES);
 
     struct dep_graph *g = dep_graph_new();
     assert(dep_graph_add(g, a) == DEP_OK);
@@ -149,11 +163,15 @@ test_missing_transitive_dep(void)
 void
 test_provides_resolution(void)
 {
-    struct package_metadata *app    = make_pkg("app",        (const char *[]){"libfoo"}, 1, NOCONFLICTS, NOPROVIDES, NOREPLACES);
-    struct package_metadata *compat = make_pkg("lib-compat", NODEPS, NOCONFLICTS, (const char *[]){"libfoo"}, 1, NOREPLACES);
+    struct package_metadata *app =
+        make_pkg("app", (const char *[]){"libfoo"}, 1, NOCONFLICTS, NOPROVIDES,
+                 NOREPLACES);
+    struct package_metadata *compat =
+        make_pkg("lib-compat", NODEPS, NOCONFLICTS, (const char *[]){"libfoo"},
+                 1, NOREPLACES);
 
     struct dep_graph *g = dep_graph_new();
-    assert(dep_graph_add(g, app)    == DEP_OK);
+    assert(dep_graph_add(g, app) == DEP_OK);
     assert(dep_graph_add(g, compat) == DEP_OK);
 
     char **order = NULL;
@@ -174,7 +192,9 @@ void
 test_resolve_via_alias(void)
 {
     // resolve() called with a provides alias, not the canonical name
-    struct package_metadata *impl = make_pkg("impl", NODEPS, NOCONFLICTS, (const char *[]){"virtual-lib"}, 1, NOREPLACES);
+    struct package_metadata *impl =
+        make_pkg("impl", NODEPS, NOCONFLICTS, (const char *[]){"virtual-lib"},
+                 1, NOREPLACES);
 
     struct dep_graph *g = dep_graph_new();
     assert(dep_graph_add(g, impl) == DEP_OK);
@@ -195,11 +215,15 @@ void
 test_replaces_resolution(void)
 {
     // pkg-new replaces "old-pkg" (not in graph); app depends on "old-pkg"
-    struct package_metadata *app     = make_pkg("app",     (const char *[]){"old-pkg"}, 1, NOCONFLICTS, NOPROVIDES, NOREPLACES);
-    struct package_metadata *pkg_new = make_pkg("pkg-new", NODEPS, NOCONFLICTS, NOPROVIDES, (const char *[]){"old-pkg"}, 1);
+    struct package_metadata *app =
+        make_pkg("app", (const char *[]){"old-pkg"}, 1, NOCONFLICTS, NOPROVIDES,
+                 NOREPLACES);
+    struct package_metadata *pkg_new =
+        make_pkg("pkg-new", NODEPS, NOCONFLICTS, NOPROVIDES,
+                 (const char *[]){"old-pkg"}, 1);
 
     struct dep_graph *g = dep_graph_new();
-    assert(dep_graph_add(g, app)     == DEP_OK);
+    assert(dep_graph_add(g, app) == DEP_OK);
     assert(dep_graph_add(g, pkg_new) == DEP_OK);
 
     char **order = NULL;
@@ -219,8 +243,10 @@ test_replaces_resolution(void)
 void
 test_version_constraint_satisfied(void)
 {
-    struct package_metadata *a = make_pkg("a", (const char *[]){"b >= 1.0"}, 1, NOCONFLICTS, NOPROVIDES, NOREPLACES);
-    struct package_metadata *b = make_pkg("b", NODEPS, NOCONFLICTS, NOPROVIDES, NOREPLACES);
+    struct package_metadata *a = make_pkg("a", (const char *[]){"b >= 1.0"}, 1,
+                                          NOCONFLICTS, NOPROVIDES, NOREPLACES);
+    struct package_metadata *b =
+        make_pkg("b", NODEPS, NOCONFLICTS, NOPROVIDES, NOREPLACES);
     b->version = strdup("2.0");
 
     struct dep_graph *g = dep_graph_new();
@@ -244,8 +270,10 @@ test_version_constraint_satisfied(void)
 void
 test_version_constraint_unsatisfied(void)
 {
-    struct package_metadata *a = make_pkg("a", (const char *[]){"b >= 3.0"}, 1, NOCONFLICTS, NOPROVIDES, NOREPLACES);
-    struct package_metadata *b = make_pkg("b", NODEPS, NOCONFLICTS, NOPROVIDES, NOREPLACES);
+    struct package_metadata *a = make_pkg("a", (const char *[]){"b >= 3.0"}, 1,
+                                          NOCONFLICTS, NOPROVIDES, NOREPLACES);
+    struct package_metadata *b =
+        make_pkg("b", NODEPS, NOCONFLICTS, NOPROVIDES, NOREPLACES);
     b->version = strdup("2.0");
 
     struct dep_graph *g = dep_graph_new();
@@ -265,8 +293,11 @@ test_version_constraint_unsatisfied(void)
 void
 test_version_exact_match(void)
 {
-    struct package_metadata *a = make_pkg("a", (const char *[]){"b == 2.1.0"}, 1, NOCONFLICTS, NOPROVIDES, NOREPLACES);
-    struct package_metadata *b = make_pkg("b", NODEPS, NOCONFLICTS, NOPROVIDES, NOREPLACES);
+    struct package_metadata *a =
+        make_pkg("a", (const char *[]){"b == 2.1.0"}, 1, NOCONFLICTS,
+                 NOPROVIDES, NOREPLACES);
+    struct package_metadata *b =
+        make_pkg("b", NODEPS, NOCONFLICTS, NOPROVIDES, NOREPLACES);
     b->version = strdup("2.1.0");
 
     struct dep_graph *g = dep_graph_new();
