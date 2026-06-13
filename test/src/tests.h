@@ -29,3 +29,7 @@ void test_conflict_via_installed_provides(void);
 void test_no_conflicts(void);
 void test_breaks_empty_installed(void);
 void test_breaks_unknown_pkg(void);
+
+void test_policy_unsigned(void);
+void test_policy_no_sig_required(void);
+void test_policy_clear(void);

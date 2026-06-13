@@ -34,6 +34,10 @@ main(void)
     test_breaks_empty_installed();
     test_breaks_unknown_pkg();
 
-    printf("All 24 tests passed.\n");
+    test_policy_unsigned();
+    test_policy_no_sig_required();
+    test_policy_clear();
+
+    printf("All 27 tests passed.\n");
     return 0;
 }

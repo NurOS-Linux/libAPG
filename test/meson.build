@@ -3,6 +3,7 @@ apg_test = executable('apg-test',
   'src/test_resolve.c',
   'src/test_cycle.c',
   'src/test_conflict.c',
+  'src/test_policy.c',
   dependencies: libapg_dep,
   build_by_default: false,
 )
