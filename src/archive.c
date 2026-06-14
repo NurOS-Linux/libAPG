@@ -26,7 +26,11 @@ extract_to_dir(const char *archive_path, const char *path_dest)
                                    ARCHIVE_EXTRACT_TIME | ARCHIVE_EXTRACT_PERM);
 
     if (archive_read_open_filename(a, archive_path, 10240) != ARCHIVE_OK)
+    {
+        archive_read_free(a);
+        archive_write_free(ext);
         return false;
+    }
 
     while (archive_read_next_header(a, &entry) == ARCHIVE_OK)
     {
