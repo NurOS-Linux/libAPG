@@ -78,7 +78,8 @@ jobs:
         run: |
           CC=clang meson setup build-san \
             --buildtype=debug \
-            -Db_sanitize=address,undefined
+            -Db_sanitize=address,undefined \
+            -Db_lundef=false
           meson compile -C build-san
 
       - name: Test
