@@ -38,6 +38,38 @@ meson compile -C build
 - All identifiers in English
 - No decorative comment separators (`// ---`, `/* === */`, etc.)
 
+Before submitting, run the quality checks:
+
+```bash
+python3 scripts/checkpatch.py
+```
+
+This runs three checks in sequence:
+
+- **clang-format** — verifies formatting against `.clang-format`
+- **SPDX** — every `.c`, `.h`, and `.py` file must have `SPDX-License-Identifier`
+  and `SPDX-FileCopyrightText` in the first ten lines
+- **Doxygen coverage** — every public function declared in `include/` must have
+  a `/** ... */` doc comment
+
+All three must pass. A PR that fails any of these checks will not be merged.
+
+## Documentation
+
+Public API functions in `include/` require a Doxygen comment:
+
+```c
+/**
+ * Brief one-line description.
+ *
+ * @param foo  What foo is.
+ * @return     What the function returns.
+ */
+int apg_example(int foo);
+```
+
+Internal functions (`src/`) and `static` functions are exempt.
+
 ## Signing backend
 
 If you contribute to signing code, keep both backends (`src/sign/pgp/` and `src/sign/sodium/`) in sync. The public interface is defined in `include/apg/sign.h` and must not diverge between backends.
