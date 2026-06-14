@@ -126,6 +126,28 @@ libapg_dep = declare_dependency(
   include_directories: libapg_inc,
 )
 
+install_headers(
+  'include/apg/archive.h',
+  'include/apg/checksum.h',
+  'include/apg/config.h',
+  'include/apg/copy.h',
+  'include/apg/crc32.h',
+  'include/apg/db.h',
+  'include/apg/graph.h',
+  'include/apg/install.h',
+  'include/apg/journal.h',
+  'include/apg/json.h',
+  'include/apg/keyring.h',
+  'include/apg/md5.h',
+  'include/apg/package.h',
+  'include/apg/scripts.h',
+  'include/apg/sha256.h',
+  'include/apg/sign.h',
+  'include/apg/transaction.h',
+  'include/apg/version.h',
+  subdir: 'apg',
+)
+
 pkg = import('pkgconfig')
 pkg.generate(libapg)
 
