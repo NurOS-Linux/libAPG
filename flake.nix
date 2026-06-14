@@ -3,14 +3,12 @@
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-    iron-log.url = "github:ruzen42/iron-log";
   };
 
-  outputs = { self, nixpkgs, iron-log }:
+  outputs = { self, nixpkgs }:
     let
       system = "x86_64-linux";
       pkgs = import nixpkgs { inherit system; };
-      libiron = iron-log.packages.${system}.default;
     in
     {
       packages.${system}.default = pkgs.stdenv.mkDerivation {
@@ -23,9 +21,8 @@
           pkgs.meson
           pkgs.ninja
           pkgs.pkg-config
-          pkgs.llvmPackages.clang   # Clang IAS for .S files (replaces gas/binutils)
-          pkgs.llvmPackages.llvm    # llvm-ar, llvm-strip, llvm-objcopy
-          libiron
+          pkgs.llvmPackages.clang
+          pkgs.llvmPackages.llvm
         ];
 
         buildInputs = [
