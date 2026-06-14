@@ -32,7 +32,15 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y \
             meson ninja-build pkg-config \
-            libarchive-dev liblmdb-dev libyyjson-dev libgpgme-dev
+            libarchive-dev liblmdb-dev libgpgme-dev
+
+      - name: Install yyjson
+        run: |
+          git clone --depth=1 https://github.com/ibireme/yyjson.git /tmp/yyjson
+          gcc -O2 -shared -fPIC -o /tmp/libyyjson.so /tmp/yyjson/src/yyjson.c
+          sudo cp /tmp/libyyjson.so /usr/local/lib/
+          sudo cp /tmp/yyjson/src/yyjson.h /usr/local/include/
+          sudo ldconfig
 
       - name: Build
         run: |
@@ -56,7 +64,15 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y \
             meson ninja-build pkg-config clang \
-            libarchive-dev liblmdb-dev libyyjson-dev libgpgme-dev
+            libarchive-dev liblmdb-dev libgpgme-dev
+
+      - name: Install yyjson
+        run: |
+          git clone --depth=1 https://github.com/ibireme/yyjson.git /tmp/yyjson
+          gcc -O2 -shared -fPIC -o /tmp/libyyjson.so /tmp/yyjson/src/yyjson.c
+          sudo cp /tmp/libyyjson.so /usr/local/lib/
+          sudo cp /tmp/yyjson/src/yyjson.h /usr/local/include/
+          sudo ldconfig
 
       - name: Build with sanitizers
         run: |
