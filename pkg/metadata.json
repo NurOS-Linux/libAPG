@@ -1,0 +1,16 @@
+{
+    "name": "libapg",
+    "version": "@VERSION@",
+    "type": "binary",
+    "architecture": "x86_64",
+    "description": "Package management library for NurOS.",
+    "maintainer": "AnmiTaliDev <anmitalidev@nuros.org>",
+    "license": "GPL-3.0",
+    "homepage": "https://nuros.org",
+    "tags": ["library", "package-manager"],
+    "dependencies": ["libarchive", "lmdb", "libsodium"],
+    "conflicts": [],
+    "provides": [],
+    "replaces": [],
+    "conf": []
+}
