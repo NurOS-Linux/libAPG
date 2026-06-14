@@ -39,8 +39,6 @@ simple_pkg(const char *name)
 {
     struct package *pkg = package_new();
     assert(pkg);
-    pkg->meta = package_metadata_new();
-    assert(pkg->meta);
     pkg->meta->name = strdup(name);
     pkg->meta->version = strdup("1.0");
     pkg->pkg_path = strdup("/nonexistent/test.pkg");
