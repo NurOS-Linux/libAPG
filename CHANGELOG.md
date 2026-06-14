@@ -4,6 +4,28 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- Install policy with configurable signature enforcement
+- Doxygen + Sphinx documentation pipeline with GitHub Pages deployment
+- Doxygen comments across the entire public API
+- API reference index for Sphinx
+- `.clang-format` configuration
+- Code quality scripts: `checkpatch.py`, `check-spdx.py`, `check-doc.py`
+- `.editorconfig`
+- Security policy (`SECURITY.md`)
+
+### Changed
+
+- Applied clang-format to all sources and tests
+- Removed repo types from config (responsibility of the frontend)
+- Updated `CONTRIBUTING.md` with code style check instructions and
+  Doxygen requirements
+
+### Added (tests)
+
+- Install policy tests
+
 ## [1.4.0] - 2026-06-06
 
 ### Added
