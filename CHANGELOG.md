@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.4.0] - 2026-06-06
+
+### Added
+
+- Database opaque handle, parallel writes, lock-free reads, and hook callbacks
+- Keyring with trust chain verification
+- Transaction API
+- Version constraints in package dependencies
+- File ownership query in the database
+
 ## [1.3.1] - 2026-05-28
 
 ### Changed
