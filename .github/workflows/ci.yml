@@ -1,0 +1,74 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  quality:
+    name: Code quality
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang-format python3
+
+      - name: Run checks
+        run: python3 scripts/checkpatch.py
+
+  build:
+    name: Build and test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            meson ninja-build pkg-config \
+            libarchive-dev liblmdb-dev libyyjson-dev libgpgme-dev
+
+      - name: Build
+        run: |
+          meson setup build --buildtype=debug
+          meson compile -C build
+
+      - name: Test
+        run: meson test -C build --print-errorlogs
+
+  sanitize:
+    name: Sanitizers (ASan + UBSan)
+    runs-on: ubuntu-latest
+    env:
+      ASAN_OPTIONS: halt_on_error=1
+      UBSAN_OPTIONS: halt_on_error=1:print_stacktrace=1
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            meson ninja-build pkg-config clang \
+            libarchive-dev liblmdb-dev libyyjson-dev libgpgme-dev
+
+      - name: Build with sanitizers
+        run: |
+          CC=clang meson setup build-san \
+            --buildtype=debug \
+            -Db_sanitize=address,undefined
+          meson compile -C build-san
+
+      - name: Test
+        run: meson test -C build-san --print-errorlogs
+
+  # TODO: add cross-compilation jobs for aarch64 and riscv64.
+  # Blockers: riscv64 packages require ports.ubuntu.com (not on standard mirrors);
+  # libyyjson-dev multiarch availability is uncertain; linker needs to be set
+  # explicitly in cross files (c_link_args = ['-fuse-ld=lld']).
