@@ -1,0 +1,67 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build APG package
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            meson ninja-build pkg-config \
+            libarchive-dev liblmdb-dev libgpgme-dev
+
+      - name: Install yyjson
+        run: |
+          git clone --depth=1 https://github.com/ibireme/yyjson.git /tmp/yyjson
+          gcc -O2 -shared -fPIC -o /tmp/libyyjson.so /tmp/yyjson/src/yyjson.c
+          sudo cp /tmp/libyyjson.so /usr/local/lib/
+          sudo cp /tmp/yyjson/src/yyjson.h /usr/local/include/
+          sudo ldconfig
+
+      - name: Get version
+        id: version
+        run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Build
+        run: |
+          meson setup build --buildtype=release --prefix=/usr
+          meson compile -C build
+
+      - name: Stage install
+        run: DESTDIR=/tmp/apg-stage/data meson install -C build
+
+      - name: Prepare package
+        run: |
+          mkdir -p /tmp/apg-pkg
+          cp -r /tmp/apg-stage/data /tmp/apg-pkg/data
+          sed 's/@VERSION@/${{ steps.version.outputs.version }}/g' \
+            pkg/metadata.json > /tmp/apg-pkg/metadata.json
+          cd /tmp/apg-pkg
+          find data -type f | sort | xargs md5sum > md5sums
+
+      - name: Pack APG
+        run: |
+          cd /tmp/apg-pkg
+          tar -cJf ${{ github.workspace }}/libapg-${{ steps.version.outputs.version }}-x86_64.apg \
+            metadata.json md5sums data/
+
+      - name: Create GitHub Release
+        run: |
+          gh release create "${{ github.ref_name }}" \
+            --title "libapg ${{ github.ref_name }}" \
+            --generate-notes \
+            "${{ github.workspace }}/libapg-${{ steps.version.outputs.version }}-x86_64.apg"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
