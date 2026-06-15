@@ -99,6 +99,9 @@ lmdb_dep = dependency('lmdb', required: false)
 libyyjson_dep = dependency('yyjson', required: false)
 gpgme_dep = dependency('gpgme', required: false)
 sodium_dep = dependency('libsodium', required: false)
+if not sodium_dep.found()
+  sodium_dep = cc.find_library('sodium', required: false)
+endif
 
 if not libarchive_dep.found()
   libarchive_dep = cc.find_library('archive', required: true)
