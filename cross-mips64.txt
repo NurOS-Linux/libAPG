@@ -1,0 +1,21 @@
+[binaries]
+c         = 'clang'
+cpp       = 'clang++'
+ar        = 'llvm-ar'
+strip     = 'llvm-strip'
+objcopy   = 'llvm-objcopy'
+asm       = 'clang'
+pkgconfig = 'pkg-config'
+
+[host_machine]
+system     = 'linux'
+cpu_family = 'mips64'
+cpu        = 'mips64el'
+endian     = 'little'
+
+[properties]
+asm_args = ['-target', 'mips64el-linux-gnuabi64', '-march=mips64r2']
+
+[built-in options]
+c_args      = ['-march=mips64r2', '-target', 'mips64el-linux-gnuabi64']
+c_link_args = ['-fuse-ld=lld', '-target', 'mips64el-linux-gnuabi64']

@@ -213,10 +213,87 @@ jobs:
           name: pkg-riscv64
           path: libapg-${{ steps.version.outputs.version }}-riscv64.apg
 
+  build-mips64el:
+    name: Build APG package (mips64el)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Add mips64el architecture
+        run: |
+          sudo dpkg --add-architecture mips64el
+          sudo sed -i '/^deb \[/!s/^deb /deb [arch=amd64] /' /etc/apt/sources.list
+          sudo find /etc/apt/sources.list.d/ -name '*.list' \
+            -exec sed -i '/^deb \[/!s/^deb /deb [arch=amd64] /' {} +
+          sudo find /etc/apt/sources.list.d/ -name '*.sources' \
+            -exec sed -i '/^Architectures:/d; /^Types:/i Architectures: amd64' {} +
+          . /etc/os-release
+          sudo tee /etc/apt/sources.list.d/mips64el-ports.list << EOF
+          deb [arch=mips64el] http://ports.ubuntu.com/ubuntu-ports ${VERSION_CODENAME} main restricted universe
+          deb [arch=mips64el] http://ports.ubuntu.com/ubuntu-ports ${VERSION_CODENAME}-updates main restricted universe
+          deb [arch=mips64el] http://ports.ubuntu.com/ubuntu-ports ${VERSION_CODENAME}-security main restricted universe
+          EOF
+          sudo apt-get update
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get install -y \
+            clang lld llvm \
+            gcc-mips64el-linux-gnuabi64 \
+            meson ninja-build pkg-config \
+            libarchive-dev:mips64el \
+            liblmdb-dev:mips64el \
+            libsodium-dev:mips64el \
+            libseccomp-dev:mips64el
+
+      - name: Build yyjson for mips64el
+        run: |
+          git clone --depth=1 https://github.com/ibireme/yyjson.git /tmp/yyjson
+          clang --target=mips64el-linux-gnuabi64 -O2 -shared -fPIC \
+            -o /tmp/libyyjson.so /tmp/yyjson/src/yyjson.c
+          sudo cp /tmp/libyyjson.so /usr/lib/mips64el-linux-gnuabi64/
+          sudo cp /tmp/yyjson/src/yyjson.h /usr/include/
+          printf 'Name: yyjson\nDescription: Fast JSON library\nVersion: 0.0.0\nLibs: -L/usr/lib/mips64el-linux-gnuabi64 -lyyjson\nCflags: -I/usr/include\n' | \
+            sudo tee /usr/lib/mips64el-linux-gnuabi64/pkgconfig/yyjson.pc
+
+      - name: Get version
+        id: version
+        run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Build
+        env:
+          PKG_CONFIG_LIBDIR: /usr/lib/mips64el-linux-gnuabi64/pkgconfig:/usr/share/pkgconfig
+        run: |
+          meson setup build \
+            --cross-file cross-mips64.txt \
+            --buildtype=release \
+            --prefix=/usr
+          meson compile -C build
+
+      - name: Stage install
+        run: DESTDIR=/tmp/apg-stage/data meson install -C build
+
+      - name: Prepare and pack
+        run: |
+          mkdir -p /tmp/apg-pkg
+          cp -r /tmp/apg-stage/data /tmp/apg-pkg/data
+          sed 's/@VERSION@/${{ steps.version.outputs.version }}/g' \
+            pkg/metadata.json > /tmp/apg-pkg/metadata.json
+          cd /tmp/apg-pkg
+          find data -type f | sort | xargs md5sum > md5sums
+          tar -cJf ${{ github.workspace }}/libapg-${{ steps.version.outputs.version }}-mips64el.apg \
+            metadata.json md5sums data/
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: pkg-mips64el
+          path: libapg-${{ steps.version.outputs.version }}-mips64el.apg
+
   release:
     name: Create GitHub Release
     runs-on: ubuntu-latest
-    needs: [build-x86_64, build-aarch64, build-riscv64]
+    needs: [build-x86_64, build-aarch64, build-riscv64, build-mips64el]
     steps:
       - uses: actions/checkout@v4
 

@@ -74,6 +74,18 @@ elif cpu == 'riscv64'
     '-DAPG_MD5_HW_AVAILABLE=1',
     '-march=rv64gc_zknh',
   ]
+elif cpu == 'mips64'
+  libapg_sources += files(
+    'arch/mips64/sha256.S',
+    'arch/mips64/crc32.S',
+    'arch/mips64/md5.S',
+  )
+  hw_args = [
+    '-DAPG_SHA256_HW_AVAILABLE=1',
+    '-DAPG_CRC32_HW_AVAILABLE=1',
+    '-DAPG_MD5_HW_AVAILABLE=1',
+    '-march=mips64r2',
+  ]
 endif
 
 if hw_args.length() > 0
