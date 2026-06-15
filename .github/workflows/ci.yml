@@ -217,14 +217,21 @@ jobs:
             clang lld llvm \
             gcc-mips64el-linux-gnuabi64 \
             meson ninja-build pkg-config \
-            cmake autoconf automake libtool
+            cmake autoconf automake libtool gperf
 
       - name: Build cross libs for mips64el
         run: |
           TRIPLET=mips64el-linux-gnuabi64
           SYSROOT=/usr/lib/${TRIPLET}
-          sudo mkdir -p ${SYSROOT}/pkgconfig /usr/include/${TRIPLET}
+          sudo mkdir -p ${SYSROOT}/pkgconfig
           CC="clang --target=${TRIPLET}"
+
+          # zlib (required by libarchive)
+          curl -fsSL https://zlib.net/zlib-1.3.1.tar.gz | tar xz -C /tmp
+          cd /tmp/zlib-1.3.1
+          CC="${CC}" ./configure --prefix=/usr --libdir=${SYSROOT} --static
+          make -j$(nproc) && sudo make install
+          printf 'Name: zlib\nVersion: 1.3.1\nLibs: -L%s -lz\nCflags: -I/usr/include\n' "${SYSROOT}" | sudo tee ${SYSROOT}/pkgconfig/zlib.pc
 
           # libsodium
           curl -fsSL https://download.libsodium.org/libsodium/releases/libsodium-1.0.20.tar.gz | tar xz -C /tmp
@@ -234,7 +241,6 @@ jobs:
           printf 'Name: libsodium\nVersion: 1.0.20\nLibs: -L%s -lsodium\nCflags: -I/usr/include\n' "${SYSROOT}" | sudo tee ${SYSROOT}/pkgconfig/libsodium.pc
 
           # lmdb
-          git clone --depth=1 https://git.openldap.org/openldap/openldap.git /tmp/openldap || true
           curl -fsSL https://github.com/LMDB/lmdb/archive/refs/tags/LMDB_0.9.32.tar.gz | tar xz -C /tmp
           cd /tmp/lmdb-LMDB_0.9.32/libraries/liblmdb
           make CC="clang --target=${TRIPLET}" liblmdb.a
@@ -242,14 +248,15 @@ jobs:
           sudo cp lmdb.h /usr/include/lmdb.h
           printf 'Name: lmdb\nVersion: 0.9.32\nLibs: -L%s -llmdb\nCflags: -I/usr/include\n' "${SYSROOT}" | sudo tee ${SYSROOT}/pkgconfig/lmdb.pc
 
-          # libarchive
+          # libarchive (with zlib)
           curl -fsSL https://github.com/libarchive/libarchive/releases/download/v3.7.4/libarchive-3.7.4.tar.gz | tar xz -C /tmp
           cd /tmp/libarchive-3.7.4
+          CFLAGS="-I/usr/include" LDFLAGS="-L${SYSROOT}" \
           ./configure --host=${TRIPLET} CC="${CC}" --prefix=/usr --libdir=${SYSROOT} --disable-shared \
             --without-bz2lib --without-libb2 --without-iconv --without-lz4 --without-zstd \
-            --without-lzma --without-cng --without-xml2 --without-expat
+            --without-lzma --without-cng --without-xml2 --without-expat --with-zlib
           make -j$(nproc) && sudo make install
-          printf 'Name: libarchive\nVersion: 3.7.4\nLibs: -L%s -larchive\nCflags: -I/usr/include\n' "${SYSROOT}" | sudo tee ${SYSROOT}/pkgconfig/libarchive.pc
+          printf 'Name: libarchive\nVersion: 3.7.4\nLibs: -L%s -larchive -lz\nCflags: -I/usr/include\n' "${SYSROOT}" | sudo tee ${SYSROOT}/pkgconfig/libarchive.pc
 
           # libseccomp
           curl -fsSL https://github.com/seccomp/libseccomp/releases/download/v2.5.5/libseccomp-2.5.5.tar.gz | tar xz -C /tmp
