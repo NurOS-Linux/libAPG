@@ -250,7 +250,7 @@ jobs:
           sudo mkdir -p ${SYSROOT}/pkgconfig
           CC="clang --target=${TRIPLET}"
 
-          curl -fsSL https://zlib.net/zlib-1.3.1.tar.gz | tar xz -C /tmp
+          curl -fsSL https://github.com/madler/zlib/releases/download/v1.3.1/zlib-1.3.1.tar.gz | tar xz -C /tmp
           cd /tmp/zlib-1.3.1
           CC="${CC}" ./configure --prefix=/usr --libdir=${SYSROOT} --static
           make -j$(nproc) && sudo make install
