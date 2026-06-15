@@ -230,16 +230,16 @@ jobs:
           curl -fsSL https://download.libsodium.org/libsodium/releases/libsodium-1.0.20.tar.gz | tar xz -C /tmp
           cd /tmp/libsodium-1.0.20
           ./configure --host=${TRIPLET} CC="${CC}" --prefix=/usr --libdir=${SYSROOT} --disable-shared
-          make -j$(nproc) && sudo make install-includesHEADERS install-libLTLIBRARIES
+          make -j$(nproc) && sudo make install
           printf 'Name: libsodium\nVersion: 1.0.20\nLibs: -L%s -lsodium\nCflags: -I/usr/include\n' "${SYSROOT}" | sudo tee ${SYSROOT}/pkgconfig/libsodium.pc
 
           # lmdb
           git clone --depth=1 https://git.openldap.org/openldap/openldap.git /tmp/openldap || true
           curl -fsSL https://github.com/LMDB/lmdb/archive/refs/tags/LMDB_0.9.32.tar.gz | tar xz -C /tmp
           cd /tmp/lmdb-LMDB_0.9.32/libraries/liblmdb
-          make CC="${CC}" liblmdb.a
-          sudo cp liblmdb.a ${SYSROOT}/
-          sudo cp lmdb.h /usr/include/
+          make CC="clang --target=${TRIPLET}" liblmdb.a
+          sudo cp liblmdb.a ${SYSROOT}/liblmdb.a
+          sudo cp lmdb.h /usr/include/lmdb.h
           printf 'Name: lmdb\nVersion: 0.9.32\nLibs: -L%s -llmdb\nCflags: -I/usr/include\n' "${SYSROOT}" | sudo tee ${SYSROOT}/pkgconfig/lmdb.pc
 
           # libarchive
@@ -248,14 +248,14 @@ jobs:
           ./configure --host=${TRIPLET} CC="${CC}" --prefix=/usr --libdir=${SYSROOT} --disable-shared \
             --without-bz2lib --without-libb2 --without-iconv --without-lz4 --without-zstd \
             --without-lzma --without-cng --without-xml2 --without-expat
-          make -j$(nproc) && sudo make install-includesHEADERS install-libLTLIBRARIES
+          make -j$(nproc) && sudo make install
           printf 'Name: libarchive\nVersion: 3.7.4\nLibs: -L%s -larchive\nCflags: -I/usr/include\n' "${SYSROOT}" | sudo tee ${SYSROOT}/pkgconfig/libarchive.pc
 
           # libseccomp
           curl -fsSL https://github.com/seccomp/libseccomp/releases/download/v2.5.5/libseccomp-2.5.5.tar.gz | tar xz -C /tmp
           cd /tmp/libseccomp-2.5.5
           ./configure --host=${TRIPLET} CC="${CC}" --prefix=/usr --libdir=${SYSROOT} --disable-shared
-          make -j$(nproc) && sudo make install-includesHEADERS install-libLTLIBRARIES
+          make -j$(nproc) && sudo make install
           printf 'Name: libseccomp\nVersion: 2.5.5\nLibs: -L%s -lseccomp\nCflags: -I/usr/include\n' "${SYSROOT}" | sudo tee ${SYSROOT}/pkgconfig/libseccomp.pc
 
       - name: Build yyjson for mips64el
