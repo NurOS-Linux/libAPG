@@ -241,10 +241,41 @@ jobs:
             clang lld llvm \
             gcc-mips64el-linux-gnuabi64 \
             meson ninja-build pkg-config \
-            libarchive-dev:mips64el \
-            liblmdb-dev:mips64el \
-            libsodium-dev:mips64el \
-            libseccomp-dev:mips64el
+            cmake autoconf automake libtool
+
+      - name: Build cross libs for mips64el
+        run: |
+          TRIPLET=mips64el-linux-gnuabi64
+          SYSROOT=/usr/lib/${TRIPLET}
+          sudo mkdir -p ${SYSROOT}/pkgconfig /usr/include/${TRIPLET}
+          CC="clang --target=${TRIPLET}"
+
+          curl -fsSL https://download.libsodium.org/libsodium/releases/libsodium-1.0.20.tar.gz | tar xz -C /tmp
+          cd /tmp/libsodium-1.0.20
+          ./configure --host=${TRIPLET} CC="${CC}" --prefix=/usr --libdir=${SYSROOT} --disable-shared
+          make -j$(nproc) && sudo make install-includesHEADERS install-libLTLIBRARIES
+          printf 'Name: libsodium\nVersion: 1.0.20\nLibs: -L%s -lsodium\nCflags: -I/usr/include\n' "${SYSROOT}" | sudo tee ${SYSROOT}/pkgconfig/libsodium.pc
+
+          curl -fsSL https://github.com/LMDB/lmdb/archive/refs/tags/LMDB_0.9.32.tar.gz | tar xz -C /tmp
+          cd /tmp/lmdb-LMDB_0.9.32/libraries/liblmdb
+          make CC="${CC}" liblmdb.a
+          sudo cp liblmdb.a ${SYSROOT}/
+          sudo cp lmdb.h /usr/include/
+          printf 'Name: lmdb\nVersion: 0.9.32\nLibs: -L%s -llmdb\nCflags: -I/usr/include\n' "${SYSROOT}" | sudo tee ${SYSROOT}/pkgconfig/lmdb.pc
+
+          curl -fsSL https://github.com/libarchive/libarchive/releases/download/v3.7.4/libarchive-3.7.4.tar.gz | tar xz -C /tmp
+          cd /tmp/libarchive-3.7.4
+          ./configure --host=${TRIPLET} CC="${CC}" --prefix=/usr --libdir=${SYSROOT} --disable-shared \
+            --without-bz2lib --without-libb2 --without-iconv --without-lz4 --without-zstd \
+            --without-lzma --without-cng --without-xml2 --without-expat
+          make -j$(nproc) && sudo make install-includesHEADERS install-libLTLIBRARIES
+          printf 'Name: libarchive\nVersion: 3.7.4\nLibs: -L%s -larchive\nCflags: -I/usr/include\n' "${SYSROOT}" | sudo tee ${SYSROOT}/pkgconfig/libarchive.pc
+
+          curl -fsSL https://github.com/seccomp/libseccomp/releases/download/v2.5.5/libseccomp-2.5.5.tar.gz | tar xz -C /tmp
+          cd /tmp/libseccomp-2.5.5
+          ./configure --host=${TRIPLET} CC="${CC}" --prefix=/usr --libdir=${SYSROOT} --disable-shared
+          make -j$(nproc) && sudo make install-includesHEADERS install-libLTLIBRARIES
+          printf 'Name: libseccomp\nVersion: 2.5.5\nLibs: -L%s -lseccomp\nCflags: -I/usr/include\n' "${SYSROOT}" | sudo tee ${SYSROOT}/pkgconfig/libseccomp.pc
 
       - name: Build yyjson for mips64el
         run: |
