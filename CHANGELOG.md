@@ -4,27 +4,28 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.5.0] - 2026-06-15
+
 ### Added
 
-- Install policy with configurable signature enforcement
-- Doxygen + Sphinx documentation pipeline with GitHub Pages deployment
-- Doxygen comments across the entire public API
-- API reference index for Sphinx
-- `.clang-format` configuration
-- Code quality scripts: `checkpatch.py`, `check-spdx.py`, `check-doc.py`
-- `.editorconfig`
-- Security policy (`SECURITY.md`)
+- Audit log for all package operations (`include/apg/audit.h`)
+- `audit_read_all()` — public API to read the operation history via
+  `db_handle *` without exposing LMDB internals
+- `JOURNAL_ROLLBACK` operation type — rollback removes are now recorded
+  separately from user-requested removes
+- `uid` field in `journal_entry` — records the UID of the user who
+  initiated each operation
+- `explicit_op` field in `journal_entry` — distinguishes user-requested
+  operations from automatic dependency installs and rollbacks
+- Version recording for remove operations — `db_remove` now looks up the
+  installed version before deletion and includes it in the journal entry
 
 ### Changed
 
-- Applied clang-format to all sources and tests
-- Removed repo types from config (responsibility of the frontend)
-- Updated `CONTRIBUTING.md` with code style check instructions and
-  Doxygen requirements
-
-### Added (tests)
-
-- Install policy tests
+- `journal_write` signature extended with `uid_t uid` and `bool explicit_op`
+- `trans_commit` now suppresses duplicate journal writes from `db_add`/
+  `db_remove` and journals each step directly with the correct `explicit`
+  flag and rollback context
 
 ## [1.4.0] - 2026-06-06
 
