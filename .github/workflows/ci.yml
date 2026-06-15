@@ -85,7 +85,89 @@ jobs:
       - name: Test
         run: meson test -C build-san --print-errorlogs
 
-  # TODO: add cross-compilation jobs for aarch64 and riscv64.
-  # Blockers: riscv64 packages require ports.ubuntu.com (not on standard mirrors);
-  # libyyjson-dev multiarch availability is uncertain; linker needs to be set
-  # explicitly in cross files (c_link_args = ['-fuse-ld=lld']).
+  cross-aarch64:
+    name: Cross-compile (aarch64)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Add arm64 architecture
+        run: |
+          sudo dpkg --add-architecture arm64
+          sudo apt-get update
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get install -y \
+            clang lld llvm \
+            gcc-aarch64-linux-gnu \
+            meson ninja-build pkg-config \
+            libarchive-dev:arm64 \
+            liblmdb-dev:arm64 \
+            libsodium-dev:arm64 \
+            libseccomp-dev:arm64
+
+      - name: Build yyjson for arm64
+        run: |
+          git clone --depth=1 https://github.com/ibireme/yyjson.git /tmp/yyjson
+          clang --target=aarch64-linux-gnu -O2 -shared -fPIC \
+            -o /tmp/libyyjson.so /tmp/yyjson/src/yyjson.c
+          sudo cp /tmp/libyyjson.so /usr/lib/aarch64-linux-gnu/
+          sudo cp /tmp/yyjson/src/yyjson.h /usr/include/
+          printf 'Name: yyjson\nDescription: Fast JSON library\nVersion: 0.0.0\nLibs: -L/usr/lib/aarch64-linux-gnu -lyyjson\nCflags: -I/usr/include\n' | \
+            sudo tee /usr/lib/aarch64-linux-gnu/pkgconfig/yyjson.pc
+
+      - name: Cross-compile
+        env:
+          PKG_CONFIG_PATH: /usr/lib/aarch64-linux-gnu/pkgconfig
+        run: |
+          meson setup build-aarch64 \
+            --cross-file cross-aarch64.txt \
+            --buildtype=release
+          meson compile -C build-aarch64
+
+  cross-riscv64:
+    name: Cross-compile (riscv64)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Add riscv64 architecture
+        run: |
+          sudo dpkg --add-architecture riscv64
+          . /etc/os-release
+          sudo tee /etc/apt/sources.list.d/riscv64-ports.list << EOF
+          deb [arch=riscv64] http://ports.ubuntu.com/ubuntu-ports ${VERSION_CODENAME} main restricted universe
+          deb [arch=riscv64] http://ports.ubuntu.com/ubuntu-ports ${VERSION_CODENAME}-updates main restricted universe
+          EOF
+          sudo apt-get update
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get install -y \
+            clang lld llvm \
+            gcc-riscv64-linux-gnu \
+            meson ninja-build pkg-config \
+            libarchive-dev:riscv64 \
+            liblmdb-dev:riscv64 \
+            libsodium-dev:riscv64 \
+            libseccomp-dev:riscv64
+
+      - name: Build yyjson for riscv64
+        run: |
+          git clone --depth=1 https://github.com/ibireme/yyjson.git /tmp/yyjson
+          clang --target=riscv64-linux-gnu -O2 -shared -fPIC \
+            -o /tmp/libyyjson.so /tmp/yyjson/src/yyjson.c
+          sudo cp /tmp/libyyjson.so /usr/lib/riscv64-linux-gnu/
+          sudo cp /tmp/yyjson/src/yyjson.h /usr/include/
+          printf 'Name: yyjson\nDescription: Fast JSON library\nVersion: 0.0.0\nLibs: -L/usr/lib/riscv64-linux-gnu -lyyjson\nCflags: -I/usr/include\n' | \
+            sudo tee /usr/lib/riscv64-linux-gnu/pkgconfig/yyjson.pc
+
+      - name: Cross-compile
+        env:
+          PKG_CONFIG_PATH: /usr/lib/riscv64-linux-gnu/pkgconfig
+        run: |
+          meson setup build-riscv64 \
+            --cross-file cross-riscv64.txt \
+            --buildtype=release
+          meson compile -C build-riscv64

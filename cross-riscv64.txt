@@ -13,5 +13,6 @@ cpu        = 'riscv64'
 endian     = 'little'
 
 [properties]
-c_args   = ['-march=rv64gc_zknh', '-target', 'riscv64-linux-gnu']
-asm_args = ['-target', 'riscv64-linux-gnu', '-march=rv64gc_zknh']
+c_args      = ['-march=rv64gc_zknh', '-target', 'riscv64-linux-gnu']
+c_link_args = ['-fuse-ld=lld', '-target', 'riscv64-linux-gnu']
+asm_args    = ['-target', 'riscv64-linux-gnu', '-march=rv64gc_zknh']

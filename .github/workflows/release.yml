@@ -9,8 +9,8 @@ permissions:
   contents: write
 
 jobs:
-  build:
-    name: Build APG package
+  build-x86_64:
+    name: Build APG package (x86_64)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -42,7 +42,7 @@ jobs:
       - name: Stage install
         run: DESTDIR=/tmp/apg-stage/data meson install -C build
 
-      - name: Prepare package
+      - name: Prepare and pack
         run: |
           mkdir -p /tmp/apg-pkg
           cp -r /tmp/apg-stage/data /tmp/apg-pkg/data
@@ -50,18 +50,174 @@ jobs:
             pkg/metadata.json > /tmp/apg-pkg/metadata.json
           cd /tmp/apg-pkg
           find data -type f | sort | xargs md5sum > md5sums
-
-      - name: Pack APG
-        run: |
-          cd /tmp/apg-pkg
           tar -cJf ${{ github.workspace }}/libapg-${{ steps.version.outputs.version }}-x86_64.apg \
             metadata.json md5sums data/
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: pkg-x86_64
+          path: libapg-${{ steps.version.outputs.version }}-x86_64.apg
+
+  build-aarch64:
+    name: Build APG package (aarch64)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Add arm64 architecture
+        run: |
+          sudo dpkg --add-architecture arm64
+          sudo apt-get update
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get install -y \
+            clang lld llvm \
+            gcc-aarch64-linux-gnu \
+            meson ninja-build pkg-config \
+            libarchive-dev:arm64 \
+            liblmdb-dev:arm64 \
+            libsodium-dev:arm64 \
+            libseccomp-dev:arm64
+
+      - name: Build yyjson for arm64
+        run: |
+          git clone --depth=1 https://github.com/ibireme/yyjson.git /tmp/yyjson
+          clang --target=aarch64-linux-gnu -O2 -shared -fPIC \
+            -o /tmp/libyyjson.so /tmp/yyjson/src/yyjson.c
+          sudo cp /tmp/libyyjson.so /usr/lib/aarch64-linux-gnu/
+          sudo cp /tmp/yyjson/src/yyjson.h /usr/include/
+          printf 'Name: yyjson\nDescription: Fast JSON library\nVersion: 0.0.0\nLibs: -L/usr/lib/aarch64-linux-gnu -lyyjson\nCflags: -I/usr/include\n' | \
+            sudo tee /usr/lib/aarch64-linux-gnu/pkgconfig/yyjson.pc
+
+      - name: Get version
+        id: version
+        run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Build
+        env:
+          PKG_CONFIG_PATH: /usr/lib/aarch64-linux-gnu/pkgconfig
+        run: |
+          meson setup build \
+            --cross-file cross-aarch64.txt \
+            --buildtype=release \
+            --prefix=/usr
+          meson compile -C build
+
+      - name: Stage install
+        run: DESTDIR=/tmp/apg-stage/data meson install -C build
+
+      - name: Prepare and pack
+        run: |
+          mkdir -p /tmp/apg-pkg
+          cp -r /tmp/apg-stage/data /tmp/apg-pkg/data
+          sed 's/@VERSION@/${{ steps.version.outputs.version }}/g' \
+            pkg/metadata.json > /tmp/apg-pkg/metadata.json
+          cd /tmp/apg-pkg
+          find data -type f | sort | xargs md5sum > md5sums
+          tar -cJf ${{ github.workspace }}/libapg-${{ steps.version.outputs.version }}-aarch64.apg \
+            metadata.json md5sums data/
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: pkg-aarch64
+          path: libapg-${{ steps.version.outputs.version }}-aarch64.apg
+
+  build-riscv64:
+    name: Build APG package (riscv64)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Add riscv64 architecture
+        run: |
+          sudo dpkg --add-architecture riscv64
+          . /etc/os-release
+          sudo tee /etc/apt/sources.list.d/riscv64-ports.list << EOF
+          deb [arch=riscv64] http://ports.ubuntu.com/ubuntu-ports ${VERSION_CODENAME} main restricted universe
+          deb [arch=riscv64] http://ports.ubuntu.com/ubuntu-ports ${VERSION_CODENAME}-updates main restricted universe
+          EOF
+          sudo apt-get update
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get install -y \
+            clang lld llvm \
+            gcc-riscv64-linux-gnu \
+            meson ninja-build pkg-config \
+            libarchive-dev:riscv64 \
+            liblmdb-dev:riscv64 \
+            libsodium-dev:riscv64 \
+            libseccomp-dev:riscv64
+
+      - name: Build yyjson for riscv64
+        run: |
+          git clone --depth=1 https://github.com/ibireme/yyjson.git /tmp/yyjson
+          clang --target=riscv64-linux-gnu -O2 -shared -fPIC \
+            -o /tmp/libyyjson.so /tmp/yyjson/src/yyjson.c
+          sudo cp /tmp/libyyjson.so /usr/lib/riscv64-linux-gnu/
+          sudo cp /tmp/yyjson/src/yyjson.h /usr/include/
+          printf 'Name: yyjson\nDescription: Fast JSON library\nVersion: 0.0.0\nLibs: -L/usr/lib/riscv64-linux-gnu -lyyjson\nCflags: -I/usr/include\n' | \
+            sudo tee /usr/lib/riscv64-linux-gnu/pkgconfig/yyjson.pc
+
+      - name: Get version
+        id: version
+        run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Build
+        env:
+          PKG_CONFIG_PATH: /usr/lib/riscv64-linux-gnu/pkgconfig
+        run: |
+          meson setup build \
+            --cross-file cross-riscv64.txt \
+            --buildtype=release \
+            --prefix=/usr
+          meson compile -C build
+
+      - name: Stage install
+        run: DESTDIR=/tmp/apg-stage/data meson install -C build
+
+      - name: Prepare and pack
+        run: |
+          mkdir -p /tmp/apg-pkg
+          cp -r /tmp/apg-stage/data /tmp/apg-pkg/data
+          sed 's/@VERSION@/${{ steps.version.outputs.version }}/g' \
+            pkg/metadata.json > /tmp/apg-pkg/metadata.json
+          cd /tmp/apg-pkg
+          find data -type f | sort | xargs md5sum > md5sums
+          tar -cJf ${{ github.workspace }}/libapg-${{ steps.version.outputs.version }}-riscv64.apg \
+            metadata.json md5sums data/
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: pkg-riscv64
+          path: libapg-${{ steps.version.outputs.version }}-riscv64.apg
+
+  release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+    needs: [build-x86_64, build-aarch64, build-riscv64]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Get version
+        id: version
+        run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: pkgs/
+          merge-multiple: true
 
       - name: Create GitHub Release
         run: |
           gh release create "${{ github.ref_name }}" \
             --title "libapg ${{ github.ref_name }}" \
             --generate-notes \
-            "${{ github.workspace }}/libapg-${{ steps.version.outputs.version }}-x86_64.apg"
+            pkgs/*.apg
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
