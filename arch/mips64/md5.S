@@ -101,7 +101,7 @@ apg_md5_transform_hw:
     lw      $t3, 0($t0)            // T[i]
 
     daddu   $t0, $s6, $s4
-    lbu     $t4, 0($t0)            // S[i]
+    lbu     $a4, 0($t0)            // S[i]
 
     addu    $t1, $t1, $s0          // f + a
     addu    $t1, $t1, $t2          // + M[g]
@@ -109,8 +109,8 @@ apg_md5_transform_hw:
 
     // ROTL32(t1, t4): rotrv by (32 - t4)
     li      $t0, 32
-    subu    $t5, $t0, $t4          // 32 - S[i]
-    rotrv   $t1, $t1, $t5          // ROTR(32-S) == ROTL(S)
+    subu    $a5, $t0, $a4          // 32 - S[i]
+    rotrv   $t1, $t1, $a5          // ROTR(32-S) == ROTL(S)
 
     addu    $t1, $t1, $s1          // + b
 

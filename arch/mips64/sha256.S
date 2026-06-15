@@ -64,14 +64,14 @@ apg_sha256_transform_hw:
     daddu   $t0, $t0, $a1          // &data[i*4]
     lbu     $t2, 0($t0)
     lbu     $t3, 1($t0)
-    lbu     $t4, 2($t0)
-    lbu     $t5, 3($t0)
+    lbu     $a4, 2($t0)
+    lbu     $a5, 3($t0)
     sll     $t2, $t2, 24
     sll     $t3, $t3, 16
-    sll     $t4, $t4, 8
+    sll     $a4, $a4, 8
     or      $t2, $t2, $t3
-    or      $t4, $t4, $t5
-    or      $t2, $t2, $t4
+    or      $a4, $a4, $a5
+    or      $t2, $t2, $a4
     dsll    $t3, $a2, 2
     daddu   $t3, $t3, $s8
     sw      $t2, 0($t3)
@@ -94,9 +94,9 @@ apg_sha256_transform_hw:
     lw      $t1, 0($t0)
     rotr    $t2, $t1, 17
     rotr    $t3, $t1, 19
-    srl     $t4, $t1, 10
+    srl     $a4, $t1, 10
     xor     $t2, $t2, $t3
-    xor     $t1, $t2, $t4
+    xor     $t1, $t2, $a4
 
     // W[i-7]
     addiu   $t0, $a2, -7
@@ -113,10 +113,10 @@ apg_sha256_transform_hw:
     daddu   $t0, $t0, $s8
     lw      $t2, 0($t0)
     rotr    $t3, $t2, 7
-    rotr    $t4, $t2, 18
-    srl     $t5, $t2, 3
-    xor     $t3, $t3, $t4
-    xor     $t2, $t3, $t5
+    rotr    $a4, $t2, 18
+    srl     $a5, $t2, 3
+    xor     $t3, $t3, $a4
+    xor     $t2, $t3, $a5
     addu    $t1, $t1, $t2
 
     // W[i-16]
@@ -146,15 +146,15 @@ apg_sha256_transform_hw:
     // Sigma1(E) = ROTR(E,6) ^ ROTR(E,11) ^ ROTR(E,25)
     rotr    $t2, $s4, 6
     rotr    $t3, $s4, 11
-    rotr    $t4, $s4, 25
+    rotr    $a4, $s4, 25
     xor     $t2, $t2, $t3
-    xor     $t2, $t2, $t4
+    xor     $t2, $t2, $a4
 
     // Ch(E,F,G) = (E & F) ^ (~E & G)
     and     $t3, $s4, $s5
-    nor     $t4, $s4, $zero
-    and     $t4, $t4, $s6
-    xor     $t3, $t3, $t4
+    nor     $a4, $s4, $zero
+    and     $a4, $a4, $s6
+    xor     $t3, $t3, $a4
 
     // T1 = H + Sigma1(E) + Ch(E,F,G) + K[i] + W[i]
     addu    $t2, $t2, $t3
@@ -164,20 +164,20 @@ apg_sha256_transform_hw:
 
     // Sigma0(A) = ROTR(A,2) ^ ROTR(A,13) ^ ROTR(A,22)
     rotr    $t3, $s0, 2
-    rotr    $t4, $s0, 13
-    rotr    $t5, $s0, 22
-    xor     $t3, $t3, $t4
-    xor     $t3, $t3, $t5
+    rotr    $a4, $s0, 13
+    rotr    $a5, $s0, 22
+    xor     $t3, $t3, $a4
+    xor     $t3, $t3, $a5
 
     // Maj(A,B,C) = (A&B) ^ (A&C) ^ (B&C)
-    and     $t4, $s0, $s1
-    and     $t5, $s0, $s2
-    and     $t6, $s1, $s2
-    xor     $t4, $t4, $t5
-    xor     $t4, $t4, $t6
+    and     $a4, $s0, $s1
+    and     $a5, $s0, $s2
+    and     $a6, $s1, $s2
+    xor     $a4, $a4, $a5
+    xor     $a4, $a4, $a6
 
     // T2 = Sigma0(A) + Maj(A,B,C)
-    addu    $t3, $t3, $t4
+    addu    $t3, $t3, $a4
 
     move    $s7, $s6
     move    $s6, $s5
