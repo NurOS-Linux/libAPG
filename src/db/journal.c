@@ -54,7 +54,11 @@ unpack_ts(const uint8_t *key)
 static const char *
 op_to_str(journal_op_t op)
 {
-    return op == JOURNAL_INSTALL ? "install" : "remove";
+    if (op == JOURNAL_INSTALL)
+        return "install";
+    if (op == JOURNAL_ROLLBACK)
+        return "rollback";
+    return "remove";
 }
 
 static const char *
@@ -65,7 +69,8 @@ status_to_str(journal_status_t st)
 
 bool
 journal_write(MDB_env *env, journal_op_t op, const char *pkg_name,
-              const char *pkg_version, journal_status_t status)
+              const char *pkg_version, journal_status_t status, uid_t uid,
+              bool explicit_op)
 {
     MDB_txn *txn;
     MDB_dbi dbi;
@@ -82,9 +87,9 @@ journal_write(MDB_env *env, journal_op_t op, const char *pkg_name,
     pack_key(raw_key, time(NULL), seq_counter++);
 
     char val[512];
-    snprintf(val, sizeof(val), "%s|%s|%s|%s", op_to_str(op),
+    snprintf(val, sizeof(val), "%s|%s|%s|%s|%u|%d", op_to_str(op),
              pkg_name ? pkg_name : "-", pkg_version ? pkg_version : "-",
-             status_to_str(status));
+             status_to_str(status), (unsigned)uid, explicit_op ? 1 : 0);
 
     MDB_val k = {sizeof(raw_key), raw_key};
     MDB_val v = {strlen(val), val};
@@ -141,9 +146,9 @@ journal_read_all(MDB_env *env, int *count)
         memcpy(raw, v.mv_data, v.mv_size);
         raw[v.mv_size] = '\0';
 
-        char *fields[4] = {raw, NULL, NULL, NULL};
+        char *fields[6] = {raw, NULL, NULL, NULL, NULL, NULL};
         int fi = 0;
-        for (char *p = raw; *p && fi < 3; p++)
+        for (char *p = raw; *p && fi < 5; p++)
         {
             if (*p == '|')
             {
@@ -164,12 +169,19 @@ journal_read_all(MDB_env *env, int *count)
             continue;
         }
 
-        e->op = strcmp(fields[0], "install") == 0 ? JOURNAL_INSTALL
-                                                  : JOURNAL_REMOVE;
+        if (strcmp(fields[0], "install") == 0)
+            e->op = JOURNAL_INSTALL;
+        else if (strcmp(fields[0], "rollback") == 0)
+            e->op = JOURNAL_ROLLBACK;
+        else
+            e->op = JOURNAL_REMOVE;
         e->pkg_name = strcmp(fields[1], "-") == 0 ? NULL : strdup(fields[1]);
         e->pkg_version = strcmp(fields[2], "-") == 0 ? NULL : strdup(fields[2]);
         e->status = strcmp(fields[3], "ok") == 0 ? JOURNAL_STATUS_OK
                                                  : JOURNAL_STATUS_FAILED;
+        e->uid =
+            (fi >= 4 && fields[4]) ? (uid_t)strtoul(fields[4], NULL, 10) : 0;
+        e->explicit_op = (fi >= 5 && fields[5]) ? fields[5][0] == '1' : false;
         e->timestamp = unpack_ts((const uint8_t *)k.mv_data);
         free(raw);
 

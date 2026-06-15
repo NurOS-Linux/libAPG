@@ -19,6 +19,7 @@ libapg_sources = files(
   'src/db/read.c',
   'src/db/owner.c',
   'src/db/journal.c',
+  'src/db/audit.c',
   'src/json.c',
   'src/graph/graph.c',
   'src/graph/resolve.c',
@@ -133,6 +134,7 @@ libapg_dep = declare_dependency(
 
 install_headers(
   'include/apg/archive.h',
+  'include/apg/audit.h',
   'include/apg/checksum.h',
   'include/apg/config.h',
   'include/apg/copy.h',

@@ -9,6 +9,7 @@
  */
 
 #include <lmdb.h>
+#include <sys/types.h>
 #include <time.h>
 #include <stdbool.h>
 
@@ -17,8 +18,10 @@
  */
 typedef enum
 {
-    JOURNAL_INSTALL, /**< A package was installed. */
-    JOURNAL_REMOVE,  /**< A package was removed. */
+    JOURNAL_INSTALL,  /**< A package was installed. */
+    JOURNAL_REMOVE,   /**< A package was removed. */
+    JOURNAL_ROLLBACK, /**< A package was removed as part of a transaction
+                         rollback. */
 } journal_op_t;
 
 /**
@@ -44,6 +47,9 @@ struct journal_entry
                         */
     time_t timestamp;  /**< Unix timestamp of the operation. */
     journal_status_t status; /**< Outcome of the operation. */
+    uid_t uid;        /**< UID of the user who initiated the operation. */
+    bool explicit_op; /**< True when directly requested by the user; false when
+                           pulled in as a dependency or during rollback. */
 };
 
 /**
@@ -54,10 +60,13 @@ struct journal_entry
  * @param pkg_name    Package name to record.
  * @param pkg_version Package version to record.
  * @param status      Outcome of the operation.
+ * @param uid         UID of the user who initiated the operation.
+ * @param explicit_op True when directly requested by the user.
  * @return true on success, false if the write failed.
  */
 bool journal_write(MDB_env *env, journal_op_t op, const char *pkg_name,
-                   const char *pkg_version, journal_status_t status);
+                   const char *pkg_version, journal_status_t status, uid_t uid,
+                   bool explicit_op);
 
 /**
  * @brief Read all journal entries in chronological order.

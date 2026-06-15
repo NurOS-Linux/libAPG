@@ -7,6 +7,7 @@
 #include <pthread.h>
 #include <lmdb.h>
 #include <stdio.h>
+#include <unistd.h>
 
 #include "db_priv.h"
 #include "../../include/apg/package.h"
@@ -92,8 +93,10 @@ db_add(struct db_handle *db, struct package *pkg)
 
     pthread_mutex_unlock(&db->write_lock);
 
-    journal_write(db->env, JOURNAL_INSTALL, pkg->meta->name, pkg->meta->version,
-                  ok ? JOURNAL_STATUS_OK : JOURNAL_STATUS_FAILED);
+    if (!db->suppress_journal)
+        journal_write(
+            db->env, JOURNAL_INSTALL, pkg->meta->name, pkg->meta->version,
+            ok ? JOURNAL_STATUS_OK : JOURNAL_STATUS_FAILED, getuid(), true);
 
     if (db->hooks.post)
         db->hooks.post(DB_OP_ADD, pkg->meta->name, db->hooks.userdata);
@@ -106,6 +109,15 @@ db_remove(struct db_handle *db, const char *pkg_name)
 {
     if (!db || !pkg_name || db->readonly)
         return false;
+
+    char *version_for_journal = NULL;
+    if (!db->suppress_journal)
+    {
+        struct package *existing = db_get(db, pkg_name);
+        if (existing && existing->meta && existing->meta->version)
+            version_for_journal = strdup(existing->meta->version);
+        package_free(existing);
+    }
 
     if (db->hooks.pre)
         db->hooks.pre(DB_OP_REMOVE, pkg_name, db->hooks.userdata);
@@ -138,8 +150,11 @@ db_remove(struct db_handle *db, const char *pkg_name)
 
     pthread_mutex_unlock(&db->write_lock);
 
-    journal_write(db->env, JOURNAL_REMOVE, pkg_name, NULL,
-                  ok ? JOURNAL_STATUS_OK : JOURNAL_STATUS_FAILED);
+    if (!db->suppress_journal)
+        journal_write(db->env, JOURNAL_REMOVE, pkg_name, version_for_journal,
+                      ok ? JOURNAL_STATUS_OK : JOURNAL_STATUS_FAILED, getuid(),
+                      true);
+    free(version_for_journal);
 
     if (db->hooks.post)
         db->hooks.post(DB_OP_REMOVE, pkg_name, db->hooks.userdata);

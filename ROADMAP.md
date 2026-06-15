@@ -34,7 +34,7 @@
 - [x] Trust chain verification (keyring)
 - [x] Install policies: reject unsigned packages, trusted key list
 - [x] Sandboxed execution of install scripts (seccomp / namespaces)
-- [ ] Audit log of all package operations
+- [x] Audit log of all package operations
 
 ## v2.0 — Stable public API
 

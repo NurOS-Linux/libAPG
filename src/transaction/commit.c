@@ -4,13 +4,29 @@
 #include <stdlib.h>
 #include <limits.h>
 #include <stdio.h>
+#include <unistd.h>
 
 #include "trans_priv.h"
+#include "../db/db_priv.h"
 #include "../../include/apg/package.h"
 #include "../../include/apg/db.h"
+#include "../../include/apg/journal.h"
 #include "../../include/apg/keyring.h"
 
 #define DEFAULT_KEYRING_DIR "/etc/apg/trusted.d"
+
+static void
+rollback_committed(struct apg_trans *trans, size_t *committed_idx,
+                   size_t committed_count)
+{
+    for (size_t j = committed_count; j-- > 0;)
+    {
+        struct trans_step *s = &trans->plan[committed_idx[j]];
+        db_remove(trans->db, s->pkg_name);
+        journal_write(trans->db->env, JOURNAL_ROLLBACK, s->pkg_name,
+                      s->pkg_version, JOURNAL_STATUS_OK, getuid(), false);
+    }
+}
 
 trans_error_t
 trans_commit(struct apg_trans *trans, const char *root_path)
@@ -43,6 +59,9 @@ trans_commit(struct apg_trans *trans, const char *root_path)
     }
 
     size_t committed_count = 0;
+    uid_t uid = getuid();
+
+    trans->db->suppress_journal = true;
 
     for (size_t i = 0; i < trans->plan_count; i++)
     {
@@ -60,36 +79,48 @@ trans_commit(struct apg_trans *trans, const char *root_path)
                              pkg->pkg_path) >= (int)sizeof(sig_path) ||
                     !keyring_verify(kr, pkg->pkg_path, sig_path))
                 {
-                    for (size_t j = committed_count; j-- > 0;)
-                        db_remove(trans->db,
-                                  trans->plan[committed_idx[j]].pkg_name);
+                    journal_write(trans->db->env, JOURNAL_INSTALL,
+                                  step->pkg_name, step->pkg_version,
+                                  JOURNAL_STATUS_FAILED, uid, step->explicit);
+                    rollback_committed(trans, committed_idx, committed_count);
                     free(committed_idx);
                     keyring_free(kr);
+                    trans->db->suppress_journal = false;
                     return TRANS_ERR_UNSIGNED;
                 }
             }
 
             if (!install_package_in_root(pkg, root_path))
             {
-                for (size_t j = committed_count; j-- > 0;)
-                    db_remove(trans->db,
-                              trans->plan[committed_idx[j]].pkg_name);
+                journal_write(trans->db->env, JOURNAL_INSTALL, step->pkg_name,
+                              step->pkg_version, JOURNAL_STATUS_FAILED, uid,
+                              step->explicit);
+                rollback_committed(trans, committed_idx, committed_count);
                 free(committed_idx);
                 keyring_free(kr);
+                trans->db->suppress_journal = false;
                 return TRANS_ERR_INSTALL_FAILED;
             }
 
             db_add(trans->db, pkg);
+            journal_write(trans->db->env, JOURNAL_INSTALL, step->pkg_name,
+                          step->pkg_version, JOURNAL_STATUS_OK, uid,
+                          step->explicit);
             committed_idx[committed_count++] = i;
         }
         else
         {
-            db_remove(trans->db, step->pkg_name);
+            bool ok = db_remove(trans->db, step->pkg_name);
+            journal_write(trans->db->env, JOURNAL_REMOVE, step->pkg_name,
+                          step->pkg_version,
+                          ok ? JOURNAL_STATUS_OK : JOURNAL_STATUS_FAILED, uid,
+                          step->explicit);
         }
     }
 
     free(committed_idx);
     keyring_free(kr);
+    trans->db->suppress_journal = false;
     trans->committed = true;
     return TRANS_OK;
 }

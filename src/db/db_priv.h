@@ -7,6 +7,9 @@
 #include <pthread.h>
 #include <stdbool.h>
 #include "../../include/apg/db.h"
+#include "../../include/apg/package.h"
+
+struct package *db_get(struct db_handle *db, const char *name);
 
 struct db_handle
 {
@@ -16,4 +19,6 @@ struct db_handle
     bool readonly;
     pthread_mutex_t write_lock;
     struct db_hooks hooks;
+    bool suppress_journal; /**< When true, db_add/db_remove skip journal_write.
+                                Used by trans_commit which journals manually. */
 };
