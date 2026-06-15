@@ -71,6 +71,8 @@ jobs:
           sudo sed -i '/^deb \[/!s/^deb /deb [arch=amd64] /' /etc/apt/sources.list
           sudo find /etc/apt/sources.list.d/ -name '*.list' \
             -exec sed -i '/^deb \[/!s/^deb /deb [arch=amd64] /' {} +
+          sudo find /etc/apt/sources.list.d/ -name '*.sources' \
+            -exec sed -i '/^Architectures:/d; /^Types:/i Architectures: amd64' {} +
           . /etc/os-release
           sudo tee /etc/apt/sources.list.d/arm64-ports.list << EOF
           deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports ${VERSION_CODENAME} main restricted universe
@@ -146,6 +148,8 @@ jobs:
           sudo sed -i '/^deb \[/!s/^deb /deb [arch=amd64] /' /etc/apt/sources.list
           sudo find /etc/apt/sources.list.d/ -name '*.list' \
             -exec sed -i '/^deb \[/!s/^deb /deb [arch=amd64] /' {} +
+          sudo find /etc/apt/sources.list.d/ -name '*.sources' \
+            -exec sed -i '/^Architectures:/d; /^Types:/i Architectures: amd64' {} +
           . /etc/os-release
           sudo tee /etc/apt/sources.list.d/riscv64-ports.list << EOF
           deb [arch=riscv64] http://ports.ubuntu.com/ubuntu-ports ${VERSION_CODENAME} main restricted universe
