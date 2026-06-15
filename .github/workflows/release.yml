@@ -108,7 +108,7 @@ jobs:
 
       - name: Build
         env:
-          PKG_CONFIG_PATH: /usr/lib/aarch64-linux-gnu/pkgconfig
+          PKG_CONFIG_LIBDIR: /usr/lib/aarch64-linux-gnu/pkgconfig:/usr/share/pkgconfig
         run: |
           meson setup build \
             --cross-file cross-aarch64.txt \
@@ -185,7 +185,7 @@ jobs:
 
       - name: Build
         env:
-          PKG_CONFIG_PATH: /usr/lib/riscv64-linux-gnu/pkgconfig
+          PKG_CONFIG_LIBDIR: /usr/lib/riscv64-linux-gnu/pkgconfig:/usr/share/pkgconfig
         run: |
           meson setup build \
             --cross-file cross-riscv64.txt \

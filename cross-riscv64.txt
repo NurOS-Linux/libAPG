@@ -1,10 +1,11 @@
 [binaries]
-c       = 'clang'
-cpp     = 'clang++'
-ar      = 'llvm-ar'
-strip   = 'llvm-strip'
-objcopy = 'llvm-objcopy'
-asm     = 'clang'
+c         = 'clang'
+cpp       = 'clang++'
+ar        = 'llvm-ar'
+strip     = 'llvm-strip'
+objcopy   = 'llvm-objcopy'
+asm       = 'clang'
+pkgconfig = 'pkg-config'
 
 [host_machine]
 system     = 'linux'
@@ -13,6 +14,8 @@ cpu        = 'riscv64'
 endian     = 'little'
 
 [properties]
+asm_args = ['-target', 'riscv64-linux-gnu', '-march=rv64gc_zknh']
+
+[built-in options]
 c_args      = ['-march=rv64gc_zknh', '-target', 'riscv64-linux-gnu']
 c_link_args = ['-fuse-ld=lld', '-target', 'riscv64-linux-gnu']
-asm_args    = ['-target', 'riscv64-linux-gnu', '-march=rv64gc_zknh']
