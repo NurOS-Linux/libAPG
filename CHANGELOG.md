@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- CI cross-compilation jobs for aarch64 and riscv64
+- Release workflow now produces `.apg` packages for all three architectures
+
+### Changed
+
+- Cross files (`cross-aarch64.txt`, `cross-riscv64.txt`) migrated `c_args` and
+  `c_link_args` to `[built-in options]`; added `pkgconfig` to `[binaries]`
+
 ## [1.5.0] - 2026-06-15
 
 ### Added
