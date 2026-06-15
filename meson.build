@@ -110,6 +110,11 @@ else
   error('Either gpgme or libsodium is required for package signing')
 endif
 
+seccomp_dep = dependency('libseccomp', required: false)
+if seccomp_dep.found()
+  add_project_arguments('-DAPG_HAVE_SECCOMP=1', language: 'c')
+endif
+
 libapg = library('apg', libapg_sources,
   include_directories: libapg_inc,
   dependencies: [
@@ -117,7 +122,7 @@ libapg = library('apg', libapg_sources,
     lmdb_dep,
     libyyjson_dep,
     threads_dep,
-  ] + sign_dep,
+  ] + sign_dep + (seccomp_dep.found() ? [seccomp_dep] : []),
   install: true,
 )
 

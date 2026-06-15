@@ -13,6 +13,7 @@ Package management library for NurOS.
 | [lmdb](https://www.symas.com/lmdb) | Embedded key-value database |
 | [yyjson](https://github.com/ibireme/yyjson) | JSON library |
 | [gpgme](https://www.gnupg.org/related_software/gpgme/) **or** [libsodium](https://libsodium.org/) | Package signing |
+| [libseccomp](https://github.com/seccomp/libseccomp) *(optional)* | Syscall filtering for install script sandbox |
 
 ## Signing backends
 

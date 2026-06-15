@@ -20,7 +20,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y \
             meson ninja-build pkg-config \
-            libarchive-dev liblmdb-dev libgpgme-dev
+            libarchive-dev liblmdb-dev libgpgme-dev libseccomp-dev
 
       - name: Install yyjson
         run: |
