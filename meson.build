@@ -20,6 +20,7 @@ libapg_sources = files(
   'src/db/owner.c',
   'src/db/journal.c',
   'src/db/audit.c',
+  'src/db/dependents.c',
   'src/json.c',
   'src/graph/graph.c',
   'src/graph/resolve.c',

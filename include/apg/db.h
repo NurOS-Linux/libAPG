@@ -130,3 +130,20 @@ struct package **db_list(struct db_handle *db, int *count);
  *         owns @p path. Caller must free() the returned string.
  */
 char *db_owner(struct db_handle *db, const char *path);
+
+/**
+ * @brief Find all installed packages that depend on a given package.
+ *
+ * Checks direct dependencies and virtual names listed in the target package's
+ * @c provides field, so removing a provider is flagged even when dependents
+ * name the virtual package rather than the real one.
+ *
+ * @param db       Database handle.
+ * @param pkg_name Name of the package being queried.
+ * @param count    Output parameter set to the number of dependents found.
+ * @return Heap-allocated array of heap-allocated package name strings, or NULL
+ *         on failure. Caller must free() each element and the array itself.
+ *         @p *count is set to 0 when no dependents are found.
+ */
+char **db_get_dependents(struct db_handle *db, const char *pkg_name,
+                         int *count);
