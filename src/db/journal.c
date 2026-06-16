@@ -6,11 +6,12 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdatomic.h>
 #include <lmdb.h>
 
 #include "../../include/apg/journal.h"
 
-static uint32_t seq_counter = 0;
+static _Atomic uint32_t seq_counter = 0;
 
 // Key layout: 8 bytes big-endian timestamp || 4 bytes big-endian sequence.
 // Big-endian ensures lexicographic order == chronological order.
@@ -84,7 +85,7 @@ journal_write(MDB_env *env, journal_op_t op, const char *pkg_name,
     }
 
     uint8_t raw_key[12];
-    pack_key(raw_key, time(NULL), seq_counter++);
+    pack_key(raw_key, time(NULL), atomic_fetch_add(&seq_counter, 1));
 
     char val[512];
     snprintf(val, sizeof(val), "%s|%s|%s|%s|%u|%d", op_to_str(op),
