@@ -22,8 +22,10 @@ extract_to_dir(const char *archive_path, const char *path_dest)
     archive_read_support_format_tar(a);
 
     struct archive *ext = archive_write_disk_new();
-    archive_write_disk_set_options(ext,
-                                   ARCHIVE_EXTRACT_TIME | ARCHIVE_EXTRACT_PERM);
+    archive_write_disk_set_options(ext, ARCHIVE_EXTRACT_TIME |
+                                            ARCHIVE_EXTRACT_PERM |
+                                            ARCHIVE_EXTRACT_SECURE_NODOTDOT |
+                                            ARCHIVE_EXTRACT_SECURE_SYMLINKS);
 
     if (archive_read_open_filename(a, archive_path, 10240) != ARCHIVE_OK)
     {
