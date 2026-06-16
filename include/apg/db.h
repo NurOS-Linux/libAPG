@@ -153,6 +153,21 @@ struct db_stats
 bool db_stats(struct db_handle *db, struct db_stats *out);
 
 /**
+ * @brief Find installed packages that were auto-installed and are no longer
+ *        required by any other installed package.
+ *
+ * A package is considered an orphan when its @c installed_by_hand field is
+ * false and no other installed package lists its name (or any of its
+ * @c provides entries) as a dependency.
+ *
+ * @param db    Database handle.
+ * @param count Output parameter set to the number of orphans found.
+ * @return Heap-allocated array of heap-allocated package name strings, or NULL
+ *         on failure. Caller must free() each element and the array itself.
+ */
+char **db_get_orphans(struct db_handle *db, int *count);
+
+/**
  * @brief Search installed packages by name or description substring.
  *
  * Matching is case-insensitive. An empty @p query returns NULL.
