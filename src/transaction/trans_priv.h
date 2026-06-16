@@ -33,6 +33,10 @@ struct apg_trans
     size_t conflict_count;
     size_t conflict_cap;
 
+    struct trans_blocked_remove *blocked_removes;
+    size_t blocked_remove_count;
+    size_t blocked_remove_cap;
+
     bool prepared;
     bool committed;
 

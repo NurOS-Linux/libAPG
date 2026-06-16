@@ -255,8 +255,55 @@ trans_prepare(struct apg_trans *trans)
 
     for (size_t i = 0; i < trans->remove_count; i++)
     {
-        trans_error_t perr = plan_push(
-            trans, TRANS_OP_REMOVE, trans->remove_names[i], NULL, true, NULL);
+        const char *name = trans->remove_names[i];
+
+        int dep_count = 0;
+        char **deps = db_get_dependents(trans->db, name, &dep_count);
+        if (deps && dep_count > 0)
+        {
+            if (!trans->blocked_removes)
+            {
+                trans->blocked_removes =
+                    malloc(4 * sizeof(*trans->blocked_removes));
+                if (!trans->blocked_removes)
+                {
+                    free(deps);
+                    ret = TRANS_ERR_NOMEM;
+                    goto cleanup;
+                }
+                trans->blocked_remove_cap = 4;
+            }
+            else if (trans->blocked_remove_count == trans->blocked_remove_cap)
+            {
+                size_t new_cap = trans->blocked_remove_cap * 2;
+                struct trans_blocked_remove *tmp =
+                    realloc(trans->blocked_removes, new_cap * sizeof(*tmp));
+                if (!tmp)
+                {
+                    free(deps);
+                    ret = TRANS_ERR_NOMEM;
+                    goto cleanup;
+                }
+                trans->blocked_removes = tmp;
+                trans->blocked_remove_cap = new_cap;
+            }
+
+            struct trans_blocked_remove *br =
+                &trans->blocked_removes[trans->blocked_remove_count++];
+            br->pkg_name = strdup(name);
+            br->dependents = deps;
+            br->dependent_count = dep_count;
+            if (!br->pkg_name)
+            {
+                ret = TRANS_ERR_NOMEM;
+                goto cleanup;
+            }
+            continue;
+        }
+        free(deps);
+
+        trans_error_t perr =
+            plan_push(trans, TRANS_OP_REMOVE, name, NULL, true, NULL);
         if (perr != TRANS_OK)
         {
             ret = perr;
@@ -264,7 +311,9 @@ trans_prepare(struct apg_trans *trans)
         }
     }
 
-    if (trans->conflict_count > 0)
+    if (trans->blocked_remove_count > 0)
+        ret = TRANS_ERR_HAS_DEPENDENTS;
+    else if (trans->conflict_count > 0)
         ret = TRANS_ERR_CONFLICT;
     else
         trans->prepared = true;

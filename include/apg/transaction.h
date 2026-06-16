@@ -51,6 +51,7 @@ typedef enum
     TRANS_ERR_ALREADY_COMMITTED, /**< trans_commit() called more than once. */
     TRANS_ERR_INSTALL_FAILED,    /**< One or more packages failed to install. */
     TRANS_ERR_UNSIGNED,          /**< Package rejected by signature policy. */
+    TRANS_ERR_HAS_DEPENDENTS, /**< Removal blocked by installed dependents. */
 } trans_error_t;
 
 /**
@@ -75,6 +76,18 @@ struct trans_conflict
 {
     char *pkg_name;       /**< Package being installed or removed. */
     char *conflicts_with; /**< Existing package that conflicts with it. */
+};
+
+/**
+ * @brief A removal blocked by installed dependents.
+ *
+ * The array is owned by the transaction and valid until trans_free().
+ */
+struct trans_blocked_remove
+{
+    char *pkg_name;    /**< Package that cannot be removed. */
+    char **dependents; /**< Names of packages that depend on it. */
+    int dependent_count;
 };
 
 /**
@@ -184,6 +197,20 @@ const struct trans_step *trans_get_plan(const struct apg_trans *trans,
  */
 const struct trans_conflict *trans_get_conflicts(const struct apg_trans *trans,
                                                  size_t *count);
+
+/**
+ * @brief Retrieve removals blocked by installed dependents.
+ *
+ * Valid after a trans_prepare() call that returned
+ * @ref TRANS_ERR_HAS_DEPENDENTS. The returned array is owned by the
+ * transaction and valid until trans_free().
+ *
+ * @param trans Transaction after trans_prepare().
+ * @param count Output parameter set to the number of blocked removes.
+ * @return Pointer to the first entry, or NULL if none.
+ */
+const struct trans_blocked_remove *
+trans_get_blocked_removes(const struct apg_trans *trans, size_t *count);
 
 /**
  * @brief Execute the prepared plan.

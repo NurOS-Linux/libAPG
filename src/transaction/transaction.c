@@ -93,6 +93,15 @@ trans_free(struct apg_trans *trans)
     }
     free(trans->conflicts);
 
+    for (size_t i = 0; i < trans->blocked_remove_count; i++)
+    {
+        free(trans->blocked_removes[i].pkg_name);
+        for (int j = 0; j < trans->blocked_removes[i].dependent_count; j++)
+            free(trans->blocked_removes[i].dependents[j]);
+        free(trans->blocked_removes[i].dependents);
+    }
+    free(trans->blocked_removes);
+
     free(trans);
 }
 
@@ -168,6 +177,15 @@ trans_get_plan(const struct apg_trans *trans, size_t *count)
         return NULL;
     *count = trans->plan_count;
     return trans->plan;
+}
+
+const struct trans_blocked_remove *
+trans_get_blocked_removes(const struct apg_trans *trans, size_t *count)
+{
+    if (!trans || !count)
+        return NULL;
+    *count = trans->blocked_remove_count;
+    return trans->blocked_removes;
 }
 
 const struct trans_conflict *
