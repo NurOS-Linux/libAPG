@@ -14,6 +14,17 @@ All notable changes to this project will be documented in this file.
 - Cross files (`cross-aarch64.txt`, `cross-riscv64.txt`) migrated `c_args` and
   `c_link_args` to `[built-in options]`; added `pkgconfig` to `[binaries]`
 
+## [1.6.0] - 2026-06-16
+
+### Added
+
+- `db_search()` — case-insensitive substring search across package name and
+  description
+- `db_stats()` — O(1) installed package count plus total file count via
+  file-index scan
+- `trans_add_upgrade()` — upgrade operation in transactions; installs a new
+  package version over the existing one in a single atomic step
+
 ## [1.5.1] - 2026-06-16
 
 ### Added

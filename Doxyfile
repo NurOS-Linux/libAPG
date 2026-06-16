@@ -1,6 +1,6 @@
 DOXYFILE_ENCODING      = UTF-8
 PROJECT_NAME           = libapg
-PROJECT_NUMBER         = 1.4.0
+PROJECT_NUMBER         = 1.6.0
 PROJECT_BRIEF          = "Package management library"
 OUTPUT_DIRECTORY       = docs/_doxygen
 INPUT                  = include/
