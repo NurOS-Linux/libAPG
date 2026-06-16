@@ -7,6 +7,7 @@
 #include "trans_priv.h"
 #include "../../include/apg/graph.h"
 #include "../../include/apg/db.h"
+#include "../../include/apg/package.h"
 
 static bool
 in_strarray(const char **arr, size_t count, const char *name)
@@ -311,7 +312,72 @@ trans_prepare(struct apg_trans *trans)
         }
     }
 
-    if (trans->blocked_remove_count > 0)
+    for (size_t i = 0; i < trans->install_count; i++)
+    {
+        struct package *pkg = trans->install_pkgs[i];
+        if (!pkg->meta || !pkg->meta->name)
+            continue;
+
+        if (pkg->package_files.count == 0)
+            package_collect_files(pkg, "/");
+
+        for (int j = 0; j < pkg->package_files.count; j++)
+        {
+            const char *path = pkg->package_files.items[j];
+            if (!path)
+                continue;
+            char *owner = db_owner(trans->db, path);
+            if (!owner)
+                continue;
+            if (strcmp(owner, pkg->meta->name) == 0)
+            {
+                free(owner);
+                continue;
+            }
+
+            if (!trans->file_conflicts)
+            {
+                trans->file_conflicts =
+                    malloc(4 * sizeof(*trans->file_conflicts));
+                if (!trans->file_conflicts)
+                {
+                    free(owner);
+                    ret = TRANS_ERR_NOMEM;
+                    goto cleanup;
+                }
+                trans->file_conflict_cap = 4;
+            }
+            else if (trans->file_conflict_count == trans->file_conflict_cap)
+            {
+                size_t new_cap = trans->file_conflict_cap * 2;
+                struct trans_file_conflict *tmp =
+                    realloc(trans->file_conflicts, new_cap * sizeof(*tmp));
+                if (!tmp)
+                {
+                    free(owner);
+                    ret = TRANS_ERR_NOMEM;
+                    goto cleanup;
+                }
+                trans->file_conflicts = tmp;
+                trans->file_conflict_cap = new_cap;
+            }
+
+            struct trans_file_conflict *fc =
+                &trans->file_conflicts[trans->file_conflict_count++];
+            fc->path = strdup(path);
+            fc->requested_by = strdup(pkg->meta->name);
+            fc->owned_by = owner;
+            if (!fc->path || !fc->requested_by)
+            {
+                ret = TRANS_ERR_NOMEM;
+                goto cleanup;
+            }
+        }
+    }
+
+    if (trans->file_conflict_count > 0)
+        ret = TRANS_ERR_FILE_CONFLICT;
+    else if (trans->blocked_remove_count > 0)
         ret = TRANS_ERR_HAS_DEPENDENTS;
     else if (trans->conflict_count > 0)
         ret = TRANS_ERR_CONFLICT;

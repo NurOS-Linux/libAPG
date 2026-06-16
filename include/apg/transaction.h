@@ -52,6 +52,7 @@ typedef enum
     TRANS_ERR_INSTALL_FAILED,    /**< One or more packages failed to install. */
     TRANS_ERR_UNSIGNED,          /**< Package rejected by signature policy. */
     TRANS_ERR_HAS_DEPENDENTS, /**< Removal blocked by installed dependents. */
+    TRANS_ERR_FILE_CONFLICT,  /**< File already owned by another package. */
 } trans_error_t;
 
 /**
@@ -76,6 +77,18 @@ struct trans_conflict
 {
     char *pkg_name;       /**< Package being installed or removed. */
     char *conflicts_with; /**< Existing package that conflicts with it. */
+};
+
+/**
+ * @brief A file conflict between a package being installed and an existing one.
+ *
+ * The array is owned by the transaction and valid until trans_free().
+ */
+struct trans_file_conflict
+{
+    char *path;         /**< Conflicting file path. */
+    char *requested_by; /**< Package being installed that claims the file. */
+    char *owned_by;     /**< Currently installed package that owns the file. */
 };
 
 /**
@@ -211,6 +224,20 @@ const struct trans_conflict *trans_get_conflicts(const struct apg_trans *trans,
  */
 const struct trans_blocked_remove *
 trans_get_blocked_removes(const struct apg_trans *trans, size_t *count);
+
+/**
+ * @brief Retrieve file conflicts detected by trans_prepare().
+ *
+ * Valid after a trans_prepare() call that returned
+ * @ref TRANS_ERR_FILE_CONFLICT. The returned array is owned by the transaction
+ * and valid until trans_free().
+ *
+ * @param trans Transaction after trans_prepare().
+ * @param count Output parameter set to the number of conflicts.
+ * @return Pointer to the first entry, or NULL if none.
+ */
+const struct trans_file_conflict *
+trans_get_file_conflicts(const struct apg_trans *trans, size_t *count);
 
 /**
  * @brief Execute the prepared plan.

@@ -102,6 +102,14 @@ trans_free(struct apg_trans *trans)
     }
     free(trans->blocked_removes);
 
+    for (size_t i = 0; i < trans->file_conflict_count; i++)
+    {
+        free(trans->file_conflicts[i].path);
+        free(trans->file_conflicts[i].requested_by);
+        free(trans->file_conflicts[i].owned_by);
+    }
+    free(trans->file_conflicts);
+
     free(trans);
 }
 
@@ -177,6 +185,15 @@ trans_get_plan(const struct apg_trans *trans, size_t *count)
         return NULL;
     *count = trans->plan_count;
     return trans->plan;
+}
+
+const struct trans_file_conflict *
+trans_get_file_conflicts(const struct apg_trans *trans, size_t *count)
+{
+    if (!trans || !count)
+        return NULL;
+    *count = trans->file_conflict_count;
+    return trans->file_conflicts;
 }
 
 const struct trans_blocked_remove *

@@ -37,6 +37,10 @@ struct apg_trans
     size_t blocked_remove_count;
     size_t blocked_remove_cap;
 
+    struct trans_file_conflict *file_conflicts;
+    size_t file_conflict_count;
+    size_t file_conflict_cap;
+
     bool prepared;
     bool committed;
 

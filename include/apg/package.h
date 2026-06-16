@@ -122,6 +122,20 @@ bool install_package(struct package *pkg);
 bool install_package_in_root(struct package *pkg, const char *root_path);
 
 /**
+ * @brief Extract a package archive and collect its file list without
+ *        installing any files.
+ *
+ * Populates @p pkg->package_files so callers can inspect which paths the
+ * package would install before committing to a transaction. Safe to call
+ * multiple times — existing file list is replaced.
+ *
+ * @param pkg       Package whose archive to inspect.
+ * @param root_path Filesystem root used to locate the temporary work area.
+ * @return true on success, false if the archive could not be extracted.
+ */
+bool package_collect_files(struct package *pkg, const char *root_path);
+
+/**
  * @brief Parse a package from disk.
  *
  * @param path      Path to the package archive.

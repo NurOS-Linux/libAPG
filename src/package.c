@@ -156,6 +156,38 @@ install_package_in_root(struct package *pkg, const char *root_path)
     return true;
 }
 
+bool
+package_collect_files(struct package *pkg, const char *root_path)
+{
+    if (!pkg || !pkg->pkg_path)
+        return false;
+
+    char *real_tmp = concat_dirs(root_path, tmp_path);
+    if (!real_tmp)
+        return false;
+    create_dir(real_tmp);
+
+    if (!unarchive_package_in_root(pkg, real_tmp))
+    {
+        free(real_tmp);
+        return false;
+    }
+
+    char *data_src = concat_dirs(real_tmp, "data");
+    free(real_tmp);
+    if (!data_src)
+        return false;
+
+    int file_count = 0;
+    char **files = collect_files(data_src, &file_count);
+    free(data_src);
+
+    str_list_free(&pkg->package_files);
+    pkg->package_files.items = files;
+    pkg->package_files.count = file_count;
+    return true;
+}
+
 struct package *
 parse_package(const char *path, const char *root_path)
 {
