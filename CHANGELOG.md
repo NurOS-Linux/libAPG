@@ -14,6 +14,27 @@ All notable changes to this project will be documented in this file.
 - Cross files (`cross-aarch64.txt`, `cross-riscv64.txt`) migrated `c_args` and
   `c_link_args` to `[built-in options]`; added `pkgconfig` to `[binaries]`
 
+## [1.5.1] - 2026-06-16
+
+### Added
+
+- `db_get_dependents()` — reverse dependency lookup; checks both direct name
+  and virtual names from the `provides` field
+
+### Fixed
+
+- **Security:** archive extraction now sets `ARCHIVE_EXTRACT_SECURE_NODOTDOT`
+  and `ARCHIVE_EXTRACT_SECURE_SYMLINKS` to prevent path traversal (Zip Slip)
+  via malicious package archives
+- `rollback_committed()` now removes installed files from disk on transaction
+  failure, not just the database records
+- `journal_write` uses an atomic sequence counter to prevent a data race under
+  concurrent `db_add`/`db_remove` calls
+- `copy_file` now checks `fwrite` return value and propagates write errors
+  instead of silently returning success on partial writes
+- `db_get_dependents` checks `strdup` return value to avoid storing NULL in
+  the result array under OOM
+
 ## [1.5.0] - 2026-06-15
 
 ### Added
