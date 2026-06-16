@@ -130,6 +130,49 @@ trans_commit(struct apg_trans *trans, const char *root_path)
                           step->explicit);
             committed_idx[committed_count++] = i;
         }
+        else if (step->op == TRANS_OP_UPGRADE)
+        {
+            struct package *pkg = trans->plan_pkgs[i];
+
+            if (kr)
+            {
+                char sig_path[PATH_MAX];
+                if (!pkg->pkg_path ||
+                    snprintf(sig_path, sizeof(sig_path), "%s.sig",
+                             pkg->pkg_path) >= (int)sizeof(sig_path) ||
+                    !keyring_verify(kr, pkg->pkg_path, sig_path))
+                {
+                    journal_write(trans->db->env, JOURNAL_INSTALL,
+                                  step->pkg_name, step->pkg_version,
+                                  JOURNAL_STATUS_FAILED, uid, step->explicit);
+                    rollback_committed(trans, committed_idx, committed_count,
+                                       root_path);
+                    free(committed_idx);
+                    keyring_free(kr);
+                    trans->db->suppress_journal = false;
+                    return TRANS_ERR_UNSIGNED;
+                }
+            }
+
+            if (!install_package_in_root(pkg, root_path))
+            {
+                journal_write(trans->db->env, JOURNAL_INSTALL, step->pkg_name,
+                              step->pkg_version, JOURNAL_STATUS_FAILED, uid,
+                              step->explicit);
+                rollback_committed(trans, committed_idx, committed_count,
+                                   root_path);
+                free(committed_idx);
+                keyring_free(kr);
+                trans->db->suppress_journal = false;
+                return TRANS_ERR_INSTALL_FAILED;
+            }
+
+            db_add(trans->db, pkg);
+            journal_write(trans->db->env, JOURNAL_INSTALL, step->pkg_name,
+                          step->pkg_version, JOURNAL_STATUS_OK, uid,
+                          step->explicit);
+            committed_idx[committed_count++] = i;
+        }
         else
         {
             bool ok = db_remove(trans->db, step->pkg_name);

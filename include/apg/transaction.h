@@ -33,6 +33,7 @@ typedef enum
 {
     TRANS_OP_INSTALL, /**< Install a package. */
     TRANS_OP_REMOVE,  /**< Remove a package. */
+    TRANS_OP_UPGRADE, /**< Replace an installed package with a newer version. */
 } trans_op_t;
 
 /**
@@ -131,6 +132,20 @@ trans_error_t trans_add_install(struct apg_trans *trans, struct package *pkg);
  * @return @ref TRANS_OK, or an error code.
  */
 trans_error_t trans_add_remove(struct apg_trans *trans, const char *pkg_name);
+
+/**
+ * @brief Queue a package for upgrade.
+ *
+ * The installed package with the same name as @p pkg is replaced in the
+ * database and on disk. Files removed between versions are not cleaned up —
+ * only the new version's files are written. The transaction borrows @p pkg;
+ * the caller retains ownership.
+ *
+ * @param trans Transaction to modify.
+ * @param pkg   New version of the package to install.
+ * @return @ref TRANS_OK, or an error code.
+ */
+trans_error_t trans_add_upgrade(struct apg_trans *trans, struct package *pkg);
 
 /**
  * @brief Resolve dependencies, detect conflicts, and build the execution plan.

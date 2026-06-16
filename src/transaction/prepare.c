@@ -150,6 +150,9 @@ trans_prepare(struct apg_trans *trans)
     for (size_t i = 0; i < trans->install_count; i++)
         dep_graph_add(g, trans->install_pkgs[i]->meta);
 
+    for (size_t i = 0; i < trans->upgrade_count; i++)
+        dep_graph_add(g, trans->upgrade_pkgs[i]->meta);
+
     for (int i = 0; i < installed_count; i++)
         if (installed[i]->meta)
             dep_graph_add(g, installed[i]->meta);
@@ -234,6 +237,20 @@ trans_prepare(struct apg_trans *trans)
             }
         }
         free(breaks);
+    }
+
+    for (size_t i = 0; i < trans->upgrade_count; i++)
+    {
+        struct package *pkg = trans->upgrade_pkgs[i];
+        const char *name = pkg->meta->name;
+        const char *version = pkg->meta->version;
+        trans_error_t perr =
+            plan_push(trans, TRANS_OP_UPGRADE, name, version, true, pkg);
+        if (perr != TRANS_OK)
+        {
+            ret = perr;
+            goto cleanup;
+        }
     }
 
     for (size_t i = 0; i < trans->remove_count; i++)

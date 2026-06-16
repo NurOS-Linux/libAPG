@@ -13,6 +13,10 @@ struct apg_trans
     size_t install_count;
     size_t install_cap;
 
+    struct package **upgrade_pkgs;
+    size_t upgrade_count;
+    size_t upgrade_cap;
+
     char **remove_names;
     size_t remove_count;
     size_t remove_cap;
