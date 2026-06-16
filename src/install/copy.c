@@ -27,12 +27,21 @@ copy_file(const char *src, const char *dst)
 
     char buf[4096];
     size_t n;
+    bool ok = true;
     while ((n = fread(buf, 1, sizeof(buf), in)) > 0)
-        fwrite(buf, 1, n, out);
+    {
+        if (fwrite(buf, 1, n, out) != n)
+        {
+            ok = false;
+            break;
+        }
+    }
+    if (ferror(in))
+        ok = false;
 
     fclose(in);
     fclose(out);
-    return true;
+    return ok;
 }
 
 bool
