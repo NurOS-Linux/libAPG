@@ -12,16 +12,36 @@
 #include "../../include/apg/db.h"
 #include "../../include/apg/journal.h"
 #include "../../include/apg/keyring.h"
+#include "../../include/util.h"
 
 #define DEFAULT_KEYRING_DIR "/etc/apg/trusted.d"
 
 static void
 rollback_committed(struct apg_trans *trans, size_t *committed_idx,
-                   size_t committed_count)
+                   size_t committed_count, const char *root_path)
 {
     for (size_t j = committed_count; j-- > 0;)
     {
-        struct trans_step *s = &trans->plan[committed_idx[j]];
+        size_t idx = committed_idx[j];
+        struct trans_step *s = &trans->plan[idx];
+        struct package *pkg = trans->plan_pkgs[idx];
+
+        if (pkg && root_path)
+        {
+            const struct str_list *files = &pkg->package_files;
+            for (int k = 0; k < files->count; k++)
+            {
+                if (!files->items[k])
+                    continue;
+                char *path = concat_dirs(root_path, files->items[k]);
+                if (path)
+                {
+                    unlink(path);
+                    free(path);
+                }
+            }
+        }
+
         db_remove(trans->db, s->pkg_name);
         journal_write(trans->db->env, JOURNAL_ROLLBACK, s->pkg_name,
                       s->pkg_version, JOURNAL_STATUS_OK, getuid(), false);
@@ -82,7 +102,8 @@ trans_commit(struct apg_trans *trans, const char *root_path)
                     journal_write(trans->db->env, JOURNAL_INSTALL,
                                   step->pkg_name, step->pkg_version,
                                   JOURNAL_STATUS_FAILED, uid, step->explicit);
-                    rollback_committed(trans, committed_idx, committed_count);
+                    rollback_committed(trans, committed_idx, committed_count,
+                                       root_path);
                     free(committed_idx);
                     keyring_free(kr);
                     trans->db->suppress_journal = false;
@@ -95,7 +116,8 @@ trans_commit(struct apg_trans *trans, const char *root_path)
                 journal_write(trans->db->env, JOURNAL_INSTALL, step->pkg_name,
                               step->pkg_version, JOURNAL_STATUS_FAILED, uid,
                               step->explicit);
-                rollback_committed(trans, committed_idx, committed_count);
+                rollback_committed(trans, committed_idx, committed_count,
+                                   root_path);
                 free(committed_idx);
                 keyring_free(kr);
                 trans->db->suppress_journal = false;
