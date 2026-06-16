@@ -69,7 +69,10 @@ db_get_dependents(struct db_handle *db, const char *pkg_name, int *count)
                 break;
             result = tmp;
         }
-        result[(*count)++] = strdup(p->meta->name);
+        char *name = strdup(p->meta->name);
+        if (!name)
+            break;
+        result[(*count)++] = name;
     }
 
 out:
