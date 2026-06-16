@@ -15,7 +15,7 @@
 #include "../../include/apg/keyring.h"
 #include "../../include/util.h"
 
-#define DEFAULT_KEYRING_DIR "/etc/apg/trusted.d"
+#define DEFAULT_KEYRING_DIR APG_KEYRING_DIR
 
 struct conf_backup
 {

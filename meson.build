@@ -36,6 +36,14 @@ libapg_sources = files(
 
 add_project_arguments('-D_GNU_SOURCE', language: 'c')
 
+add_project_arguments(
+  '-DAPG_KEYRING_DIR="' + get_option('keyring_dir') + '"',
+  '-DAPG_KEYS_DIR="' + get_option('keys_dir') + '"',
+  '-DAPG_TMP_DIR="' + get_option('tmp_dir') + '"',
+  '-DAPG_DB_MAPSIZE=' + get_option('db_mapsize').to_string(),
+  language: 'c',
+)
+
 libapg_inc = include_directories('include')
 
 cc = meson.get_compiler('c')

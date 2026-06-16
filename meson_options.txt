@@ -1,0 +1,23 @@
+option('keyring_dir',
+  type: 'string',
+  value: '/etc/apg/trusted.d',
+  description: 'Default directory for trusted signing keys',
+)
+
+option('keys_dir',
+  type: 'string',
+  value: '/etc/apg/keys',
+  description: 'Default directory for libsodium key files',
+)
+
+option('tmp_dir',
+  type: 'string',
+  value: '/tmp/apg',
+  description: 'Temporary directory used during package extraction',
+)
+
+option('db_mapsize',
+  type: 'integer',
+  value: 10485760,
+  description: 'LMDB environment map size in bytes (default: 10 MiB)',
+)

@@ -19,7 +19,7 @@ open_env(const char *path, unsigned int extra_flags)
         goto fail;
     mdb_env_set_maxdbs(db->env, 2);
     mdb_env_set_maxreaders(db->env, 256);
-    mdb_env_set_mapsize(db->env, 10485760);
+    mdb_env_set_mapsize(db->env, APG_DB_MAPSIZE);
 
     // MDB_NOTLS: read transactions are not tied to a thread, safe for
     // concurrent use

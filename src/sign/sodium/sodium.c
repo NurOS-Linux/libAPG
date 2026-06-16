@@ -8,7 +8,7 @@
 
 #include "../../../include/apg/sign.h"
 
-static const char *key_path = "/etc/apg/keys/";
+static const char *key_path = APG_KEYS_DIR "/";
 
 // libsodium uses Ed25519, which is ECC. allow_rsa has no effect here but is
 // kept for interface compatibility.

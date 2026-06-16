@@ -17,7 +17,7 @@
 #include "../include/apg/json.h"
 #include "../include/util.h"
 
-static const char *tmp_path = "/tmp/apg/";
+static const char *tmp_path = APG_TMP_DIR "/";
 
 struct package_metadata *
 package_metadata_new(void)
