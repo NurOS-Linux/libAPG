@@ -132,6 +132,19 @@ struct package **db_list(struct db_handle *db, int *count);
 char *db_owner(struct db_handle *db, const char *path);
 
 /**
+ * @brief Search installed packages by name or description substring.
+ *
+ * Matching is case-insensitive. An empty @p query returns NULL.
+ *
+ * @param db    Database handle.
+ * @param query Substring to search for.
+ * @param count Output parameter set to the number of matching packages.
+ * @return Heap-allocated array of heap-allocated packages, or NULL on failure.
+ *         Caller must call package_free() on each element and free() the array.
+ */
+struct package **db_search(struct db_handle *db, const char *query, int *count);
+
+/**
  * @brief Find all installed packages that depend on a given package.
  *
  * Checks direct dependencies and virtual names listed in the target package's
