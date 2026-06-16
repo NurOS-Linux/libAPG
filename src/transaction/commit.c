@@ -124,6 +124,7 @@ trans_commit(struct apg_trans *trans, const char *root_path)
                 return TRANS_ERR_INSTALL_FAILED;
             }
 
+            pkg->installed_by_hand = step->explicit;
             db_add(trans->db, pkg);
             journal_write(trans->db->env, JOURNAL_INSTALL, step->pkg_name,
                           step->pkg_version, JOURNAL_STATUS_OK, uid,
@@ -167,6 +168,7 @@ trans_commit(struct apg_trans *trans, const char *root_path)
                 return TRANS_ERR_INSTALL_FAILED;
             }
 
+            pkg->installed_by_hand = step->explicit;
             db_add(trans->db, pkg);
             journal_write(trans->db->env, JOURNAL_INSTALL, step->pkg_name,
                           step->pkg_version, JOURNAL_STATUS_OK, uid,

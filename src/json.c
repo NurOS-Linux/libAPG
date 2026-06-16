@@ -173,6 +173,10 @@ package_from_json(const char *json, size_t len)
         return NULL;
     }
 
+    yyjson_val *ibh = yyjson_obj_get(root, "installed_by_hand");
+    if (yyjson_is_bool(ibh))
+        pkg->installed_by_hand = yyjson_get_bool(ibh);
+
     yyjson_doc_free(doc);
     return pkg;
 }
@@ -228,6 +232,9 @@ package_to_json(struct package *pkg)
     yyjson_mut_obj_add_str(doc, root, "license", m->license ? m->license : "");
     yyjson_mut_obj_add_str(doc, root, "homepage",
                            m->homepage ? m->homepage : "");
+
+    yyjson_mut_obj_add_bool(doc, root, "installed_by_hand",
+                            pkg->installed_by_hand);
 
     add_str_array(doc, root, "tags", &m->tags);
     add_dep_array(doc, root, "dependencies", &m->dependencies);
