@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <limits.h>
 #include <stdio.h>
+#include <string.h>
 #include <unistd.h>
 
 #include "trans_priv.h"
@@ -15,6 +16,94 @@
 #include "../../include/util.h"
 
 #define DEFAULT_KEYRING_DIR "/etc/apg/trusted.d"
+
+struct conf_backup
+{
+    char *path;
+    void *data;
+    size_t size;
+};
+
+static struct conf_backup *
+save_confs(const struct package *pkg, const char *root_path, int *count)
+{
+    *count = 0;
+    const struct str_list *conf = &pkg->meta->conf;
+    if (!conf->count)
+        return NULL;
+
+    struct conf_backup *bk = malloc(conf->count * sizeof(*bk));
+    if (!bk)
+        return NULL;
+
+    for (int i = 0; i < conf->count; i++)
+    {
+        if (!conf->items[i])
+            continue;
+        char *full = concat_dirs(root_path, conf->items[i]);
+        if (!full)
+            continue;
+
+        FILE *f = fopen(full, "rb");
+        if (!f)
+        {
+            free(full);
+            continue;
+        }
+        fseek(f, 0, SEEK_END);
+        long sz = ftell(f);
+        fseek(f, 0, SEEK_SET);
+
+        void *data = malloc((size_t)sz);
+        if (!data || fread(data, 1, (size_t)sz, f) != (size_t)sz)
+        {
+            free(data);
+            fclose(f);
+            free(full);
+            continue;
+        }
+        fclose(f);
+
+        bk[*count].path = full;
+        bk[*count].data = data;
+        bk[*count].size = (size_t)sz;
+        (*count)++;
+    }
+    return bk;
+}
+
+static void
+restore_confs(struct conf_backup *bk, int count, const char *root_path)
+{
+    (void)root_path;
+    for (int i = 0; i < count; i++)
+    {
+        char apg_new[PATH_MAX];
+        snprintf(apg_new, sizeof(apg_new), "%s.apg-new", bk[i].path);
+        rename(bk[i].path, apg_new);
+
+        FILE *f = fopen(bk[i].path, "wb");
+        if (f)
+        {
+            fwrite(bk[i].data, 1, bk[i].size, f);
+            fclose(f);
+        }
+        free(bk[i].path);
+        free(bk[i].data);
+    }
+    free(bk);
+}
+
+static void
+free_confs(struct conf_backup *bk, int count)
+{
+    for (int i = 0; i < count; i++)
+    {
+        free(bk[i].path);
+        free(bk[i].data);
+    }
+    free(bk);
+}
 
 static void
 rollback_committed(struct apg_trans *trans, size_t *committed_idx,
@@ -155,8 +244,13 @@ trans_commit(struct apg_trans *trans, const char *root_path)
                 }
             }
 
+            int conf_count = 0;
+            struct conf_backup *conf_bk =
+                save_confs(pkg, root_path, &conf_count);
+
             if (!install_package_in_root(pkg, root_path))
             {
+                free_confs(conf_bk, conf_count);
                 journal_write(trans->db->env, JOURNAL_INSTALL, step->pkg_name,
                               step->pkg_version, JOURNAL_STATUS_FAILED, uid,
                               step->explicit);
@@ -167,6 +261,9 @@ trans_commit(struct apg_trans *trans, const char *root_path)
                 trans->db->suppress_journal = false;
                 return TRANS_ERR_INSTALL_FAILED;
             }
+
+            if (conf_bk)
+                restore_confs(conf_bk, conf_count, root_path);
 
             pkg->installed_by_hand = step->explicit;
             db_add(trans->db, pkg);
