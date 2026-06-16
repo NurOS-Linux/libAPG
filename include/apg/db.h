@@ -132,6 +132,27 @@ struct package **db_list(struct db_handle *db, int *count);
 char *db_owner(struct db_handle *db, const char *path);
 
 /**
+ * @brief Aggregate statistics about the installed package database.
+ */
+struct db_stats
+{
+    int package_count; /**< Number of installed packages. */
+    int file_count;    /**< Total number of files across all packages. */
+};
+
+/**
+ * @brief Populate a @ref db_stats structure with current database statistics.
+ *
+ * @p package_count is derived in O(1) from the LMDB page tree. @p file_count
+ * requires a full scan of the file index.
+ *
+ * @param db  Database handle.
+ * @param out Output structure to populate.
+ * @return true on success, false if the database could not be queried.
+ */
+bool db_stats(struct db_handle *db, struct db_stats *out);
+
+/**
  * @brief Search installed packages by name or description substring.
  *
  * Matching is case-insensitive. An empty @p query returns NULL.
