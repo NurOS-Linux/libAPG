@@ -14,6 +14,27 @@
 #include "../../include/apg/json.h"
 #include "../../include/apg/journal.h"
 
+static void
+delete_file_owner_entries(struct db_handle *db, MDB_txn *txn, const char *fdata,
+                          size_t flen)
+{
+    if (!db->file_owner_dbi_open || !fdata || flen == 0)
+        return;
+    const char *p = fdata, *end = fdata + flen;
+    while (p < end)
+    {
+        const char *nl = memchr(p, '\n', (size_t)(end - p));
+        if (!nl)
+            break;
+        if (nl > p)
+        {
+            MDB_val okey = {(size_t)(nl - p), (void *)p};
+            mdb_del(txn, db->file_owner_dbi, &okey, NULL);
+        }
+        p = nl + 1;
+    }
+}
+
 static char *
 serialize_files(const struct str_list *files)
 {
@@ -68,15 +89,31 @@ db_add(struct db_handle *db, struct package *pkg)
                 ok = mdb_put(txn, dbi, &key, &data, 0) == MDB_SUCCESS;
                 free(json);
             }
-            if (ok && db->files_dbi_open && pkg->package_files.count > 0)
+            if (ok && pkg->package_files.count > 0)
             {
-                char *fdata = serialize_files(&pkg->package_files);
-                if (fdata)
+                if (db->files_dbi_open)
                 {
-                    MDB_val fkey = {strlen(pkg->meta->name), pkg->meta->name};
-                    MDB_val fval = {strlen(fdata), fdata};
-                    mdb_put(txn, db->files_dbi, &fkey, &fval, 0);
-                    free(fdata);
+                    char *fdata = serialize_files(&pkg->package_files);
+                    if (fdata)
+                    {
+                        MDB_val fkey = {strlen(pkg->meta->name),
+                                        pkg->meta->name};
+                        MDB_val fval = {strlen(fdata), fdata};
+                        mdb_put(txn, db->files_dbi, &fkey, &fval, 0);
+                        free(fdata);
+                    }
+                }
+                if (db->file_owner_dbi_open)
+                {
+                    MDB_val oval = {strlen(pkg->meta->name), pkg->meta->name};
+                    for (int fi = 0; fi < pkg->package_files.count; fi++)
+                    {
+                        const char *fp = pkg->package_files.items[fi];
+                        if (!fp)
+                            continue;
+                        MDB_val okey = {strlen(fp), (void *)fp};
+                        mdb_put(txn, db->file_owner_dbi, &okey, &oval, 0);
+                    }
                 }
             }
             if (ok)
@@ -135,7 +172,13 @@ db_remove(struct db_handle *db, const char *pkg_name)
             MDB_val key = {strlen(pkg_name), (void *)pkg_name};
             ok = mdb_del(txn, dbi, &key, NULL) == MDB_SUCCESS;
             if (ok && db->files_dbi_open)
+            {
+                MDB_val fdata;
+                if (mdb_get(txn, db->files_dbi, &key, &fdata) == MDB_SUCCESS)
+                    delete_file_owner_entries(db, txn, fdata.mv_data,
+                                              fdata.mv_size);
                 mdb_del(txn, db->files_dbi, &key, NULL);
+            }
             if (ok)
                 mdb_txn_commit(txn);
             else

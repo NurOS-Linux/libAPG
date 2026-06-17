@@ -3,41 +3,28 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <lmdb.h>
 
 #include "db_priv.h"
 #include "../../include/apg/db.h"
-#include "../../include/apg/package.h"
 
 char *
 db_owner(struct db_handle *db, const char *path)
 {
-    if (!db || !path)
+    if (!db || !path || !db->file_owner_dbi_open)
         return NULL;
 
-    int count = 0;
-    struct package **pkgs = db_list(db, &count);
-    if (!pkgs)
+    MDB_txn *txn;
+    if (mdb_txn_begin(db->env, NULL, MDB_RDONLY, &txn) != MDB_SUCCESS)
         return NULL;
 
+    MDB_val key = {strlen(path), (void *)path};
+    MDB_val val;
     char *owner = NULL;
-    for (int i = 0; i < count && !owner; i++)
-    {
-        struct package *pkg = pkgs[i];
-        if (!pkg->meta || !pkg->meta->name)
-            continue;
-        for (int j = 0; j < pkg->package_files.count; j++)
-        {
-            if (pkg->package_files.items[j] &&
-                strcmp(pkg->package_files.items[j], path) == 0)
-            {
-                owner = strdup(pkg->meta->name);
-                break;
-            }
-        }
-    }
 
-    for (int i = 0; i < count; i++)
-        package_free(pkgs[i]);
-    free(pkgs);
+    if (mdb_get(txn, db->file_owner_dbi, &key, &val) == MDB_SUCCESS)
+        owner = strndup(val.mv_data, val.mv_size);
+
+    mdb_txn_abort(txn);
     return owner;
 }

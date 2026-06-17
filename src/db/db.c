@@ -17,7 +17,7 @@ open_env(const char *path, unsigned int extra_flags)
 
     if (mdb_env_create(&db->env) != MDB_SUCCESS)
         goto fail;
-    mdb_env_set_maxdbs(db->env, 2);
+    mdb_env_set_maxdbs(db->env, 3);
     mdb_env_set_maxreaders(db->env, 256);
     mdb_env_set_mapsize(db->env, APG_DB_MAPSIZE);
 
@@ -49,14 +49,14 @@ db_open(const char *path)
     {
         if (mdb_dbi_open(txn, "files", MDB_CREATE, &db->files_dbi) ==
             MDB_SUCCESS)
-        {
-            mdb_txn_commit(txn);
             db->files_dbi_open = true;
-        }
+        if (mdb_dbi_open(txn, "file_owner", MDB_CREATE, &db->file_owner_dbi) ==
+            MDB_SUCCESS)
+            db->file_owner_dbi_open = true;
+        if (db->files_dbi_open || db->file_owner_dbi_open)
+            mdb_txn_commit(txn);
         else
-        {
             mdb_txn_abort(txn);
-        }
     }
     return db;
 }
@@ -74,6 +74,9 @@ db_open_readonly(const char *path)
     {
         if (mdb_dbi_open(txn, "files", 0, &db->files_dbi) == MDB_SUCCESS)
             db->files_dbi_open = true;
+        if (mdb_dbi_open(txn, "file_owner", 0, &db->file_owner_dbi) ==
+            MDB_SUCCESS)
+            db->file_owner_dbi_open = true;
         mdb_txn_abort(txn);
     }
     return db;
