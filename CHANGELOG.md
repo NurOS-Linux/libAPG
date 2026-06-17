@@ -14,6 +14,27 @@ All notable changes to this project will be documented in this file.
 - Cross files (`cross-aarch64.txt`, `cross-riscv64.txt`) migrated `c_args` and
   `c_link_args` to `[built-in options]`; added `pkgconfig` to `[binaries]`
 
+## [1.7.0] - 2026-06-17
+
+### Added
+
+- `db_get_orphans()` — returns auto-installed packages no longer required by
+  any other package
+- Config file preservation during upgrade: existing files listed in the `conf`
+  field are saved before the new version is installed; the new version's config
+  is renamed to `<path>.apg-new` and the user's original is restored
+- Removal blocked by dependents: `trans_prepare()` now calls
+  `db_get_dependents()` and populates `trans_blocked_remove`; inspect with
+  `trans_get_blocked_removes()`
+- File conflict detection in `trans_prepare()`: checks `db_owner()` for every
+  file in an incoming package and populates `trans_file_conflict`; inspect with
+  `trans_get_file_conflicts()`
+
+### Changed
+
+- Hardcoded paths and the LMDB map size extracted into Meson build options:
+  `keyring_dir`, `keys_dir`, `tmp_dir`, `db_mapsize`
+
 ## [1.6.0] - 2026-06-16
 
 ### Added
