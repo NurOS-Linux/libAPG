@@ -3,9 +3,11 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
 #include <ctype.h>
 #include <unistd.h>
 #include <dirent.h>
+#include <sched.h>
 #include <sys/wait.h>
 
 #include "../../include/apg/scripts.h"
@@ -27,14 +29,48 @@ normalize(const char *src, char *dst, size_t dst_size)
 static bool
 exec_script(const char *path)
 {
+    int pipefd[2];
+    if (pipe(pipefd) < 0)
+        return false;
+
     pid_t pid = fork();
     if (pid < 0)
+    {
+        close(pipefd[0]);
+        close(pipefd[1]);
         return false;
+    }
 
     if (pid == 0)
     {
+        close(pipefd[0]);
+
+        if (unshare(CLONE_NEWNET | CLONE_NEWNS | CLONE_NEWUTS | CLONE_NEWIPC) <
+            0)
+        {
+            uint8_t err = 1;
+            (void)write(pipefd[1], &err, 1);
+            close(pipefd[1]);
+            _exit(1);
+        }
+
+        // EOF on pipe signals sandbox established successfully.
+        close(pipefd[1]);
         execl(path, path, (char *)NULL);
         _exit(1);
+    }
+
+    // Parent: close write end and check whether child signalled sandbox
+    // failure.
+    close(pipefd[1]);
+    uint8_t err = 0;
+    ssize_t n = read(pipefd[0], &err, 1);
+    close(pipefd[0]);
+
+    if (n > 0)
+    {
+        waitpid(pid, NULL, 0);
+        return false;
     }
 
     int status;
