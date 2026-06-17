@@ -274,7 +274,24 @@ trans_commit(struct apg_trans *trans, const char *root_path)
         }
         else
         {
+            struct package *installed = db_get(trans->db, step->pkg_name);
             bool ok = db_remove(trans->db, step->pkg_name);
+            if (ok && installed)
+            {
+                const struct str_list *files = &installed->package_files;
+                for (int j = 0; j < files->count; j++)
+                {
+                    if (!files->items[j])
+                        continue;
+                    char *fpath = concat_dirs(root_path, files->items[j]);
+                    if (fpath)
+                    {
+                        unlink(fpath);
+                        free(fpath);
+                    }
+                }
+            }
+            package_free(installed);
             journal_write(trans->db->env, JOURNAL_REMOVE, step->pkg_name,
                           step->pkg_version,
                           ok ? JOURNAL_STATUS_OK : JOURNAL_STATUS_FAILED, uid,
