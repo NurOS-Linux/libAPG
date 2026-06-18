@@ -24,6 +24,7 @@ libapg_sources = files(
   'src/db/orphans.c',
   'src/db/search.c',
   'src/db/stats.c',
+  'src/db/verify.c',
   'src/json.c',
   'src/graph/graph.c',
   'src/graph/resolve.c',

@@ -196,3 +196,41 @@ struct package **db_search(struct db_handle *db, const char *query, int *count);
  */
 char **db_get_dependents(struct db_handle *db, const char *pkg_name,
                          int *count);
+
+/**
+ * @brief A single package integrity issue found by db_verify().
+ */
+struct db_verify_issue
+{
+    char *pkg_name;       /**< Name of the affected package. */
+    char **missing_files; /**< Paths of files absent from disk. */
+    int missing_count;    /**< Number of missing files. */
+};
+
+/**
+ * @brief Verify that every file recorded for each installed package exists
+ *        on disk under @p root_path.
+ *
+ * Iterates all packages in the database and checks each path in
+ * @c package_files with @c stat(). Packages whose file lists are empty are
+ * skipped. Only packages with at least one missing file appear in the
+ * returned array.
+ *
+ * @param db        Database handle.
+ * @param root_path Filesystem root to prepend to each recorded file path
+ *                  (e.g. @c "/").
+ * @param count     Output parameter set to the number of issues found.
+ *                  Set to 0 when all files are present.
+ * @return Heap-allocated array of issues, or NULL on allocation failure.
+ *         Free with db_verify_free().
+ */
+struct db_verify_issue *db_verify(struct db_handle *db, const char *root_path,
+                                  int *count);
+
+/**
+ * @brief Free the array returned by db_verify().
+ *
+ * @param issues Array to free. May be NULL.
+ * @param count  Number of elements in @p issues.
+ */
+void db_verify_free(struct db_verify_issue *issues, int count);
