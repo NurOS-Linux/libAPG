@@ -7,8 +7,11 @@
 #include <ctype.h>
 #include <unistd.h>
 #include <dirent.h>
-#include <sched.h>
 #include <sys/wait.h>
+
+#ifdef __linux__
+#include <sched.h>
+#endif
 
 #include "../../include/apg/scripts.h"
 #include "../../include/util.h"
@@ -29,6 +32,7 @@ normalize(const char *src, char *dst, size_t dst_size)
 static bool
 exec_script(const char *path)
 {
+#ifdef __linux__
     int pipefd[2];
     if (pipe(pipefd) < 0)
         return false;
@@ -77,6 +81,22 @@ exec_script(const char *path)
     if (waitpid(pid, &status, 0) < 0)
         return false;
     return WIFEXITED(status) && WEXITSTATUS(status) == 0;
+#else
+    pid_t pid = fork();
+    if (pid < 0)
+        return false;
+
+    if (pid == 0)
+    {
+        execl(path, path, (char *)NULL);
+        _exit(1);
+    }
+
+    int status;
+    if (waitpid(pid, &status, 0) < 0)
+        return false;
+    return WIFEXITED(status) && WEXITSTATUS(status) == 0;
+#endif
 }
 
 bool
