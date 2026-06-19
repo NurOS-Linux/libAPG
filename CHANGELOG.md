@@ -2,15 +2,34 @@
 
 All notable changes to this project will be documented in this file.
 
-## [Unreleased]
+## [1.8.0] - 2026-06-19
 
 ### Added
 
 - CI cross-compilation jobs for aarch64 and riscv64
 - Release workflow now produces `.apg` packages for all three architectures
+- `db_verify()` — checks that every file recorded for each installed package
+  exists on disk under a given root; returns a `db_verify_issue` array with
+  per-package lists of missing paths
+- `db_verify_free()` — companion free function for `db_verify()` results
+
+### Fixed
+
+- `TRANS_OP_REMOVE` now removes package files from disk before calling
+  `db_remove()`; previously only the database record was deleted
+- `db_owner()` replaced O(n×m) full-scan with an O(1) `mdb_get` lookup
+  against a new `file_owner` LMDB index (`file_path → pkg_name`); the index
+  is maintained automatically by `db_add()` and `db_remove()`
+- `run_script()` now sandboxes the child process with isolated network, mount,
+  UTS, and IPC namespaces on Linux via `unshare()`; sandbox failure is
+  fail-closed (script is not executed)
 
 ### Changed
 
+- Linux namespace sandbox in `run_script()` guarded behind `#ifdef __linux__`;
+  on other POSIX platforms scripts run without isolation
+- Hardcoded paths and LMDB map size extracted into Meson build options:
+  `keyring_dir`, `keys_dir`, `tmp_dir`, `db_mapsize`
 - Cross files (`cross-aarch64.txt`, `cross-riscv64.txt`) migrated `c_args` and
   `c_link_args` to `[built-in options]`; added `pkgconfig` to `[binaries]`
 
