@@ -88,8 +88,14 @@ void dep_constraint_list_free(struct dep_constraint_list *list);
 /**
  * @brief Compare two version strings.
  *
- * Segments separated by @c '.' are compared numerically when both consist
- * entirely of digits, and lexicographically otherwise.
+ * Supports an optional epoch prefix in the form @c "N:version" (e.g.
+ * @c "1:2.0"). The epoch is a non-negative integer; if omitted it defaults
+ * to zero. Epochs are compared first; only when they are equal does the
+ * remainder of the string determine the result.
+ *
+ * Within the version part, segments separated by @c '.' are compared
+ * numerically when both consist entirely of digits, and lexicographically
+ * otherwise.
  *
  * @param a First version string.
  * @param b Second version string.

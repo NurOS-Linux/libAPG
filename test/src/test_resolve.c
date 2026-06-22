@@ -314,3 +314,32 @@ test_version_exact_match(void)
     package_metadata_free(b);
     printf("test_version_exact_match: PASS\n");
 }
+
+void
+test_epoch_higher_wins(void)
+{
+    assert(ver_compare("1:1.0", "0:9.9") > 0);
+    assert(ver_compare("0:9.9", "1:1.0") < 0);
+    assert(ver_satisfies("1:1.0", VER_OP_GT, "0:9.9"));
+    assert(!ver_satisfies("0:9.9", VER_OP_GT, "1:1.0"));
+    printf("test_epoch_higher_wins: PASS\n");
+}
+
+void
+test_epoch_zero_implicit(void)
+{
+    assert(ver_compare("1:1.0", "2.0") > 0);
+    assert(ver_compare("2.0", "1:1.0") < 0);
+    assert(ver_compare("0:2.0", "2.0") == 0);
+    printf("test_epoch_zero_implicit: PASS\n");
+}
+
+void
+test_epoch_equal_falls_through(void)
+{
+    assert(ver_compare("1:2.0", "1:1.0") > 0);
+    assert(ver_compare("1:1.0", "1:2.0") < 0);
+    assert(ver_compare("1:1.0", "1:1.0") == 0);
+    assert(ver_satisfies("1:2.0", VER_OP_GE, "1:1.0"));
+    printf("test_epoch_equal_falls_through: PASS\n");
+}

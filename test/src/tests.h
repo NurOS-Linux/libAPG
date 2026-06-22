@@ -15,6 +15,9 @@ void test_replaces_resolution(void);
 void test_version_constraint_satisfied(void);
 void test_version_constraint_unsatisfied(void);
 void test_version_exact_match(void);
+void test_epoch_higher_wins(void);
+void test_epoch_zero_implicit(void);
+void test_epoch_equal_falls_through(void);
 
 void test_self_cycle(void);
 void test_two_node_cycle(void);

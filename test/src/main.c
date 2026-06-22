@@ -19,6 +19,9 @@ main(void)
     test_version_constraint_satisfied();
     test_version_constraint_unsatisfied();
     test_version_exact_match();
+    test_epoch_higher_wins();
+    test_epoch_zero_implicit();
+    test_epoch_equal_falls_through();
 
     test_self_cycle();
     test_two_node_cycle();
@@ -38,6 +41,6 @@ main(void)
     test_policy_no_sig_required();
     test_policy_clear();
 
-    printf("All 27 tests passed.\n");
+    printf("All 30 tests passed.\n");
     return 0;
 }
