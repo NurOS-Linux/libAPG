@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.9.0] - 2026-06-22
+
+### Added
+
+- Epoch prefix support in version strings: `N:version` (e.g. `1:2.0`); epoch
+  defaults to zero when absent and is compared before the version part,
+  allowing correct ordering when upstream resets version numbering
+- Exclusive write lock on database open: `db_open()` acquires a
+  `flock(LOCK_EX | LOCK_NB)` on `db.lock` inside the database directory,
+  preventing concurrent write access across processes; returns NULL immediately
+  if the lock is already held
+- Package hold/pin: `db_set_hold()` marks an installed package as held;
+  `trans_prepare()` blocks `TRANS_OP_REMOVE` and `TRANS_OP_UPGRADE` on held
+  packages and returns `TRANS_ERR_HELD`; inspect blocked operations with
+  `trans_get_held_pkgs()`
+
 ## [1.8.0] - 2026-06-19
 
 ### Added

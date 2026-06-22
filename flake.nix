@@ -13,7 +13,7 @@
     {
       packages.${system}.default = pkgs.stdenv.mkDerivation {
         pname = "libapg";
-        version = "1.8.0";
+        version = "1.9.0";
 
         src = ./.;
 
