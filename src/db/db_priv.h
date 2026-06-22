@@ -23,4 +23,5 @@ struct db_handle
     struct db_hooks hooks;
     bool suppress_journal; /**< When true, db_add/db_remove skip journal_write.
                                 Used by trans_commit which journals manually. */
+    int lock_fd; /**< fd holding flock on db.lock; -1 when not locked. */
 };

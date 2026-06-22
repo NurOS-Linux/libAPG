@@ -48,8 +48,14 @@ struct db_handle;
 /**
  * @brief Open a package database for reading and writing.
  *
+ * Acquires an exclusive advisory lock (@c db.lock inside @p path) using
+ * @c flock(2). If another process already holds the lock, the call returns
+ * NULL immediately without blocking. The lock is released automatically
+ * when the handle is closed with db_close().
+ *
  * @param path Filesystem path to the database directory.
- * @return Heap-allocated handle, or NULL on failure.
+ * @return Heap-allocated handle, or NULL on failure or if the database is
+ *         already locked by another process.
  *         Close with db_close() when done.
  */
 struct db_handle *db_open(const char *path);

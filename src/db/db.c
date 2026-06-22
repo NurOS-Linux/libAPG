@@ -5,8 +5,30 @@
 #include <stdlib.h>
 #include <pthread.h>
 #include <lmdb.h>
+#include <fcntl.h>
+#include <sys/file.h>
+#include <unistd.h>
+#include <stdio.h>
 
 #include "db_priv.h"
+
+static int
+acquire_write_lock(const char *db_path)
+{
+    char lock_path[4096];
+    snprintf(lock_path, sizeof(lock_path), "%s/db.lock", db_path);
+
+    int fd = open(lock_path, O_CREAT | O_RDWR, 0644);
+    if (fd < 0)
+        return -1;
+
+    if (flock(fd, LOCK_EX | LOCK_NB) != 0)
+    {
+        close(fd);
+        return -1;
+    }
+    return fd;
+}
 
 static struct db_handle *
 open_env(const char *path, unsigned int extra_flags)
@@ -14,6 +36,8 @@ open_env(const char *path, unsigned int extra_flags)
     struct db_handle *db = calloc(1, sizeof(*db));
     if (!db)
         return NULL;
+
+    db->lock_fd = -1;
 
     if (mdb_env_create(&db->env) != MDB_SUCCESS)
         goto fail;
@@ -43,6 +67,15 @@ db_open(const char *path)
     struct db_handle *db = open_env(path, 0);
     if (!db)
         return NULL;
+
+    db->lock_fd = acquire_write_lock(path);
+    if (db->lock_fd < 0)
+    {
+        mdb_env_close(db->env);
+        pthread_mutex_destroy(&db->write_lock);
+        free(db);
+        return NULL;
+    }
 
     MDB_txn *txn;
     if (mdb_txn_begin(db->env, NULL, 0, &txn) == MDB_SUCCESS)
@@ -89,6 +122,11 @@ db_close(struct db_handle *db)
         return;
     mdb_env_close(db->env);
     pthread_mutex_destroy(&db->write_lock);
+    if (db->lock_fd >= 0)
+    {
+        flock(db->lock_fd, LOCK_UN);
+        close(db->lock_fd);
+    }
     free(db);
 }
 
