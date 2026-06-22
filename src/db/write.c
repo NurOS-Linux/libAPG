@@ -142,6 +142,26 @@ db_add(struct db_handle *db, struct package *pkg)
 }
 
 bool
+db_set_hold(struct db_handle *db, const char *pkg_name, bool held)
+{
+    if (!db || !pkg_name || db->readonly)
+        return false;
+
+    struct package *pkg = db_get(db, pkg_name);
+    if (!pkg)
+        return false;
+
+    pkg->held = held;
+
+    db->suppress_journal = true;
+    bool ok = db_add(db, pkg);
+    db->suppress_journal = false;
+
+    package_free(pkg);
+    return ok;
+}
+
+bool
 db_remove(struct db_handle *db, const char *pkg_name)
 {
     if (!db || !pkg_name || db->readonly)

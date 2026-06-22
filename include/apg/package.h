@@ -62,6 +62,7 @@ struct package
     char *pkg_path; /**< Filesystem path to the package archive. */
     struct str_list package_files; /**< Files contained in the archive. */
     bool installed_by_hand; /**< True when explicitly requested by the user. */
+    bool held;              /**< True when upgrades and removal are blocked. */
 };
 
 /**

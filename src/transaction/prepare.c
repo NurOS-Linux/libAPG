@@ -18,6 +18,36 @@ in_strarray(const char **arr, size_t count, const char *name)
     return false;
 }
 
+static trans_error_t
+held_push(struct apg_trans *trans, const char *pkg_name, trans_op_t op)
+{
+    if (!trans->held_pkgs)
+    {
+        trans->held_pkgs = malloc(4 * sizeof(*trans->held_pkgs));
+        if (!trans->held_pkgs)
+            return TRANS_ERR_NOMEM;
+        trans->held_cap = 4;
+    }
+    else if (trans->held_count == trans->held_cap)
+    {
+        size_t new_cap = trans->held_cap * 2;
+        struct trans_held_pkg *tmp =
+            realloc(trans->held_pkgs, new_cap * sizeof(*tmp));
+        if (!tmp)
+            return TRANS_ERR_NOMEM;
+        trans->held_pkgs = tmp;
+        trans->held_cap = new_cap;
+    }
+
+    struct trans_held_pkg *h = &trans->held_pkgs[trans->held_count];
+    h->pkg_name = strdup(pkg_name);
+    h->op = op;
+    if (!h->pkg_name)
+        return TRANS_ERR_NOMEM;
+    trans->held_count++;
+    return TRANS_OK;
+}
+
 static bool
 plan_has(const struct apg_trans *trans, const char *name)
 {
@@ -244,6 +274,22 @@ trans_prepare(struct apg_trans *trans)
     {
         struct package *pkg = trans->upgrade_pkgs[i];
         const char *name = pkg->meta->name;
+
+        struct package *installed_pkg = db_get(trans->db, name);
+        bool is_held = installed_pkg && installed_pkg->held;
+        package_free(installed_pkg);
+
+        if (is_held)
+        {
+            trans_error_t herr = held_push(trans, name, TRANS_OP_UPGRADE);
+            if (herr != TRANS_OK)
+            {
+                ret = herr;
+                goto cleanup;
+            }
+            continue;
+        }
+
         const char *version = pkg->meta->version;
         trans_error_t perr =
             plan_push(trans, TRANS_OP_UPGRADE, name, version, true, pkg);
@@ -257,6 +303,21 @@ trans_prepare(struct apg_trans *trans)
     for (size_t i = 0; i < trans->remove_count; i++)
     {
         const char *name = trans->remove_names[i];
+
+        struct package *installed_pkg = db_get(trans->db, name);
+        bool is_held = installed_pkg && installed_pkg->held;
+        package_free(installed_pkg);
+
+        if (is_held)
+        {
+            trans_error_t herr = held_push(trans, name, TRANS_OP_REMOVE);
+            if (herr != TRANS_OK)
+            {
+                ret = herr;
+                goto cleanup;
+            }
+            continue;
+        }
 
         int dep_count = 0;
         char **deps = db_get_dependents(trans->db, name, &dep_count);
@@ -375,7 +436,9 @@ trans_prepare(struct apg_trans *trans)
         }
     }
 
-    if (trans->file_conflict_count > 0)
+    if (trans->held_count > 0)
+        ret = TRANS_ERR_HELD;
+    else if (trans->file_conflict_count > 0)
         ret = TRANS_ERR_FILE_CONFLICT;
     else if (trans->blocked_remove_count > 0)
         ret = TRANS_ERR_HAS_DEPENDENTS;

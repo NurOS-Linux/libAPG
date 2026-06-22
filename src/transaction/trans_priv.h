@@ -41,6 +41,10 @@ struct apg_trans
     size_t file_conflict_count;
     size_t file_conflict_cap;
 
+    struct trans_held_pkg *held_pkgs;
+    size_t held_count;
+    size_t held_cap;
+
     bool prepared;
     bool committed;
 

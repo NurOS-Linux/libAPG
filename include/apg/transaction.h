@@ -53,6 +53,7 @@ typedef enum
     TRANS_ERR_UNSIGNED,          /**< Package rejected by signature policy. */
     TRANS_ERR_HAS_DEPENDENTS, /**< Removal blocked by installed dependents. */
     TRANS_ERR_FILE_CONFLICT,  /**< File already owned by another package. */
+    TRANS_ERR_HELD,           /**< Operation blocked by a held package. */
 } trans_error_t;
 
 /**
@@ -89,6 +90,17 @@ struct trans_file_conflict
     char *path;         /**< Conflicting file path. */
     char *requested_by; /**< Package being installed that claims the file. */
     char *owned_by;     /**< Currently installed package that owns the file. */
+};
+
+/**
+ * @brief An operation blocked because the target package is held.
+ *
+ * The array is owned by the transaction and valid until trans_free().
+ */
+struct trans_held_pkg
+{
+    char *pkg_name; /**< Name of the held package. */
+    trans_op_t op;  /**< Operation that was blocked (REMOVE or UPGRADE). */
 };
 
 /**
@@ -238,6 +250,19 @@ trans_get_blocked_removes(const struct apg_trans *trans, size_t *count);
  */
 const struct trans_file_conflict *
 trans_get_file_conflicts(const struct apg_trans *trans, size_t *count);
+
+/**
+ * @brief Retrieve operations blocked by held packages.
+ *
+ * Valid after a trans_prepare() call that returned @ref TRANS_ERR_HELD.
+ * The returned array is owned by the transaction and valid until trans_free().
+ *
+ * @param trans Transaction after trans_prepare().
+ * @param count Output parameter set to the number of blocked operations.
+ * @return Pointer to the first entry, or NULL if none.
+ */
+const struct trans_held_pkg *trans_get_held_pkgs(const struct apg_trans *trans,
+                                                 size_t *count);
 
 /**
  * @brief Execute the prepared plan.

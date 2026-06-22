@@ -110,6 +110,10 @@ trans_free(struct apg_trans *trans)
     }
     free(trans->file_conflicts);
 
+    for (size_t i = 0; i < trans->held_count; i++)
+        free(trans->held_pkgs[i].pkg_name);
+    free(trans->held_pkgs);
+
     free(trans);
 }
 
@@ -212,4 +216,13 @@ trans_get_conflicts(const struct apg_trans *trans, size_t *count)
         return NULL;
     *count = trans->conflict_count;
     return trans->conflicts;
+}
+
+const struct trans_held_pkg *
+trans_get_held_pkgs(const struct apg_trans *trans, size_t *count)
+{
+    if (!trans || !count)
+        return NULL;
+    *count = trans->held_count;
+    return trans->held_pkgs;
 }

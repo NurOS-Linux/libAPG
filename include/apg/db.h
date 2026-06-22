@@ -108,6 +108,20 @@ bool db_add(struct db_handle *db, struct package *pkg);
 bool db_remove(struct db_handle *db, const char *pkg_name);
 
 /**
+ * @brief Set or clear the hold flag on an installed package.
+ *
+ * A held package is blocked from being upgraded or removed by
+ * trans_prepare(). The hold state is persisted in the database record.
+ *
+ * @param db       Database handle opened for writing.
+ * @param pkg_name Name of the installed package.
+ * @param held     true to hold, false to release.
+ * @return true on success, false if the package was not found or the handle
+ *         is read-only.
+ */
+bool db_set_hold(struct db_handle *db, const char *pkg_name, bool held);
+
+/**
  * @brief Look up a package record by name.
  *
  * @param db   Database handle.
