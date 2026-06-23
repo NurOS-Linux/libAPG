@@ -131,8 +131,16 @@ ver_compare(const char *a, const char *b)
     long ea = 0, eb = 0;
     const char *ca = strchr(a, ':');
     const char *cb = strchr(b, ':');
-    if (ca) { ea = strtol(a, NULL, 10); a = ca + 1; }
-    if (cb) { eb = strtol(b, NULL, 10); b = cb + 1; }
+    if (ca)
+    {
+        ea = strtol(a, NULL, 10);
+        a = ca + 1;
+    }
+    if (cb)
+    {
+        eb = strtol(b, NULL, 10);
+        b = cb + 1;
+    }
     if (ea != eb)
         return (ea > eb) ? 1 : -1;
 
