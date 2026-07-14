@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Added
+
+- FreeBSD support: the library builds, links, and passes its test suite on
+  FreeBSD with the libsodium signing backend; no source changes are required
+  because the seccomp dependency is optional and the install-script runner
+  already has a non-Linux path
+- CI job that builds and tests the library in a native FreeBSD x86_64 virtual
+  machine
+
 ## [1.9.0] - 2026-06-22
 
 ### Added

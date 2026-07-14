@@ -283,3 +283,21 @@ jobs:
             --cross-file cross-mips64.txt \
             --buildtype=release
           meson compile -C build-mips64el
+
+  freebsd:
+    name: Build (FreeBSD x86_64)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build and test on FreeBSD
+        uses: cross-platform-actions/action@v1.3.0
+        with:
+          operating_system: freebsd
+          architecture: x86-64
+          version: '14.3'
+          run: |
+            sudo pkg install -y meson pkgconf ninja lmdb libarchive yyjson libsodium
+            meson setup build --buildtype=release
+            meson compile -C build
+            meson test -C build
