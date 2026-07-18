@@ -86,7 +86,7 @@ jobs:
         run: meson test -C build-san --print-errorlogs
 
   arch-asm:
-    name: Assembly (32-bit arch validation)
+    name: Assembly (minor arch validation)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -96,7 +96,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y clang lld
 
-      - name: Assemble and PIC-link each 32-bit arch backend
+      - name: Assemble and PIC-link each minor arch backend
         run: |
           set -e
           assemble() {
@@ -113,7 +113,10 @@ jobs:
           assemble x86     -target i386-linux-gnu
           assemble riscv32 -target riscv32-linux-gnu -march=rv32gc -mabi=ilp32
           assemble mips    -target mipsel-linux-gnu -march=mips32r2
-          assemble powerpc -target powerpc-linux-gnu
+          assemble ppc32   -target powerpc-linux-gnu
+          assemble ppc32le -target powerpcle-linux-gnu
+          assemble ppc64   -target powerpc64-linux-gnu -mabi=elfv2
+          assemble ppc64le -target powerpc64le-linux-gnu
 
   cross-aarch64:
     name: Cross-compile (aarch64)

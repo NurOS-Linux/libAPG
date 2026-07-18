@@ -1,11 +1,23 @@
 /* SPDX-License-Identifier: GPL-3.0-only */
-/* SPDX-FileCopyrightText: 2026 Meigo™ Corporation (https://github.com/meigoc) */
+/* SPDX-FileCopyrightText: 2026 AnmiTaliDev <anmitalidev@nuros.org> */
+/*
+ * CRC-32 (ISO 3309, poly 0xEDB88320), table-based, byte-wise.
+ * PowerPC64 ELFv2 ABI. Content is identical to arch/ppc64/crc32.S: the
+ * message is assembled byte-wise (lbz only, no multi-byte loads of input
+ * data), so the code is endian-independent: only the target ABI/triple
+ * passed to the assembler differs between the two directories.
+ *
+ * int      apg_crc32_hw_supported(void)
+ * uint32_t apg_crc32_update_hw(uint32_t crc, const uint8_t *buf, size_t len)
+ */
 
+    .abiversion 2
     .text
 
     .globl  apg_crc32_hw_supported
     .type   apg_crc32_hw_supported, @function
 apg_crc32_hw_supported:
+    .localentry apg_crc32_hw_supported, 1
     li      3, 1
     blr
     .size   apg_crc32_hw_supported, .-apg_crc32_hw_supported
@@ -13,13 +25,14 @@ apg_crc32_hw_supported:
     .globl  apg_crc32_update_hw
     .type   apg_crc32_update_hw, @function
 apg_crc32_update_hw:
+    .localentry apg_crc32_update_hw, 1
     mflr    8
     bcl     20, 31, 0f
 0:  mflr    6
     addis   6, 6, (.Ltab - 0b)@ha
     addi    6, 6, (.Ltab - 0b)@l
 .Lc4:
-    cmpwi   5, 4
+    cmpdi   5, 4
     blt     .Lctail
     lbz     7, 0(4)
     xor     7, 7, 3
@@ -57,7 +70,7 @@ apg_crc32_update_hw:
     addi    5, 5, -4
     b       .Lc4
 .Lctail:
-    cmpwi   5, 0
+    cmpdi   5, 0
     beq     .Lcdone
     lbz     7, 0(4)
     xor     7, 7, 3

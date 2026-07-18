@@ -1,0 +1,21 @@
+[binaries]
+c         = 'clang'
+cpp       = 'clang++'
+ar        = 'llvm-ar'
+strip     = 'llvm-strip'
+objcopy   = 'llvm-objcopy'
+asm       = 'clang'
+pkgconfig = 'pkg-config'
+
+[host_machine]
+system     = 'linux'
+cpu_family = 'ppc'
+cpu        = 'ppcle'
+endian     = 'little'
+
+[properties]
+asm_args = ['-target', 'powerpcle-linux-gnu']
+
+[built-in options]
+c_args      = ['-target', 'powerpcle-linux-gnu']
+c_link_args = ['-fuse-ld=lld', '-target', 'powerpcle-linux-gnu']
