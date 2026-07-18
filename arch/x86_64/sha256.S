@@ -124,6 +124,9 @@ apg_sha256_transform_hw:
     // Rounds 12-15
     movdqa  xmm8, xmm7
     paddd   xmm8, [rip + .LK3]
+    movdqa  xmm10, xmm7
+    palignr xmm10, xmm6, 4
+    paddd   xmm4, xmm10
     sha256msg1 xmm6, xmm7
     sha256msg2 xmm4, xmm7
     movdqa  xmm0, xmm8
@@ -134,6 +137,9 @@ apg_sha256_transform_hw:
     // Rounds 16-19
     movdqa  xmm8, xmm4
     paddd   xmm8, [rip + .LK4]
+    movdqa  xmm10, xmm4
+    palignr xmm10, xmm7, 4
+    paddd   xmm5, xmm10
     sha256msg1 xmm7, xmm4
     sha256msg2 xmm5, xmm4
     movdqa  xmm0, xmm8
@@ -144,6 +150,9 @@ apg_sha256_transform_hw:
     // Rounds 20-23
     movdqa  xmm8, xmm5
     paddd   xmm8, [rip + .LK5]
+    movdqa  xmm10, xmm5
+    palignr xmm10, xmm4, 4
+    paddd   xmm6, xmm10
     sha256msg1 xmm4, xmm5
     sha256msg2 xmm6, xmm5
     movdqa  xmm0, xmm8
@@ -154,6 +163,9 @@ apg_sha256_transform_hw:
     // Rounds 24-27
     movdqa  xmm8, xmm6
     paddd   xmm8, [rip + .LK6]
+    movdqa  xmm10, xmm6
+    palignr xmm10, xmm5, 4
+    paddd   xmm7, xmm10
     sha256msg1 xmm5, xmm6
     sha256msg2 xmm7, xmm6
     movdqa  xmm0, xmm8
@@ -164,6 +176,9 @@ apg_sha256_transform_hw:
     // Rounds 28-31
     movdqa  xmm8, xmm7
     paddd   xmm8, [rip + .LK7]
+    movdqa  xmm10, xmm7
+    palignr xmm10, xmm6, 4
+    paddd   xmm4, xmm10
     sha256msg1 xmm6, xmm7
     sha256msg2 xmm4, xmm7
     movdqa  xmm0, xmm8
@@ -174,6 +189,9 @@ apg_sha256_transform_hw:
     // Rounds 32-35
     movdqa  xmm8, xmm4
     paddd   xmm8, [rip + .LK8]
+    movdqa  xmm10, xmm4
+    palignr xmm10, xmm7, 4
+    paddd   xmm5, xmm10
     sha256msg1 xmm7, xmm4
     sha256msg2 xmm5, xmm4
     movdqa  xmm0, xmm8
@@ -184,6 +202,9 @@ apg_sha256_transform_hw:
     // Rounds 36-39
     movdqa  xmm8, xmm5
     paddd   xmm8, [rip + .LK9]
+    movdqa  xmm10, xmm5
+    palignr xmm10, xmm4, 4
+    paddd   xmm6, xmm10
     sha256msg1 xmm4, xmm5
     sha256msg2 xmm6, xmm5
     movdqa  xmm0, xmm8
@@ -194,6 +215,9 @@ apg_sha256_transform_hw:
     // Rounds 40-43
     movdqa  xmm8, xmm6
     paddd   xmm8, [rip + .LK10]
+    movdqa  xmm10, xmm6
+    palignr xmm10, xmm5, 4
+    paddd   xmm7, xmm10
     sha256msg1 xmm5, xmm6
     sha256msg2 xmm7, xmm6
     movdqa  xmm0, xmm8
@@ -204,6 +228,9 @@ apg_sha256_transform_hw:
     // Rounds 44-47
     movdqa  xmm8, xmm7
     paddd   xmm8, [rip + .LK11]
+    movdqa  xmm10, xmm7
+    palignr xmm10, xmm6, 4
+    paddd   xmm4, xmm10
     sha256msg1 xmm6, xmm7
     sha256msg2 xmm4, xmm7
     movdqa  xmm0, xmm8
@@ -214,6 +241,9 @@ apg_sha256_transform_hw:
     // Rounds 48-51
     movdqa  xmm8, xmm4
     paddd   xmm8, [rip + .LK12]
+    movdqa  xmm10, xmm4
+    palignr xmm10, xmm7, 4
+    paddd   xmm5, xmm10
     sha256msg2 xmm5, xmm4
     movdqa  xmm0, xmm8
     sha256rnds2 xmm2, xmm1
@@ -223,6 +253,9 @@ apg_sha256_transform_hw:
     // Rounds 52-55
     movdqa  xmm8, xmm5
     paddd   xmm8, [rip + .LK13]
+    movdqa  xmm10, xmm5
+    palignr xmm10, xmm4, 4
+    paddd   xmm6, xmm10
     sha256msg2 xmm6, xmm5
     movdqa  xmm0, xmm8
     sha256rnds2 xmm2, xmm1
@@ -232,6 +265,9 @@ apg_sha256_transform_hw:
     // Rounds 56-59
     movdqa  xmm8, xmm6
     paddd   xmm8, [rip + .LK14]
+    movdqa  xmm10, xmm6
+    palignr xmm10, xmm5, 4
+    paddd   xmm7, xmm10
     sha256msg2 xmm7, xmm6
     movdqa  xmm0, xmm8
     sha256rnds2 xmm2, xmm1
@@ -255,10 +291,9 @@ apg_sha256_transform_hw:
     pshufd  xmm2, xmm2, 0xb1
     movdqa  xmm8, xmm1
     pblendw xmm1, xmm2, 0xf0
-    palignr xmm8, xmm2, 8
-    pshufd  xmm1, xmm1, 0x1b
-    movdqu  [rdi],      xmm8
-    movdqu  [rdi + 16], xmm1
+    palignr xmm2, xmm8, 8
+    movdqu  [rdi],      xmm1
+    movdqu  [rdi + 16], xmm2
 
     movdqu  xmm6,  [rsp +  0]
     movdqu  xmm7,  [rsp + 16]
