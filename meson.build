@@ -99,6 +99,63 @@ elif cpu == 'mips64'
     '-DAPG_MD5_HW_AVAILABLE=1',
     '-march=mips64r2',
   ]
+elif cpu == 'arm'
+  libapg_sources += files(
+    'arch/arm/sha256.S',
+    'arch/arm/crc32.S',
+    'arch/arm/md5.S',
+  )
+  hw_args = [
+    '-DAPG_SHA256_HW_AVAILABLE=1',
+    '-DAPG_CRC32_HW_AVAILABLE=1',
+    '-DAPG_MD5_HW_AVAILABLE=1',
+    '-march=armv7-a',
+  ]
+elif cpu == 'x86'
+  libapg_sources += files(
+    'arch/x86/sha256.S',
+    'arch/x86/crc32.S',
+    'arch/x86/md5.S',
+  )
+  hw_args = [
+    '-DAPG_SHA256_HW_AVAILABLE=1',
+    '-DAPG_CRC32_HW_AVAILABLE=1',
+    '-DAPG_MD5_HW_AVAILABLE=1',
+  ]
+elif cpu == 'riscv32'
+  libapg_sources += files(
+    'arch/riscv32/sha256.S',
+    'arch/riscv32/crc32.S',
+    'arch/riscv32/md5.S',
+  )
+  hw_args = [
+    '-DAPG_SHA256_HW_AVAILABLE=1',
+    '-DAPG_CRC32_HW_AVAILABLE=1',
+    '-DAPG_MD5_HW_AVAILABLE=1',
+  ]
+elif cpu == 'mips'
+  libapg_sources += files(
+    'arch/mips/sha256.S',
+    'arch/mips/crc32.S',
+    'arch/mips/md5.S',
+  )
+  hw_args = [
+    '-DAPG_SHA256_HW_AVAILABLE=1',
+    '-DAPG_CRC32_HW_AVAILABLE=1',
+    '-DAPG_MD5_HW_AVAILABLE=1',
+    '-march=mips32r2',
+  ]
+elif cpu == 'ppc'
+  libapg_sources += files(
+    'arch/powerpc/sha256.S',
+    'arch/powerpc/crc32.S',
+    'arch/powerpc/md5.S',
+  )
+  hw_args = [
+    '-DAPG_SHA256_HW_AVAILABLE=1',
+    '-DAPG_CRC32_HW_AVAILABLE=1',
+    '-DAPG_MD5_HW_AVAILABLE=1',
+  ]
 endif
 
 if hw_args.length() > 0

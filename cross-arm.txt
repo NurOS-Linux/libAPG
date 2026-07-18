@@ -1,0 +1,21 @@
+[binaries]
+c         = 'clang'
+cpp       = 'clang++'
+ar        = 'llvm-ar'
+strip     = 'llvm-strip'
+objcopy   = 'llvm-objcopy'
+asm       = 'clang'
+pkgconfig = 'pkg-config'
+
+[host_machine]
+system     = 'linux'
+cpu_family = 'arm'
+cpu        = 'armv7'
+endian     = 'little'
+
+[properties]
+asm_args = ['-target', 'arm-linux-gnueabihf', '-march=armv7-a']
+
+[built-in options]
+c_args      = ['-march=armv7-a', '-target', 'arm-linux-gnueabihf']
+c_link_args = ['-fuse-ld=lld', '-target', 'arm-linux-gnueabihf']

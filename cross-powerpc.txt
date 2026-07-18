@@ -1,0 +1,21 @@
+[binaries]
+c         = 'clang'
+cpp       = 'clang++'
+ar        = 'llvm-ar'
+strip     = 'llvm-strip'
+objcopy   = 'llvm-objcopy'
+asm       = 'clang'
+pkgconfig = 'pkg-config'
+
+[host_machine]
+system     = 'linux'
+cpu_family = 'ppc'
+cpu        = 'ppc'
+endian     = 'big'
+
+[properties]
+asm_args = ['-target', 'powerpc-linux-gnu']
+
+[built-in options]
+c_args      = ['-target', 'powerpc-linux-gnu']
+c_link_args = ['-fuse-ld=lld', '-target', 'powerpc-linux-gnu']
