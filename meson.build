@@ -65,13 +65,15 @@ cpu = host_machine.cpu_family()
 
 hw_args = []
 if cpu == 'x86_64'
+  # arch/x86_64/sha256.S is disabled: its hardware SHA-256 transform
+  # produces incorrect digests (missing/misordered message-schedule steps
+  # before SHA256MSG2). Falls back to the portable C implementation until
+  # fixed. See CHANGELOG.
   libapg_sources += files(
-    'arch/x86_64/sha256.S',
     'arch/x86_64/crc32.S',
     'arch/x86_64/md5.S',
   )
   hw_args = [
-    '-DAPG_SHA256_HW_AVAILABLE=1',
     '-DAPG_CRC32_HW_AVAILABLE=1',
     '-DAPG_MD5_HW_AVAILABLE=1',
     '-msha', '-msse4.1', '-masm=intel',

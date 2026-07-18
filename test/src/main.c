@@ -41,6 +41,18 @@ main(void)
     test_policy_no_sig_required();
     test_policy_clear();
 
-    printf("All 30 tests passed.\n");
+    test_crc32_known_vectors();
+    test_crc32_matches_simple_reference();
+    test_md5_known_vectors();
+    test_md5_chunking_invariant();
+    test_sha256_known_vectors();
+    test_sha256_chunking_invariant();
+
+    test_install_data_dir_copies_files();
+    test_install_data_dir_missing_data_returns_false();
+    test_rollback_install_removes_files();
+    test_db_add_get_remove_roundtrip();
+
+    printf("All 41 tests passed.\n");
     return 0;
 }
