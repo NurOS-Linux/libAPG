@@ -4,7 +4,7 @@
  * MD5 (RFC 1321) single-block transform, table-based.
  * PowerPC64 ELFv2 ABI. Content is identical to arch/ppc64/md5.S: the
  * message block is assembled byte-wise (lbz only), so the code is
- * endian-independent — only the target ABI/triple passed to the assembler
+ * endian-independent: only the target ABI/triple passed to the assembler
  * differs between the two directories.
  *
  * All 32-bit intermediate values (state words, message schedule) live in

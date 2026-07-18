@@ -1,29 +1,17 @@
 /* SPDX-License-Identifier: GPL-3.0-only */
-/* SPDX-FileCopyrightText: 2026 AnmiTaliDev <anmitalidev@nuros.org> */
+/* SPDX-FileCopyrightText: 2026 Meigo™ Corporation (https://github.com/meigoc) */
 /*
- * MD5 (RFC 1321) single-block transform, table-based.
- * PowerPC64 ELFv2 ABI. Content is identical to arch/ppc64le/md5.S: the
- * message block is assembled byte-wise (lbz only), so the code is
- * endian-independent: only the target ABI/triple passed to the assembler
- * differs between the two directories.
- *
- * All 32-bit intermediate values (state words, message schedule) live in
- * the low 32 bits of 64-bit GPRs; rlwinm/rlwnm/srwi/andi. zero-extend the
- * upper 32 bits per the Power ISA 64-bit-mode definition, so no explicit
- * widening is needed. Saved nonvolatile GPRs (r14-r21) are spilled/reloaded
- * as full 64-bit values (std/ld) to preserve the caller's register state.
- *
- * int  apg_md5_hw_supported(void)
- * void apg_md5_transform_hw(uint32_t state[4], const uint8_t block[64])
+ * Content is identical to arch/ppc32/md5.S: the 32-bit PowerPC ABI does
+ * not distinguish big- and little-endian for function calling conventions,
+ * and the message block is assembled byte-wise (lbz only), so the code
+ * itself is endian-independent only the assembler target triple differs.
  */
 
-    .abiversion 2
     .text
 
     .globl  apg_md5_hw_supported
     .type   apg_md5_hw_supported, @function
 apg_md5_hw_supported:
-    .localentry apg_md5_hw_supported, 1
     li      3, 1
     blr
     .size   apg_md5_hw_supported, .-apg_md5_hw_supported
@@ -31,18 +19,17 @@ apg_md5_hw_supported:
     .globl  apg_md5_transform_hw
     .type   apg_md5_transform_hw, @function
 apg_md5_transform_hw:
-    .localentry apg_md5_transform_hw, 1
     mflr    0
-    std     0, 16(1)
-    stdu    1, -128(1)
-    std     14, 0(1)
-    std     15, 8(1)
-    std     16, 16(1)
-    std     17, 24(1)
-    std     18, 32(1)
-    std     19, 40(1)
-    std     20, 48(1)
-    std     21, 56(1)
+    stwu    1, -112(1)
+    stw     0, 116(1)
+    stw     14, 8(1)
+    stw     15, 12(1)
+    stw     16, 16(1)
+    stw     17, 20(1)
+    stw     18, 24(1)
+    stw     19, 28(1)
+    stw     20, 32(1)
+    stw     21, 36(1)
 
     mr      18, 3
 
@@ -61,7 +48,7 @@ apg_md5_transform_hw:
     slwi    9, 9, 24
     or      8, 8, 9
     slwi    7, 19, 2
-    addi    10, 1, 64
+    addi    10, 1, 40
     add     7, 10, 7
     stw     8, 0(7)
     addi    19, 19, 1
@@ -119,7 +106,7 @@ apg_md5_transform_hw:
     andi.   8, 8, 15
 .Lgot:
     slwi    9, 8, 2
-    addi    10, 1, 64
+    addi    10, 1, 40
     add     9, 10, 9
     lwz     9, 0(9)
     slwi    10, 19, 2
@@ -155,17 +142,17 @@ apg_md5_transform_hw:
     add     17, 17, 7
     stw     17, 12(18)
 
-    ld      14, 0(1)
-    ld      15, 8(1)
-    ld      16, 16(1)
-    ld      17, 24(1)
-    ld      18, 32(1)
-    ld      19, 40(1)
-    ld      20, 48(1)
-    ld      21, 56(1)
-    addi    1, 1, 128
-    ld      0, 16(1)
+    lwz     14, 8(1)
+    lwz     15, 12(1)
+    lwz     16, 16(1)
+    lwz     17, 20(1)
+    lwz     18, 24(1)
+    lwz     19, 28(1)
+    lwz     20, 32(1)
+    lwz     21, 36(1)
+    lwz     0, 116(1)
     mtlr    0
+    addi    1, 1, 112
     blr
     .size   apg_md5_transform_hw, .-apg_md5_transform_hw
 

@@ -10,12 +10,12 @@ pkgconfig = 'pkg-config'
 [host_machine]
 system     = 'linux'
 cpu_family = 'ppc'
-cpu        = 'ppc'
-endian     = 'big'
+cpu        = 'ppcle'
+endian     = 'little'
 
 [properties]
-asm_args = ['-target', 'powerpc-linux-gnu']
+asm_args = ['-target', 'powerpcle-linux-gnu']
 
 [built-in options]
-c_args      = ['-target', 'powerpc-linux-gnu']
-c_link_args = ['-fuse-ld=lld', '-target', 'powerpc-linux-gnu']
+c_args      = ['-target', 'powerpcle-linux-gnu']
+c_link_args = ['-fuse-ld=lld', '-target', 'powerpcle-linux-gnu']

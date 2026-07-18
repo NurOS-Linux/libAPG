@@ -1,29 +1,18 @@
 /* SPDX-License-Identifier: GPL-3.0-only */
-/* SPDX-FileCopyrightText: 2026 AnmiTaliDev <anmitalidev@nuros.org> */
+/* SPDX-FileCopyrightText: 2026 Meigo™ Corporation (https://github.com/meigoc) */
 /*
- * SHA-256 (FIPS 180-4) single-block transform, table-based.
- * PowerPC64 ELFv2 ABI. Content is identical to arch/ppc64/sha256.S: the
- * message block is assembled byte-wise (lbz only), so the code is
- * endian-independent: only the target ABI/triple passed to the assembler
- * differs between the two directories.
- *
- * All 32-bit intermediate values (state words, message schedule) live in
- * the low 32 bits of 64-bit GPRs; rlwinm zero-extends the upper 32 bits per
- * the Power ISA 64-bit-mode definition, so no explicit widening is needed.
- * Saved nonvolatile GPRs (r14-r25) are spilled/reloaded as full 64-bit
- * values (std/ld) to preserve the caller's register state.
- *
- * int  apg_sha256_hw_supported(void)
- * void apg_sha256_transform_hw(uint32_t state[8], const uint8_t data[64])
+ * Content is identical to arch/ppc32/sha256.S: the 32-bit PowerPC ABI
+ * does not distinguish big- and little-endian for function calling
+ * conventions, and the message block is assembled byte-wise (lbz only), so
+ * the code itself is endian-independent only the assembler target triple
+ * differs.
  */
 
-    .abiversion 2
     .text
 
     .globl  apg_sha256_hw_supported
     .type   apg_sha256_hw_supported, @function
 apg_sha256_hw_supported:
-    .localentry apg_sha256_hw_supported, 1
     li      3, 1
     blr
     .size   apg_sha256_hw_supported, .-apg_sha256_hw_supported
@@ -31,25 +20,24 @@ apg_sha256_hw_supported:
     .globl  apg_sha256_transform_hw
     .type   apg_sha256_transform_hw, @function
 apg_sha256_transform_hw:
-    .localentry apg_sha256_transform_hw, 1
     mflr    0
-    std     0, 16(1)
-    stdu    1, -352(1)
-    std     14, 0(1)
-    std     15, 8(1)
-    std     16, 16(1)
-    std     17, 24(1)
-    std     18, 32(1)
-    std     19, 40(1)
-    std     20, 48(1)
-    std     21, 56(1)
-    std     22, 64(1)
-    std     23, 72(1)
-    std     24, 80(1)
-    std     25, 88(1)
+    stwu    1, -320(1)
+    stw     0, 324(1)
+    stw     14, 8(1)
+    stw     15, 12(1)
+    stw     16, 16(1)
+    stw     17, 20(1)
+    stw     18, 24(1)
+    stw     19, 28(1)
+    stw     20, 32(1)
+    stw     21, 36(1)
+    stw     22, 40(1)
+    stw     23, 44(1)
+    stw     24, 48(1)
+    stw     25, 52(1)
 
     mr      22, 3
-    addi    25, 1, 96
+    addi    25, 1, 56
 
     li      3, 0
 .Lldw:
@@ -194,21 +182,21 @@ apg_sha256_transform_hw:
     add     21, 21, 7
     stw     21, 28(22)
 
-    ld      14, 0(1)
-    ld      15, 8(1)
-    ld      16, 16(1)
-    ld      17, 24(1)
-    ld      18, 32(1)
-    ld      19, 40(1)
-    ld      20, 48(1)
-    ld      21, 56(1)
-    ld      22, 64(1)
-    ld      23, 72(1)
-    ld      24, 80(1)
-    ld      25, 88(1)
-    addi    1, 1, 352
-    ld      0, 16(1)
+    lwz     14, 8(1)
+    lwz     15, 12(1)
+    lwz     16, 16(1)
+    lwz     17, 20(1)
+    lwz     18, 24(1)
+    lwz     19, 28(1)
+    lwz     20, 32(1)
+    lwz     21, 36(1)
+    lwz     22, 40(1)
+    lwz     23, 44(1)
+    lwz     24, 48(1)
+    lwz     25, 52(1)
+    lwz     0, 324(1)
     mtlr    0
+    addi    1, 1, 320
     blr
     .size   apg_sha256_transform_hw, .-apg_sha256_transform_hw
 

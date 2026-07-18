@@ -4,7 +4,7 @@
  * CRC-32 (ISO 3309, poly 0xEDB88320), table-based, byte-wise.
  * PowerPC64 ELFv2 ABI. Content is identical to arch/ppc64le/crc32.S: the
  * message is assembled byte-wise (lbz only, no multi-byte loads of input
- * data), so the code is endian-independent — only the target ABI/triple
+ * data), so the code is endian-independent: only the target ABI/triple
  * passed to the assembler differs between the two directories.
  *
  * int      apg_crc32_hw_supported(void)
