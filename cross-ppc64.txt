@@ -1,0 +1,25 @@
+[binaries]
+c         = 'clang'
+cpp       = 'clang++'
+ar        = 'llvm-ar'
+strip     = 'llvm-strip'
+objcopy   = 'llvm-objcopy'
+asm       = 'clang'
+pkgconfig = 'pkg-config'
+
+[host_machine]
+system     = 'linux'
+cpu_family = 'ppc64'
+cpu        = 'ppc64'
+endian     = 'big'
+
+# Targets the ELFv2 ABI, not glibc's traditional ELFv1 default for
+# big-endian ppc64 (which uses function descriptors and a TOC-based calling
+# convention). Consumers building against a default ELFv1 glibc toolchain
+# must also pass -mabi=elfv2 to match.
+[properties]
+asm_args = ['-target', 'powerpc64-linux-gnu', '-mabi=elfv2']
+
+[built-in options]
+c_args      = ['-target', 'powerpc64-linux-gnu', '-mabi=elfv2']
+c_link_args = ['-fuse-ld=lld', '-target', 'powerpc64-linux-gnu', '-mabi=elfv2']
