@@ -1,5 +1,11 @@
 /* SPDX-License-Identifier: GPL-3.0-only */
 /* SPDX-FileCopyrightText: 2026 Meigo™ Corporation (https://github.com/meigoc) */
+/*
+ * Content is identical to arch/ppc32le/md5.S: the 32-bit PowerPC ABI does
+ * not distinguish big- and little-endian for function calling conventions,
+ * and the message block is assembled byte-wise (lbz only), so the code
+ * itself is endian-independent — only the assembler target triple differs.
+ */
 
     .text
 

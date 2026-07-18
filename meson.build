@@ -158,11 +158,46 @@ elif cpu == 'mips'
     '-DAPG_MD5_HW_AVAILABLE=1',
     '-march=mips32r2',
   ]
-elif cpu == 'ppc'
+elif cpu == 'ppc' and host_machine.endian() == 'big'
   libapg_sources += files(
-    'arch/powerpc/sha256.S',
-    'arch/powerpc/crc32.S',
-    'arch/powerpc/md5.S',
+    'arch/ppc32/sha256.S',
+    'arch/ppc32/crc32.S',
+    'arch/ppc32/md5.S',
+  )
+  hw_args = [
+    '-DAPG_SHA256_HW_AVAILABLE=1',
+    '-DAPG_CRC32_HW_AVAILABLE=1',
+    '-DAPG_MD5_HW_AVAILABLE=1',
+  ]
+elif cpu == 'ppc' and host_machine.endian() == 'little'
+  libapg_sources += files(
+    'arch/ppc32le/sha256.S',
+    'arch/ppc32le/crc32.S',
+    'arch/ppc32le/md5.S',
+  )
+  hw_args = [
+    '-DAPG_SHA256_HW_AVAILABLE=1',
+    '-DAPG_CRC32_HW_AVAILABLE=1',
+    '-DAPG_MD5_HW_AVAILABLE=1',
+  ]
+elif cpu == 'ppc64' and host_machine.endian() == 'little'
+  libapg_sources += files(
+    'arch/ppc64le/sha256.S',
+    'arch/ppc64le/crc32.S',
+    'arch/ppc64le/md5.S',
+  )
+  hw_args = [
+    '-DAPG_SHA256_HW_AVAILABLE=1',
+    '-DAPG_CRC32_HW_AVAILABLE=1',
+    '-DAPG_MD5_HW_AVAILABLE=1',
+  ]
+elif cpu == 'ppc64' and host_machine.endian() == 'big'
+  # Targets the ELFv2 ABI (-mabi=elfv2, set in cross-ppc64.txt), not glibc's
+  # traditional ELFv1 default for big-endian ppc64.
+  libapg_sources += files(
+    'arch/ppc64/sha256.S',
+    'arch/ppc64/crc32.S',
+    'arch/ppc64/md5.S',
   )
   hw_args = [
     '-DAPG_SHA256_HW_AVAILABLE=1',

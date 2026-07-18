@@ -26,6 +26,35 @@ All notable changes to this project will be documented in this file.
 - CI job that builds and tests the library in a native FreeBSD x86_64 virtual
   machine, now with the `gpgme` signing backend installed so the preferred
   backend gets the same test coverage it has on Linux
+- PowerPC64 assembly backends for the checksum module (CRC-32, MD5, SHA-256)
+  in `arch/ppc64/` (big-endian) and `arch/ppc64le/` (little-endian), targeting
+  the ELFv2 ABI on both — including big-endian, where it is not glibc's
+  traditional default (see `cross-ppc64.txt`). Content is byte-identical
+  between the two directories: the message schedule is assembled byte-wise
+  (`lbz` only), so the algorithm itself is endian-independent, matching the
+  existing 32-bit backends. Correctness was verified by cross-assembling and
+  running a freestanding syscall-only test harness under `qemu-ppc64-static`
+  and `qemu-ppc64le-static` against the standard CRC-32 check value,
+  MD5(""), and SHA-256("abc") test vectors
+- PowerPC32 little-endian assembly backend in `arch/ppc32le/`, content
+  byte-identical to `arch/ppc32/` for the same reason (32-bit PowerPC's ABI
+  does not distinguish endianness for calling conventions). Verified by
+  cross-assembling and PIC-linking; execution could not be verified via QEMU
+  since no `qemu-ppcle` user-mode emulator exists upstream for this
+  combination — 32-bit little-endian PowerPC is not shipped by any current
+  mainstream distribution
+- `cross-ppc32le.txt`, `cross-ppc64.txt`, `cross-ppc64le.txt` cross-compilation
+  files; `arch-asm` CI job extended to assemble and PIC-link all three new
+  backends alongside the existing ones
+
+### Changed
+
+- Renamed `arch/powerpc/` to `arch/ppc32/` and `cross-powerpc.txt` to
+  `cross-ppc32.txt` to disambiguate from the new `ppc32le`/`ppc64`/`ppc64le`
+  directories; `meson.build` and the `arch-asm` CI job updated accordingly.
+  `meson.build`'s PowerPC dispatch now also branches on
+  `host_machine.endian()`, since `cpu_family()` alone does not distinguish
+  `ppc`/`ppc32le` or `ppc64`/`ppc64le`
 
 ### Fixed
 
