@@ -85,6 +85,36 @@ jobs:
       - name: Test
         run: meson test -C build-san --print-errorlogs
 
+  arch-asm:
+    name: Assembly (32-bit arch validation)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install clang + lld
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang lld
+
+      - name: Assemble and PIC-link each 32-bit arch backend
+        run: |
+          set -e
+          assemble() {
+            dir="$1"; shift
+            for a in crc32 md5 sha256; do
+              clang "$@" -fPIC -c "arch/$dir/$a.S" -o "/tmp/${dir}_$a.o"
+            done
+            clang "$@" -shared -fPIC -fuse-ld=lld -Wl,-z,text -nostdlib \
+              "/tmp/${dir}_crc32.o" "/tmp/${dir}_md5.o" "/tmp/${dir}_sha256.o" \
+              -o "/tmp/${dir}.so"
+            echo "OK: $dir"
+          }
+          assemble arm     -target arm-linux-gnueabihf -march=armv7-a
+          assemble x86     -target i386-linux-gnu
+          assemble riscv32 -target riscv32-linux-gnu -march=rv32gc -mabi=ilp32
+          assemble mips    -target mipsel-linux-gnu -march=mips32r2
+          assemble powerpc -target powerpc-linux-gnu
+
   cross-aarch64:
     name: Cross-compile (aarch64)
     runs-on: ubuntu-latest
@@ -283,6 +313,58 @@ jobs:
             --cross-file cross-mips64.txt \
             --buildtype=release
           meson compile -C build-mips64el
+
+  cross-armhf:
+    name: Cross-compile (armhf)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Add armhf architecture
+        run: |
+          sudo dpkg --add-architecture armhf
+          sudo sed -i '/^deb \[/!s/^deb /deb [arch=amd64] /' /etc/apt/sources.list
+          sudo find /etc/apt/sources.list.d/ -name '*.list' \
+            -exec sed -i '/^deb \[/!s/^deb /deb [arch=amd64] /' {} +
+          sudo find /etc/apt/sources.list.d/ -name '*.sources' \
+            -exec sed -i '/^Architectures:/d; /^Types:/i Architectures: amd64' {} +
+          . /etc/os-release
+          sudo tee /etc/apt/sources.list.d/armhf-ports.list << EOF
+          deb [arch=armhf] http://ports.ubuntu.com/ubuntu-ports ${VERSION_CODENAME} main restricted universe
+          deb [arch=armhf] http://ports.ubuntu.com/ubuntu-ports ${VERSION_CODENAME}-updates main restricted universe
+          deb [arch=armhf] http://ports.ubuntu.com/ubuntu-ports ${VERSION_CODENAME}-security main restricted universe
+          EOF
+          sudo apt-get update
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get install -y \
+            clang lld llvm \
+            gcc-arm-linux-gnueabihf \
+            meson ninja-build pkg-config \
+            libarchive-dev:armhf \
+            liblmdb-dev:armhf \
+            libsodium-dev:armhf \
+            libseccomp-dev:armhf
+
+      - name: Build yyjson for armhf
+        run: |
+          git clone --depth=1 https://github.com/ibireme/yyjson.git /tmp/yyjson
+          clang --target=arm-linux-gnueabihf -O2 -shared -fPIC \
+            -o /tmp/libyyjson.so /tmp/yyjson/src/yyjson.c
+          sudo cp /tmp/libyyjson.so /usr/lib/arm-linux-gnueabihf/
+          sudo cp /tmp/yyjson/src/yyjson.h /usr/include/
+          printf 'Name: yyjson\nDescription: Fast JSON library\nVersion: 0.0.0\nLibs: -L/usr/lib/arm-linux-gnueabihf -lyyjson\nCflags: -I/usr/include\n' | \
+            sudo tee /usr/lib/arm-linux-gnueabihf/pkgconfig/yyjson.pc
+
+      - name: Cross-compile
+        env:
+          PKG_CONFIG_LIBDIR: /usr/lib/arm-linux-gnueabihf/pkgconfig:/usr/share/pkgconfig
+        run: |
+          meson setup build-armhf \
+            --cross-file cross-arm.txt \
+            --buildtype=release
+          meson compile -C build-armhf
 
   freebsd:
     name: Build (FreeBSD x86_64)

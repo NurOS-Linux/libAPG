@@ -1,0 +1,21 @@
+[binaries]
+c         = 'clang'
+cpp       = 'clang++'
+ar        = 'llvm-ar'
+strip     = 'llvm-strip'
+objcopy   = 'llvm-objcopy'
+asm       = 'clang'
+pkgconfig = 'pkg-config'
+
+[host_machine]
+system     = 'linux'
+cpu_family = 'x86'
+cpu        = 'i686'
+endian     = 'little'
+
+[properties]
+asm_args = ['-target', 'i386-linux-gnu']
+
+[built-in options]
+c_args      = ['-target', 'i386-linux-gnu']
+c_link_args = ['-fuse-ld=lld', '-target', 'i386-linux-gnu']

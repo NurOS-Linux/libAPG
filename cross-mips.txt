@@ -1,0 +1,21 @@
+[binaries]
+c         = 'clang'
+cpp       = 'clang++'
+ar        = 'llvm-ar'
+strip     = 'llvm-strip'
+objcopy   = 'llvm-objcopy'
+asm       = 'clang'
+pkgconfig = 'pkg-config'
+
+[host_machine]
+system     = 'linux'
+cpu_family = 'mips'
+cpu        = 'mipsel'
+endian     = 'little'
+
+[properties]
+asm_args = ['-target', 'mipsel-linux-gnu', '-march=mips32r2']
+
+[built-in options]
+c_args      = ['-march=mips32r2', '-target', 'mipsel-linux-gnu']
+c_link_args = ['-fuse-ld=lld', '-target', 'mipsel-linux-gnu']

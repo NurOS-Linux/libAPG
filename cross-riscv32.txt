@@ -1,0 +1,21 @@
+[binaries]
+c         = 'clang'
+cpp       = 'clang++'
+ar        = 'llvm-ar'
+strip     = 'llvm-strip'
+objcopy   = 'llvm-objcopy'
+asm       = 'clang'
+pkgconfig = 'pkg-config'
+
+[host_machine]
+system     = 'linux'
+cpu_family = 'riscv32'
+cpu        = 'riscv32'
+endian     = 'little'
+
+[properties]
+asm_args = ['-target', 'riscv32-linux-gnu', '-march=rv32gc', '-mabi=ilp32']
+
+[built-in options]
+c_args      = ['-march=rv32gc', '-mabi=ilp32', '-target', 'riscv32-linux-gnu']
+c_link_args = ['-fuse-ld=lld', '-target', 'riscv32-linux-gnu']

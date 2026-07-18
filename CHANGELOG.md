@@ -6,6 +6,19 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- 32-bit assembly backends for the checksum module (CRC-32, MD5, SHA-256) on
+  ARM (AArch32/ARMv7), x86 (i386/IA-32), RISC-V (RV32), MIPS32 and PowerPC,
+  extending the existing 64-bit backends to 32-bit targets; each replaces the
+  portable C fallback with a hand-written scalar transform selected at build
+  time via `host_machine.cpu_family()`. The message-scheduling code assembles
+  words byte-wise, so the backends are endian-independent (validated on both
+  little- and big-endian MIPS and on big-endian PowerPC), and symbol
+  addressing is position-independent so they link cleanly into the shared
+  library
+- Cross-compilation files (`cross-arm.txt`, `cross-i386.txt`,
+  `cross-riscv32.txt`, `cross-mips.txt`, `cross-powerpc.txt`) and CI coverage:
+  an `arch-asm` job that assembles and PIC-links every 32-bit backend, plus a
+  full `armhf` cross-compile job
 - FreeBSD support: the library builds, links, and passes its test suite on
   FreeBSD with the libsodium signing backend; no source changes are required
   because the seccomp dependency is optional and the install-script runner
