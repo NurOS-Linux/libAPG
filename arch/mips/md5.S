@@ -1,5 +1,5 @@
-// SPDX-License-Identifier: GPL-3.0-only
-// SPDX-FileCopyrightText: 2026 Meigo™ Corporation (https://github.com/meigoc)
+/* SPDX-License-Identifier: GPL-3.0-only */
+/* SPDX-FileCopyrightText: 2026 Meigo™ Corporation (https://github.com/meigoc) */
 
     .set    reorder
     .set    mips32r2
