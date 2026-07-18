@@ -13,7 +13,7 @@ Package management library for NurOS.
 | [lmdb](https://www.symas.com/lmdb) | Embedded key-value database |
 | [yyjson](https://github.com/ibireme/yyjson) | JSON library |
 | [gpgme](https://www.gnupg.org/related_software/gpgme/) **or** [libsodium](https://libsodium.org/) | Package signing |
-| [libseccomp](https://github.com/seccomp/libseccomp) *(optional)* | Syscall filtering for install script sandbox |
+| [libseccomp](https://github.com/seccomp/libseccomp) *(optional, Linux only)* | Syscall filtering for install script sandbox |
 
 ## Signing backends
 
@@ -21,6 +21,16 @@ libapg supports two signing backends. The build system picks the first one avail
 
 - **gpgme** (preferred) — PGP signing via GnuPG. Only ECC keys are accepted by default (Ed25519, ECDSA). RSA can be enabled explicitly by passing `allow_rsa = true` to `sign_verify`.
 - **libsodium** (fallback) — Ed25519 signing. Always ECC, keys are read from `/etc/apg/keys/`.
+
+## Install-script sandbox
+
+`run_script()` isolates pre/post-install scripts using the strongest primitive available on the host:
+
+- **Linux** — `unshare()` with isolated network, mount, UTS, and IPC namespaces, plus optional `libseccomp` syscall filtering.
+- **FreeBSD** — [Capsicum](https://man.freebsd.org/cgi/man.cgi?query=capsicum) capability mode (`cap_enter()`). The script binary is opened before entering capability mode and executed with `fexecve()`; once sandboxed, the process loses access to global namespaces (path-based lookups, most syscalls).
+- **Other POSIX platforms** — no sandbox primitive is available; scripts run without isolation.
+
+On Linux and FreeBSD, if the sandbox cannot be established the script is not executed (fail closed).
 
 ## Building
 
@@ -73,6 +83,14 @@ sudo emerge dev-build/meson dev-build/ninja dev-util/pkgconf app-arch/libarchive
 ```bash
 sudo xbps-install meson ninja pkgconf libarchive-devel lmdb-devel gpgme-devel
 ```
+
+#### FreeBSD
+
+```bash
+sudo pkg install meson pkgconf ninja lmdb libarchive yyjson gpgme
+```
+
+`libseccomp` is not available on FreeBSD; the install-script sandbox uses Capsicum instead (see [Install-script sandbox](#install-script-sandbox)). Default configuration paths follow FreeBSD's `hier(7)` and resolve under `/usr/local/etc/apg/` instead of `/etc/apg/`.
 
 #### Build
 

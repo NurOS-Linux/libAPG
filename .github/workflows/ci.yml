@@ -379,7 +379,7 @@ jobs:
           architecture: x86-64
           version: '14.3'
           run: |
-            sudo pkg install -y meson pkgconf ninja lmdb libarchive yyjson libsodium
+            sudo pkg install -y meson pkgconf ninja lmdb libarchive yyjson libsodium gpgme
             meson setup build --buildtype=release
             meson compile -C build
             meson test -C build

@@ -19,12 +19,24 @@ All notable changes to this project will be documented in this file.
   `cross-riscv32.txt`, `cross-mips.txt`, `cross-powerpc.txt`) and CI coverage:
   an `arch-asm` job that assembles and PIC-links every 32-bit backend, plus a
   full `armhf` cross-compile job
-- FreeBSD support: the library builds, links, and passes its test suite on
-  FreeBSD with the libsodium signing backend; no source changes are required
-  because the seccomp dependency is optional and the install-script runner
-  already has a non-Linux path
+- FreeBSD install-script sandbox: `run_script()` now isolates scripts on
+  FreeBSD using Capsicum capability mode (`cap_enter()`); the script binary is
+  opened before entering capability mode and executed with `fexecve()`, and
+  sandbox failure is fail-closed, matching the Linux `unshare()` guarantee
 - CI job that builds and tests the library in a native FreeBSD x86_64 virtual
-  machine
+  machine, now with the `gpgme` signing backend installed so the preferred
+  backend gets the same test coverage it has on Linux
+
+### Fixed
+
+- `-D_GNU_SOURCE` is now only added on Linux; it was previously applied
+  unconditionally, which is a glibc-specific feature macro with no meaning on
+  BSD libc
+- Default `keyring_dir` and `keys_dir` now resolve under `/usr/local/etc/apg/`
+  on FreeBSD instead of `/etc/apg/`, following FreeBSD's `hier(7)` convention
+  for locally-installed configuration
+- README documents FreeBSD `pkg install` dependencies and the platform's
+  sandbox and configuration-path differences
 
 ## [1.9.0] - 2026-06-22
 

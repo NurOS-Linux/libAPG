@@ -1,13 +1,13 @@
 option('keyring_dir',
   type: 'string',
   value: '/etc/apg/trusted.d',
-  description: 'Default directory for trusted signing keys',
+  description: 'Default directory for trusted signing keys (auto-adjusted to /usr/local/etc/apg/trusted.d on FreeBSD unless overridden)',
 )
 
 option('keys_dir',
   type: 'string',
   value: '/etc/apg/keys',
-  description: 'Default directory for libsodium key files',
+  description: 'Default directory for libsodium key files (auto-adjusted to /usr/local/etc/apg/keys on FreeBSD unless overridden)',
 )
 
 option('tmp_dir',
