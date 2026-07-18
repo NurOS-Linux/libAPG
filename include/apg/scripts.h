@@ -14,9 +14,14 @@
  * @brief Run a lifecycle script from a package's @c scripts/ directory.
  *
  * Executes @c pkg_dir/scripts/name if the file exists and is executable.
- * The script runs in a sandboxed child process with isolated network, mount,
- * UTS, and IPC namespaces. If the sandbox cannot be established the script
- * is not executed and the call returns false (fail closed).
+ * On Linux, the script runs in a child process with isolated network, mount,
+ * UTS, and IPC namespaces (@c unshare()). On FreeBSD, the script runs under
+ * Capsicum capability mode (@c cap_enter()), which drops access to global
+ * namespaces (path-based lookups, most syscalls) after the executable is
+ * opened. On both platforms, if the sandbox cannot be established the script
+ * is not executed and the call returns false (fail closed). On other POSIX
+ * platforms, no sandbox primitive is available and the script runs without
+ * isolation.
  * Common script names are @c pre-install, @c post-install, @c pre-remove,
  * and @c post-remove.
  *

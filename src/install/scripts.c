@@ -11,6 +11,9 @@
 
 #ifdef __linux__
 #include <sched.h>
+#elif defined(__FreeBSD__)
+#include <fcntl.h>
+#include <sys/capsicum.h>
 #endif
 
 #include "../../include/apg/scripts.h"
@@ -64,8 +67,62 @@ exec_script(const char *path)
         _exit(1);
     }
 
-    // Parent: close write end and check whether child signalled sandbox
-    // failure.
+    close(pipefd[1]);
+    uint8_t err = 0;
+    ssize_t n = read(pipefd[0], &err, 1);
+    close(pipefd[0]);
+
+    if (n > 0)
+    {
+        waitpid(pid, NULL, 0);
+        return false;
+    }
+
+    int status;
+    if (waitpid(pid, &status, 0) < 0)
+        return false;
+    return WIFEXITED(status) && WEXITSTATUS(status) == 0;
+#elif defined(__FreeBSD__)
+    int fd = open(path, O_EXEC);
+    if (fd < 0)
+        return false;
+
+    int pipefd[2];
+    if (pipe(pipefd) < 0)
+    {
+        close(fd);
+        return false;
+    }
+
+    pid_t pid = fork();
+    if (pid < 0)
+    {
+        close(fd);
+        close(pipefd[0]);
+        close(pipefd[1]);
+        return false;
+    }
+
+    if (pid == 0)
+    {
+        close(pipefd[0]);
+
+        if (cap_enter() < 0)
+        {
+            uint8_t err = 1;
+            (void)write(pipefd[1], &err, 1);
+            close(pipefd[1]);
+            _exit(1);
+        }
+
+        close(pipefd[1]);
+        char *const argv[] = {(char *)path, NULL};
+        char *const envp[] = {NULL};
+        fexecve(fd, argv, envp);
+        _exit(1);
+    }
+
+    close(fd);
     close(pipefd[1]);
     uint8_t err = 0;
     ssize_t n = read(pipefd[0], &err, 1);

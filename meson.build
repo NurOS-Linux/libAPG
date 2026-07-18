@@ -35,11 +35,24 @@ libapg_sources = files(
   'src/transaction/commit.c',
 )
 
-add_project_arguments('-D_GNU_SOURCE', language: 'c')
+if host_machine.system() == 'linux'
+  add_project_arguments('-D_GNU_SOURCE', language: 'c')
+endif
+
+keyring_dir = get_option('keyring_dir')
+keys_dir = get_option('keys_dir')
+if host_machine.system() == 'freebsd'
+  if keyring_dir == '/etc/apg/trusted.d'
+    keyring_dir = '/usr/local/etc/apg/trusted.d'
+  endif
+  if keys_dir == '/etc/apg/keys'
+    keys_dir = '/usr/local/etc/apg/keys'
+  endif
+endif
 
 add_project_arguments(
-  '-DAPG_KEYRING_DIR="' + get_option('keyring_dir') + '"',
-  '-DAPG_KEYS_DIR="' + get_option('keys_dir') + '"',
+  '-DAPG_KEYRING_DIR="' + keyring_dir + '"',
+  '-DAPG_KEYS_DIR="' + keys_dir + '"',
   '-DAPG_TMP_DIR="' + get_option('tmp_dir') + '"',
   '-DAPG_DB_MAPSIZE=' + get_option('db_mapsize').to_string(),
   language: 'c',
