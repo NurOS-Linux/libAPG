@@ -62,7 +62,11 @@ create_dir(const char *path)
 char *
 concat_dirs(const char *path1, const char *path2)
 {
-    char *result = concat(path1, path2);
+    char *with_sep = concat(path1, "/");
+    if (!with_sep)
+        return NULL;
+    char *result = concat(with_sep, path2);
+    free(with_sep);
     if (!result)
         return NULL;
 
