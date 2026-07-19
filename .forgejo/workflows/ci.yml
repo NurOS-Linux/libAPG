@@ -1,0 +1,418 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  quality:
+    name: Code quality
+    runs-on: ubuntu-latest
+    container:
+      image: ubuntu:22.04
+    steps:
+      - name: Install basic tools
+        run: |
+          apt-get update && apt-get install -y git sudo curl ca-certificates
+
+      - uses: actions/checkout@v4
+
+      - name: Install tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang-format python3
+
+      - name: Run checks
+        run: python3 scripts/checkpatch.py
+
+  build:
+    name: Build and test
+    runs-on: ubuntu-latest
+    container:
+      image: ubuntu:22.04
+    steps:
+      - name: Install basic tools
+        run: |
+          apt-get update && apt-get install -y git sudo curl ca-certificates
+
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            meson ninja-build pkg-config \
+            libarchive-dev liblmdb-dev libgpgme-dev libseccomp-dev
+
+      - name: Install yyjson
+        run: |
+          git clone --depth=1 https://github.com/ibireme/yyjson.git /tmp/yyjson
+          gcc -O2 -shared -fPIC -o /tmp/libyyjson.so /tmp/yyjson/src/yyjson.c
+          sudo cp /tmp/libyyjson.so /usr/local/lib/
+          sudo cp /tmp/yyjson/src/yyjson.h /usr/local/include/
+          sudo ldconfig
+
+      - name: Build
+        run: |
+          meson setup build --buildtype=debug
+          meson compile -C build
+
+      - name: Test
+        run: meson test -C build --print-errorlogs
+
+  sanitize:
+    name: Sanitizers (ASan + UBSan)
+    runs-on: ubuntu-latest
+    container:
+      image: ubuntu:22.04
+    env:
+      ASAN_OPTIONS: halt_on_error=1
+      UBSAN_OPTIONS: halt_on_error=1:print_stacktrace=1
+    steps:
+      - name: Install basic tools
+        run: |
+          apt-get update && apt-get install -y git sudo curl ca-certificates
+
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            meson ninja-build pkg-config clang \
+            libarchive-dev liblmdb-dev libgpgme-dev libseccomp-dev
+
+      - name: Install yyjson
+        run: |
+          git clone --depth=1 https://github.com/ibireme/yyjson.git /tmp/yyjson
+          gcc -O2 -shared -fPIC -o /tmp/libyyjson.so /tmp/yyjson/src/yyjson.c
+          sudo cp /tmp/libyyjson.so /usr/local/lib/
+          sudo cp /tmp/yyjson/src/yyjson.h /usr/local/include/
+          sudo ldconfig
+
+      - name: Build with sanitizers
+        run: |
+          CC=clang meson setup build-san \
+            --buildtype=debug \
+            -Db_sanitize=address,undefined \
+            -Db_lundef=false
+          meson compile -C build-san
+
+      - name: Test
+        run: meson test -C build-san --print-errorlogs
+
+  arch-asm:
+    name: Assembly (minor arch validation)
+    runs-on: ubuntu-latest
+    container:
+      image: ubuntu:22.04
+    steps:
+      - name: Install basic tools
+        run: |
+          apt-get update && apt-get install -y git sudo curl ca-certificates
+
+      - uses: actions/checkout@v4
+
+      - name: Install clang + lld
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang lld
+
+      - name: Assemble and PIC-link each minor arch backend
+        run: |
+          set -e
+          assemble() {
+            dir="$1"; shift
+            for a in crc32 md5 sha256; do
+              clang "$@" -fPIC -c "arch/$dir/$a.S" -o "/tmp/${dir}_$a.o"
+            done
+            clang "$@" -shared -fPIC -fuse-ld=lld -Wl,-z,text -nostdlib \
+              "/tmp/${dir}_crc32.o" "/tmp/${dir}_md5.o" "/tmp/${dir}_sha256.o" \
+              -o "/tmp/${dir}.so"
+            echo "OK: $dir"
+          }
+          assemble arm     -target arm-linux-gnueabihf -march=armv7-a
+          assemble x86     -target i386-linux-gnu
+          assemble riscv32 -target riscv32-linux-gnu -march=rv32gc -mabi=ilp32
+          assemble mips    -target mipsel-linux-gnu -march=mips32r2
+          assemble ppc32   -target powerpc-linux-gnu
+          assemble ppc32le -target powerpcle-linux-gnu
+          assemble ppc64   -target powerpc64-linux-gnu -mabi=elfv2
+          assemble ppc64le -target powerpc64le-linux-gnu
+
+  cross-aarch64:
+    name: Cross-compile (aarch64)
+    runs-on: ubuntu-latest
+    container:
+      image: ubuntu:22.04
+    steps:
+      - name: Install basic tools
+        run: |
+          apt-get update && apt-get install -y git sudo curl ca-certificates
+
+      - uses: actions/checkout@v4
+
+      - name: Add arm64 architecture
+        run: |
+          sudo dpkg --add-architecture arm64
+          sudo sed -i '/^deb \[/!s/^deb /deb [arch=amd64] /' /etc/apt/sources.list
+          sudo find /etc/apt/sources.list.d/ -name '*.list' \
+            -exec sed -i '/^deb \[/!s/^deb /deb [arch=amd64] /' {} +
+          sudo find /etc/apt/sources.list.d/ -name '*.sources' \
+            -exec sed -i '/^Architectures:/d; /^Types:/i Architectures: amd64' {} +
+          . /etc/os-release
+          sudo tee /etc/apt/sources.list.d/arm64-ports.list << EOF
+          deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports ${VERSION_CODENAME} main restricted universe
+          deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports ${VERSION_CODENAME}-updates main restricted universe
+          deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports ${VERSION_CODENAME}-security main restricted universe
+          EOF
+          sudo apt-get update
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get install -y \
+            clang lld llvm \
+            gcc-aarch64-linux-gnu \
+            meson ninja-build pkg-config \
+            libarchive-dev:arm64 \
+            liblmdb-dev:arm64 \
+            libsodium-dev:arm64 \
+            libseccomp-dev:arm64
+
+      - name: Build yyjson for arm64
+        run: |
+          git clone --depth=1 https://github.com/ibireme/yyjson.git /tmp/yyjson
+          clang --target=aarch64-linux-gnu -O2 -shared -fPIC \
+            -o /tmp/libyyjson.so /tmp/yyjson/src/yyjson.c
+          sudo cp /tmp/libyyjson.so /usr/lib/aarch64-linux-gnu/
+          sudo cp /tmp/yyjson/src/yyjson.h /usr/include/
+          printf 'Name: yyjson\nDescription: Fast JSON library\nVersion: 0.0.0\nLibs: -L/usr/lib/aarch64-linux-gnu -lyyjson\nCflags: -I/usr/include\n' | \
+            sudo tee /usr/lib/aarch64-linux-gnu/pkgconfig/yyjson.pc
+
+      - name: Cross-compile
+        env:
+          PKG_CONFIG_LIBDIR: /usr/lib/aarch64-linux-gnu/pkgconfig:/usr/share/pkgconfig
+        run: |
+          meson setup build-aarch64 \
+            --cross-file cross-aarch64.txt \
+            --buildtype=release
+          meson compile -C build-aarch64
+
+  cross-riscv64:
+    name: Cross-compile (riscv64)
+    runs-on: ubuntu-latest
+    container:
+      image: ubuntu:22.04
+    steps:
+      - name: Install basic tools
+        run: |
+          apt-get update && apt-get install -y git sudo curl ca-certificates
+
+      - uses: actions/checkout@v4
+
+      - name: Add riscv64 architecture
+        run: |
+          sudo dpkg --add-architecture riscv64
+          sudo sed -i '/^deb \[/!s/^deb /deb [arch=amd64] /' /etc/apt/sources.list
+          sudo find /etc/apt/sources.list.d/ -name '*.list' \
+            -exec sed -i '/^deb \[/!s/^deb /deb [arch=amd64] /' {} +
+          sudo find /etc/apt/sources.list.d/ -name '*.sources' \
+            -exec sed -i '/^Architectures:/d; /^Types:/i Architectures: amd64' {} +
+          . /etc/os-release
+          sudo tee /etc/apt/sources.list.d/riscv64-ports.list << EOF
+          deb [arch=riscv64] http://ports.ubuntu.com/ubuntu-ports ${VERSION_CODENAME} main restricted universe
+          deb [arch=riscv64] http://ports.ubuntu.com/ubuntu-ports ${VERSION_CODENAME}-updates main restricted universe
+          deb [arch=riscv64] http://ports.ubuntu.com/ubuntu-ports ${VERSION_CODENAME}-security main restricted universe
+          EOF
+          sudo apt-get update
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get install -y \
+            clang lld llvm \
+            gcc-riscv64-linux-gnu \
+            meson ninja-build pkg-config \
+            libarchive-dev:riscv64 \
+            liblmdb-dev:riscv64 \
+            libsodium-dev:riscv64 \
+            libseccomp-dev:riscv64
+
+      - name: Build yyjson for riscv64
+        run: |
+          git clone --depth=1 https://github.com/ibireme/yyjson.git /tmp/yyjson
+          clang --target=riscv64-linux-gnu -O2 -shared -fPIC \
+            -o /tmp/libyyjson.so /tmp/yyjson/src/yyjson.c
+          sudo cp /tmp/libyyjson.so /usr/lib/riscv64-linux-gnu/
+          sudo cp /tmp/yyjson/src/yyjson.h /usr/include/
+          printf 'Name: yyjson\nDescription: Fast JSON library\nVersion: 0.0.0\nLibs: -L/usr/lib/riscv64-linux-gnu -lyyjson\nCflags: -I/usr/include\n' | \
+            sudo tee /usr/lib/riscv64-linux-gnu/pkgconfig/yyjson.pc
+
+      - name: Cross-compile
+        env:
+          PKG_CONFIG_LIBDIR: /usr/lib/riscv64-linux-gnu/pkgconfig:/usr/share/pkgconfig
+        run: |
+          meson setup build-riscv64 \
+            --cross-file cross-riscv64.txt \
+            --buildtype=release
+          meson compile -C build-riscv64
+
+  cross-mips64el:
+    name: Cross-compile (mips64el)
+    runs-on: ubuntu-latest
+    container:
+      image: ubuntu:22.04
+    steps:
+      - name: Install basic tools
+        run: |
+          apt-get update && apt-get install -y git sudo curl ca-certificates
+
+      - uses: actions/checkout@v4
+
+      - name: Add mips64el architecture
+        run: |
+          sudo dpkg --add-architecture mips64el
+          sudo sed -i '/^deb \[/!s/^deb /deb [arch=amd64] /' /etc/apt/sources.list
+          sudo find /etc/apt/sources.list.d/ -name '*.list' \
+            -exec sed -i '/^deb \[/!s/^deb /deb [arch=amd64] /' {} +
+          sudo find /etc/apt/sources.list.d/ -name '*.sources' \
+            -exec sed -i '/^Architectures:/d; /^Types:/i Architectures: amd64' {} +
+          . /etc/os-release
+          sudo tee /etc/apt/sources.list.d/mips64el-ports.list << EOF
+          deb [arch=mips64el] http://ports.ubuntu.com/ubuntu-ports ${VERSION_CODENAME} main restricted universe
+          deb [arch=mips64el] http://ports.ubuntu.com/ubuntu-ports ${VERSION_CODENAME}-updates main restricted universe
+          deb [arch=mips64el] http://ports.ubuntu.com/ubuntu-ports ${VERSION_CODENAME}-security main restricted universe
+          EOF
+          sudo apt-get update
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get install -y \
+            clang lld llvm \
+            gcc-mips64el-linux-gnuabi64 \
+            meson ninja-build pkg-config \
+            cmake autoconf automake libtool gperf
+
+      - name: Build cross libs for mips64el
+        run: |
+          TRIPLET=mips64el-linux-gnuabi64
+          SYSROOT=/usr/lib/${TRIPLET}
+          sudo mkdir -p ${SYSROOT}/pkgconfig
+          CC="clang --target=${TRIPLET}"
+
+          # zlib (required by libarchive)
+          curl -fsSL https://github.com/madler/zlib/releases/download/v1.3.1/zlib-1.3.1.tar.gz | tar xz -C /tmp
+          cd /tmp/zlib-1.3.1
+          CC="${CC}" ./configure --prefix=/usr --libdir=${SYSROOT} --static
+          make -j$(nproc) && sudo make install
+          printf 'Name: zlib\nVersion: 1.3.1\nLibs: -L%s -lz\nCflags: -I/usr/include\n' "${SYSROOT}" | sudo tee ${SYSROOT}/pkgconfig/zlib.pc
+
+          # libsodium
+          curl -fsSL https://download.libsodium.org/libsodium/releases/libsodium-1.0.20.tar.gz | tar xz -C /tmp
+          cd /tmp/libsodium-1.0.20
+          ./configure --host=${TRIPLET} CC="${CC}" --prefix=/usr --libdir=${SYSROOT} --disable-shared
+          make -j$(nproc) && sudo make install
+          printf 'Name: libsodium\nVersion: 1.0.20\nLibs: -L%s -lsodium\nCflags: -I/usr/include\n' "${SYSROOT}" | sudo tee ${SYSROOT}/pkgconfig/libsodium.pc
+
+          # lmdb
+          curl -fsSL https://github.com/LMDB/lmdb/archive/refs/tags/LMDB_0.9.32.tar.gz | tar xz -C /tmp
+          cd /tmp/lmdb-LMDB_0.9.32/libraries/liblmdb
+          make CC="clang --target=${TRIPLET}" liblmdb.a
+          sudo cp liblmdb.a ${SYSROOT}/liblmdb.a
+          sudo cp lmdb.h /usr/include/lmdb.h
+          printf 'Name: lmdb\nVersion: 0.9.32\nLibs: -L%s -llmdb\nCflags: -I/usr/include\n' "${SYSROOT}" | sudo tee ${SYSROOT}/pkgconfig/lmdb.pc
+
+          # libarchive (with zlib)
+          curl -fsSL https://github.com/libarchive/libarchive/releases/download/v3.7.4/libarchive-3.7.4.tar.gz | tar xz -C /tmp
+          cd /tmp/libarchive-3.7.4
+          CFLAGS="-I/usr/include" LDFLAGS="-L${SYSROOT}" \
+          ./configure --host=${TRIPLET} CC="${CC}" --prefix=/usr --libdir=${SYSROOT} --disable-shared \
+            --without-bz2lib --without-libb2 --without-iconv --without-lz4 --without-zstd \
+            --without-lzma --without-cng --without-xml2 --without-expat --with-zlib
+          make -j$(nproc) && sudo make install
+          printf 'Name: libarchive\nVersion: 3.7.4\nLibs: -L%s -larchive -lz\nCflags: -I/usr/include\n' "${SYSROOT}" | sudo tee ${SYSROOT}/pkgconfig/libarchive.pc
+
+          # libseccomp
+          curl -fsSL https://github.com/seccomp/libseccomp/releases/download/v2.5.5/libseccomp-2.5.5.tar.gz | tar xz -C /tmp
+          cd /tmp/libseccomp-2.5.5
+          ./configure --host=${TRIPLET} CC="${CC}" --prefix=/usr --libdir=${SYSROOT} --disable-shared
+          make -j$(nproc) && sudo make install
+          printf 'Name: libseccomp\nVersion: 2.5.5\nLibs: -L%s -lseccomp\nCflags: -I/usr/include\n' "${SYSROOT}" | sudo tee ${SYSROOT}/pkgconfig/libseccomp.pc
+
+      - name: Build yyjson for mips64el
+        run: |
+          git clone --depth=1 https://github.com/ibireme/yyjson.git /tmp/yyjson
+          clang --target=mips64el-linux-gnuabi64 -O2 -shared -fPIC \
+            -o /tmp/libyyjson.so /tmp/yyjson/src/yyjson.c
+          sudo cp /tmp/libyyjson.so /usr/lib/mips64el-linux-gnuabi64/
+          sudo cp /tmp/yyjson/src/yyjson.h /usr/include/
+          printf 'Name: yyjson\nDescription: Fast JSON library\nVersion: 0.0.0\nLibs: -L/usr/lib/mips64el-linux-gnuabi64 -lyyjson\nCflags: -I/usr/include\n' | \
+            sudo tee /usr/lib/mips64el-linux-gnuabi64/pkgconfig/yyjson.pc
+
+      - name: Cross-compile
+        env:
+          PKG_CONFIG_LIBDIR: /usr/lib/mips64el-linux-gnuabi64/pkgconfig:/usr/share/pkgconfig
+        run: |
+          meson setup build-mips64el \
+            --cross-file cross-mips64.txt \
+            --buildtype=release
+          meson compile -C build-mips64el
+
+  cross-armhf:
+    name: Cross-compile (armhf)
+    runs-on: ubuntu-latest
+    container:
+      image: ubuntu:22.04
+    steps:
+      - name: Install basic tools
+        run: |
+          apt-get update && apt-get install -y git sudo curl ca-certificates
+
+      - uses: actions/checkout@v4
+
+      - name: Add armhf architecture
+        run: |
+          sudo dpkg --add-architecture armhf
+          sudo sed -i '/^deb \[/!s/^deb /deb [arch=amd64] /' /etc/apt/sources.list
+          sudo find /etc/apt/sources.list.d/ -name '*.list' \
+            -exec sed -i '/^deb \[/!s/^deb /deb [arch=amd64] /' {} +
+          sudo find /etc/apt/sources.list.d/ -name '*.sources' \
+            -exec sed -i '/^Architectures:/d; /^Types:/i Architectures: amd64' {} +
+          . /etc/os-release
+          sudo tee /etc/apt/sources.list.d/armhf-ports.list << EOF
+          deb [arch=armhf] http://ports.ubuntu.com/ubuntu-ports ${VERSION_CODENAME} main restricted universe
+          deb [arch=armhf] http://ports.ubuntu.com/ubuntu-ports ${VERSION_CODENAME}-updates main restricted universe
+          deb [arch=armhf] http://ports.ubuntu.com/ubuntu-ports ${VERSION_CODENAME}-security main restricted universe
+          EOF
+          sudo apt-get update
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get install -y \
+            clang lld llvm \
+            gcc-arm-linux-gnueabihf \
+            meson ninja-build pkg-config \
+            libarchive-dev:armhf \
+            liblmdb-dev:armhf \
+            libsodium-dev:armhf \
+            libseccomp-dev:armhf
+
+      - name: Build yyjson for armhf
+        run: |
+          git clone --depth=1 https://github.com/ibireme/yyjson.git /tmp/yyjson
+          clang --target=arm-linux-gnueabihf -O2 -shared -fPIC \
+            -o /tmp/libyyjson.so /tmp/yyjson/src/yyjson.c
+          sudo cp /tmp/libyyjson.so /usr/lib/arm-linux-gnueabihf/
+          sudo cp /tmp/yyjson/src/yyjson.h /usr/include/
+          printf 'Name: yyjson\nDescription: Fast JSON library\nVersion: 0.0.0\nLibs: -L/usr/lib/arm-linux-gnueabihf -lyyjson\nCflags: -I/usr/include\n' | \
+            sudo tee /usr/lib/arm-linux-gnueabihf/pkgconfig/yyjson.pc
+
+      - name: Cross-compile
+        env:
+          PKG_CONFIG_LIBDIR: /usr/lib/arm-linux-gnueabihf/pkgconfig:/usr/share/pkgconfig
+        run: |
+          meson setup build-armhf \
+            --cross-file cross-arm.txt \
+            --buildtype=release
+          meson compile -C build-armhf
