@@ -2,10 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
-## [Unreleased]
+## [1.10.1] - 2026-07-20
+
+### Fixed
+
+- Insert path separator when concatenating directory paths in `concat_dirs()` (`src/util.c`)
+- Disable broken x86_64 SHA-256 hardware assembly backend (`arch/x86_64/sha256.S`), falling back to portable C implementation due to missing/misordered message-schedule steps before `SHA256MSG2`
+
+## [1.10.0] - 2026-07-20
 
 ### Added
 
+- Parallel dependency resolution (`dep_graph_resolve_parallel()`) using lock-free read-only graph traversal and POSIX threads
+- Parallelized dependency resolution and conflict checking (`dep_graph_find_breaks()`) during transaction preparation (`trans_prepare()`)
+- Unit test for parallel graph resolution (`test_parallel_resolve()`)
+- Lightweight Forgejo CI/CD workflows and issue/PR templates under `.forgejo/`
 - 32-bit assembly backends for the checksum module (CRC-32, MD5, SHA-256) on
   ARM (AArch32/ARMv7), x86 (i386/IA-32), RISC-V (RV32), MIPS32 and PowerPC,
   extending the existing 64-bit backends to 32-bit targets; each replaces the

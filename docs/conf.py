@@ -1,6 +1,6 @@
 project = "libapg"
 author = "AnmiTaliDev"
-release = "1.9.0"
+release = "1.10.1"
 copyright = "2026, AnmiTaliDev"
 
 extensions = [
