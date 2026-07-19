@@ -1,5 +1,5 @@
 project('libapg', 'c',
-  version: '1.9.0'
+  version: '1.10.1'
 )
 
 libapg_sources = files(
