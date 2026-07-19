@@ -115,14 +115,14 @@ static void *
 resolve_worker(void *arg)
 {
     struct resolve_task *t = arg;
-    t->err = dep_graph_resolve((struct dep_graph *)t->g, t->pkg_name,
-                               &t->order, &t->order_count);
+    t->err = dep_graph_resolve((struct dep_graph *)t->g, t->pkg_name, &t->order,
+                               &t->order_count);
     return NULL;
 }
 
 dep_error_t
 dep_graph_resolve_parallel(const struct dep_graph *g, const char **pkg_names,
-                            size_t count, char ***order, size_t *order_count)
+                           size_t count, char ***order, size_t *order_count)
 {
     if (!g || !order || !order_count || (count > 0 && !pkg_names))
         return DEP_ERR_NOMEM;
@@ -155,8 +155,9 @@ dep_graph_resolve_parallel(const struct dep_graph *g, const char **pkg_names,
         tasks[i].pkg_name = pkg_names[i];
         if (pthread_create(&threads[i], NULL, resolve_worker, &tasks[i]) != 0)
         {
-            tasks[i].err = dep_graph_resolve((struct dep_graph *)g, pkg_names[i],
-                                              &tasks[i].order, &tasks[i].order_count);
+            tasks[i].err =
+                dep_graph_resolve((struct dep_graph *)g, pkg_names[i],
+                                  &tasks[i].order, &tasks[i].order_count);
             threads[i] = 0;
         }
     }

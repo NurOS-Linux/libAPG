@@ -75,7 +75,8 @@ dep_error_t dep_graph_resolve(struct dep_graph *g, const char *pkg_name,
                               char ***order, size_t *count);
 
 /**
- * @brief Resolve the transitive install order for multiple packages in parallel.
+ * @brief Resolve the transitive install order for multiple packages in
+ * parallel.
  *
  * Resolves independent dependency graph branches concurrently using threads,
  * and merges them into a deduplicated topological install order.
@@ -83,13 +84,14 @@ dep_error_t dep_graph_resolve(struct dep_graph *g, const char *pkg_name,
  * @param g          Graph containing the available package pool.
  * @param pkg_names  Array of package names to resolve.
  * @param count      Number of entries in @p pkg_names.
- * @param order      Output: heap-allocated array of package names in install order.
+ * @param order      Output: heap-allocated array of package names in install
+ * order.
  * @param order_count Output: number of entries in @p *order.
  * @return @ref DEP_OK on success, or an error code.
  */
 dep_error_t dep_graph_resolve_parallel(const struct dep_graph *g,
-                                        const char **pkg_names, size_t count,
-                                        char ***order, size_t *order_count);
+                                       const char **pkg_names, size_t count,
+                                       char ***order, size_t *order_count);
 
 /**
  * @brief Check whether the graph contains any circular dependency.

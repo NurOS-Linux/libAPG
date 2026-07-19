@@ -276,8 +276,7 @@ trans_prepare(struct apg_trans *trans)
 
     if (trans->install_count > 0)
     {
-        struct break_task *tasks =
-            calloc(trans->install_count, sizeof(*tasks));
+        struct break_task *tasks = calloc(trans->install_count, sizeof(*tasks));
         pthread_t *threads = malloc(trans->install_count * sizeof(*threads));
         if (!tasks || !threads)
         {
@@ -294,7 +293,8 @@ trans_prepare(struct apg_trans *trans)
             tasks[i].installed_names = installed_names;
             tasks[i].installed_count = (size_t)installed_count;
 
-            if (pthread_create(&threads[i], NULL, break_worker_fn, &tasks[i]) != 0)
+            if (pthread_create(&threads[i], NULL, break_worker_fn, &tasks[i]) !=
+                0)
             {
                 tasks[i].err = dep_graph_find_breaks(
                     g, tasks[i].pkg_name, installed_names,
@@ -324,8 +324,8 @@ trans_prepare(struct apg_trans *trans)
 
             for (size_t j = 0; j < tasks[i].break_count; j++)
             {
-                trans_error_t cerr = conflict_push(
-                    trans, tasks[i].pkg_name, tasks[i].breaks[j]);
+                trans_error_t cerr =
+                    conflict_push(trans, tasks[i].pkg_name, tasks[i].breaks[j]);
                 if (cerr != TRANS_OK)
                 {
                     for (size_t k = 0; k < trans->install_count; k++)

@@ -358,28 +358,34 @@ void
 test_parallel_resolve(void)
 {
     // Subtree 1: app1 -> lib1 -> base1
-    struct package_metadata *app1 = make_pkg("app1", (const char *[]){"lib1"}, 1,
-                                            NOCONFLICTS, NOPROVIDES, NOREPLACES);
-    struct package_metadata *lib1 = make_pkg("lib1", (const char *[]){"base1"}, 1,
-                                            NOCONFLICTS, NOPROVIDES, NOREPLACES);
-    struct package_metadata *base1 = make_pkg("base1", NODEPS, NOCONFLICTS,
-                                             NOPROVIDES, NOREPLACES);
+    struct package_metadata *app1 =
+        make_pkg("app1", (const char *[]){"lib1"}, 1, NOCONFLICTS, NOPROVIDES,
+                 NOREPLACES);
+    struct package_metadata *lib1 =
+        make_pkg("lib1", (const char *[]){"base1"}, 1, NOCONFLICTS, NOPROVIDES,
+                 NOREPLACES);
+    struct package_metadata *base1 =
+        make_pkg("base1", NODEPS, NOCONFLICTS, NOPROVIDES, NOREPLACES);
 
     // Subtree 2: app2 -> lib2 -> base2
-    struct package_metadata *app2 = make_pkg("app2", (const char *[]){"lib2"}, 1,
-                                            NOCONFLICTS, NOPROVIDES, NOREPLACES);
-    struct package_metadata *lib2 = make_pkg("lib2", (const char *[]){"base2"}, 1,
-                                            NOCONFLICTS, NOPROVIDES, NOREPLACES);
-    struct package_metadata *base2 = make_pkg("base2", NODEPS, NOCONFLICTS,
-                                             NOPROVIDES, NOREPLACES);
+    struct package_metadata *app2 =
+        make_pkg("app2", (const char *[]){"lib2"}, 1, NOCONFLICTS, NOPROVIDES,
+                 NOREPLACES);
+    struct package_metadata *lib2 =
+        make_pkg("lib2", (const char *[]){"base2"}, 1, NOCONFLICTS, NOPROVIDES,
+                 NOREPLACES);
+    struct package_metadata *base2 =
+        make_pkg("base2", NODEPS, NOCONFLICTS, NOPROVIDES, NOREPLACES);
 
     // Shared subtree: app3 -> shared, app4 -> shared
-    struct package_metadata *app3 = make_pkg("app3", (const char *[]){"shared"}, 1,
-                                            NOCONFLICTS, NOPROVIDES, NOREPLACES);
-    struct package_metadata *app4 = make_pkg("app4", (const char *[]){"shared"}, 1,
-                                            NOCONFLICTS, NOPROVIDES, NOREPLACES);
-    struct package_metadata *shared = make_pkg("shared", NODEPS, NOCONFLICTS,
-                                              NOPROVIDES, NOREPLACES);
+    struct package_metadata *app3 =
+        make_pkg("app3", (const char *[]){"shared"}, 1, NOCONFLICTS, NOPROVIDES,
+                 NOREPLACES);
+    struct package_metadata *app4 =
+        make_pkg("app4", (const char *[]){"shared"}, 1, NOCONFLICTS, NOPROVIDES,
+                 NOREPLACES);
+    struct package_metadata *shared =
+        make_pkg("shared", NODEPS, NOCONFLICTS, NOPROVIDES, NOREPLACES);
 
     struct dep_graph *g = dep_graph_new();
     assert(g);
@@ -402,16 +408,16 @@ test_parallel_resolve(void)
     assert(count == 9);
 
     size_t idx_base1 = find_index_in_order(order, count, "base1");
-    size_t idx_lib1  = find_index_in_order(order, count, "lib1");
-    size_t idx_app1  = find_index_in_order(order, count, "app1");
+    size_t idx_lib1 = find_index_in_order(order, count, "lib1");
+    size_t idx_app1 = find_index_in_order(order, count, "app1");
 
     size_t idx_base2 = find_index_in_order(order, count, "base2");
-    size_t idx_lib2  = find_index_in_order(order, count, "lib2");
-    size_t idx_app2  = find_index_in_order(order, count, "app2");
+    size_t idx_lib2 = find_index_in_order(order, count, "lib2");
+    size_t idx_app2 = find_index_in_order(order, count, "app2");
 
     size_t idx_shared = find_index_in_order(order, count, "shared");
-    size_t idx_app3   = find_index_in_order(order, count, "app3");
-    size_t idx_app4   = find_index_in_order(order, count, "app4");
+    size_t idx_app3 = find_index_in_order(order, count, "app3");
+    size_t idx_app4 = find_index_in_order(order, count, "app4");
 
     assert(idx_base1 < idx_lib1 && idx_lib1 < idx_app1);
     assert(idx_base2 < idx_lib2 && idx_lib2 < idx_app2);
