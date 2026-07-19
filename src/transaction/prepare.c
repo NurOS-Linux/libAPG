@@ -3,11 +3,33 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <pthread.h>
 
 #include "trans_priv.h"
 #include "../../include/apg/graph.h"
 #include "../../include/apg/db.h"
 #include "../../include/apg/package.h"
+
+struct break_task
+{
+    const struct dep_graph *g;
+    const char *pkg_name;
+    const char **installed_names;
+    size_t installed_count;
+    char **breaks;
+    size_t break_count;
+    dep_error_t err;
+};
+
+static void *
+break_worker_fn(void *arg)
+{
+    struct break_task *t = arg;
+    t->err = dep_graph_find_breaks((struct dep_graph *)t->g, t->pkg_name,
+                                   t->installed_names, t->installed_count,
+                                   &t->breaks, &t->break_count);
+    return NULL;
+}
 
 static bool
 in_strarray(const char **arr, size_t count, const char *name)
@@ -190,13 +212,23 @@ trans_prepare(struct apg_trans *trans)
 
     trans_error_t ret = TRANS_OK;
 
-    for (size_t i = 0; i < trans->install_count; i++)
+    if (trans->install_count > 0)
     {
-        const char *pkg_name = trans->install_pkgs[i]->meta->name;
+        const char **pkg_names =
+            malloc(trans->install_count * sizeof(*pkg_names));
+        if (!pkg_names)
+        {
+            ret = TRANS_ERR_NOMEM;
+            goto cleanup;
+        }
+        for (size_t i = 0; i < trans->install_count; i++)
+            pkg_names[i] = trans->install_pkgs[i]->meta->name;
 
         char **order = NULL;
         size_t order_count = 0;
-        dep_error_t err = dep_graph_resolve(g, pkg_name, &order, &order_count);
+        dep_error_t err = dep_graph_resolve_parallel(
+            g, pkg_names, trans->install_count, &order, &order_count);
+        free(pkg_names);
 
         if (err == DEP_ERR_CYCLE)
         {
@@ -242,32 +274,70 @@ trans_prepare(struct apg_trans *trans)
         free(order);
     }
 
-    for (size_t i = 0; i < trans->install_count; i++)
+    if (trans->install_count > 0)
     {
-        const char *pkg_name = trans->install_pkgs[i]->meta->name;
-
-        char **breaks = NULL;
-        size_t break_count = 0;
-        dep_error_t err = dep_graph_find_breaks(g, pkg_name, installed_names,
-                                                (size_t)installed_count,
-                                                &breaks, &break_count);
-        if (err != DEP_OK)
+        struct break_task *tasks =
+            calloc(trans->install_count, sizeof(*tasks));
+        pthread_t *threads = malloc(trans->install_count * sizeof(*threads));
+        if (!tasks || !threads)
         {
+            free(tasks);
+            free(threads);
             ret = TRANS_ERR_NOMEM;
             goto cleanup;
         }
 
-        for (size_t j = 0; j < break_count; j++)
+        for (size_t i = 0; i < trans->install_count; i++)
         {
-            trans_error_t cerr = conflict_push(trans, pkg_name, breaks[j]);
-            if (cerr != TRANS_OK)
+            tasks[i].g = g;
+            tasks[i].pkg_name = trans->install_pkgs[i]->meta->name;
+            tasks[i].installed_names = installed_names;
+            tasks[i].installed_count = (size_t)installed_count;
+
+            if (pthread_create(&threads[i], NULL, break_worker_fn, &tasks[i]) != 0)
             {
-                free(breaks);
-                ret = cerr;
-                goto cleanup;
+                tasks[i].err = dep_graph_find_breaks(
+                    g, tasks[i].pkg_name, installed_names,
+                    (size_t)installed_count, &tasks[i].breaks,
+                    &tasks[i].break_count);
+                threads[i] = 0;
             }
         }
-        free(breaks);
+
+        for (size_t i = 0; i < trans->install_count; i++)
+        {
+            if (threads[i] != 0)
+                pthread_join(threads[i], NULL);
+        }
+        free(threads);
+
+        for (size_t i = 0; i < trans->install_count; i++)
+        {
+            if (tasks[i].err != DEP_OK)
+            {
+                for (size_t k = 0; k < trans->install_count; k++)
+                    free(tasks[k].breaks);
+                free(tasks);
+                ret = TRANS_ERR_NOMEM;
+                goto cleanup;
+            }
+
+            for (size_t j = 0; j < tasks[i].break_count; j++)
+            {
+                trans_error_t cerr = conflict_push(
+                    trans, tasks[i].pkg_name, tasks[i].breaks[j]);
+                if (cerr != TRANS_OK)
+                {
+                    for (size_t k = 0; k < trans->install_count; k++)
+                        free(tasks[k].breaks);
+                    free(tasks);
+                    ret = cerr;
+                    goto cleanup;
+                }
+            }
+            free(tasks[i].breaks);
+        }
+        free(tasks);
     }
 
     for (size_t i = 0; i < trans->upgrade_count; i++)

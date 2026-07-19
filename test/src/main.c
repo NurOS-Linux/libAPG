@@ -10,6 +10,7 @@ main(void)
     test_linear_resolve();
     test_single_node_resolve();
     test_diamond_resolve();
+    test_parallel_resolve();
     test_duplicate_add();
     test_resolve_unknown_root();
     test_missing_transitive_dep();
@@ -53,6 +54,6 @@ main(void)
     test_rollback_install_removes_files();
     test_db_add_get_remove_roundtrip();
 
-    printf("All 41 tests passed.\n");
+    printf("All 42 tests passed.\n");
     return 0;
 }

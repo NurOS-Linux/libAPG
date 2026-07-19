@@ -3,6 +3,8 @@
 
 #include <stdlib.h>
 #include <stdint.h>
+#include <string.h>
+#include <pthread.h>
 
 #include "graph_priv.h"
 #include "../../include/apg/version.h"
@@ -98,6 +100,124 @@ dep_graph_resolve(struct dep_graph *g, const char *pkg_name, char ***order,
     free(state);
     free(idx_order);
     return err;
+}
+
+struct resolve_task
+{
+    const struct dep_graph *g;
+    const char *pkg_name;
+    char **order;
+    size_t order_count;
+    dep_error_t err;
+};
+
+static void *
+resolve_worker(void *arg)
+{
+    struct resolve_task *t = arg;
+    t->err = dep_graph_resolve((struct dep_graph *)t->g, t->pkg_name,
+                               &t->order, &t->order_count);
+    return NULL;
+}
+
+dep_error_t
+dep_graph_resolve_parallel(const struct dep_graph *g, const char **pkg_names,
+                            size_t count, char ***order, size_t *order_count)
+{
+    if (!g || !order || !order_count || (count > 0 && !pkg_names))
+        return DEP_ERR_NOMEM;
+
+    if (count == 0)
+    {
+        *order = NULL;
+        *order_count = 0;
+        return DEP_OK;
+    }
+
+    if (count == 1)
+    {
+        return dep_graph_resolve((struct dep_graph *)g, pkg_names[0], order,
+                                 order_count);
+    }
+
+    struct resolve_task *tasks = calloc(count, sizeof(*tasks));
+    pthread_t *threads = malloc(count * sizeof(*threads));
+    if (!tasks || !threads)
+    {
+        free(tasks);
+        free(threads);
+        return DEP_ERR_NOMEM;
+    }
+
+    for (size_t i = 0; i < count; i++)
+    {
+        tasks[i].g = g;
+        tasks[i].pkg_name = pkg_names[i];
+        if (pthread_create(&threads[i], NULL, resolve_worker, &tasks[i]) != 0)
+        {
+            tasks[i].err = dep_graph_resolve((struct dep_graph *)g, pkg_names[i],
+                                              &tasks[i].order, &tasks[i].order_count);
+            threads[i] = 0;
+        }
+    }
+
+    dep_error_t first_err = DEP_OK;
+    for (size_t i = 0; i < count; i++)
+    {
+        if (threads[i] != 0)
+            pthread_join(threads[i], NULL);
+        if (first_err == DEP_OK && tasks[i].err != DEP_OK)
+            first_err = tasks[i].err;
+    }
+
+    free(threads);
+
+    if (first_err != DEP_OK)
+    {
+        for (size_t i = 0; i < count; i++)
+            free(tasks[i].order);
+        free(tasks);
+        return first_err;
+    }
+
+    size_t total_max = 0;
+    for (size_t i = 0; i < count; i++)
+        total_max += tasks[i].order_count;
+
+    char **merged = malloc(total_max * sizeof(*merged));
+    if (!merged)
+    {
+        for (size_t i = 0; i < count; i++)
+            free(tasks[i].order);
+        free(tasks);
+        return DEP_ERR_NOMEM;
+    }
+
+    size_t merged_count = 0;
+    for (size_t i = 0; i < count; i++)
+    {
+        for (size_t j = 0; j < tasks[i].order_count; j++)
+        {
+            const char *name = tasks[i].order[j];
+            bool exists = false;
+            for (size_t k = 0; k < merged_count; k++)
+            {
+                if (strcmp(merged[k], name) == 0)
+                {
+                    exists = true;
+                    break;
+                }
+            }
+            if (!exists)
+                merged[merged_count++] = (char *)name;
+        }
+        free(tasks[i].order);
+    }
+
+    free(tasks);
+    *order = merged;
+    *order_count = merged_count;
+    return DEP_OK;
 }
 
 bool

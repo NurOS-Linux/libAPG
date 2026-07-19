@@ -6,6 +6,7 @@
 void test_linear_resolve(void);
 void test_single_node_resolve(void);
 void test_diamond_resolve(void);
+void test_parallel_resolve(void);
 void test_duplicate_add(void);
 void test_resolve_unknown_root(void);
 void test_missing_transitive_dep(void);

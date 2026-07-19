@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
 #include <assert.h>
 
 #include "helpers.h"
@@ -342,4 +343,93 @@ test_epoch_equal_falls_through(void)
     assert(ver_compare("1:1.0", "1:1.0") == 0);
     assert(ver_satisfies("1:2.0", VER_OP_GE, "1:1.0"));
     printf("test_epoch_equal_falls_through: PASS\n");
+}
+
+static size_t
+find_index_in_order(char **order, size_t count, const char *name)
+{
+    for (size_t i = 0; i < count; i++)
+        if (strcmp(order[i], name) == 0)
+            return i;
+    return SIZE_MAX;
+}
+
+void
+test_parallel_resolve(void)
+{
+    // Subtree 1: app1 -> lib1 -> base1
+    struct package_metadata *app1 = make_pkg("app1", (const char *[]){"lib1"}, 1,
+                                            NOCONFLICTS, NOPROVIDES, NOREPLACES);
+    struct package_metadata *lib1 = make_pkg("lib1", (const char *[]){"base1"}, 1,
+                                            NOCONFLICTS, NOPROVIDES, NOREPLACES);
+    struct package_metadata *base1 = make_pkg("base1", NODEPS, NOCONFLICTS,
+                                             NOPROVIDES, NOREPLACES);
+
+    // Subtree 2: app2 -> lib2 -> base2
+    struct package_metadata *app2 = make_pkg("app2", (const char *[]){"lib2"}, 1,
+                                            NOCONFLICTS, NOPROVIDES, NOREPLACES);
+    struct package_metadata *lib2 = make_pkg("lib2", (const char *[]){"base2"}, 1,
+                                            NOCONFLICTS, NOPROVIDES, NOREPLACES);
+    struct package_metadata *base2 = make_pkg("base2", NODEPS, NOCONFLICTS,
+                                             NOPROVIDES, NOREPLACES);
+
+    // Shared subtree: app3 -> shared, app4 -> shared
+    struct package_metadata *app3 = make_pkg("app3", (const char *[]){"shared"}, 1,
+                                            NOCONFLICTS, NOPROVIDES, NOREPLACES);
+    struct package_metadata *app4 = make_pkg("app4", (const char *[]){"shared"}, 1,
+                                            NOCONFLICTS, NOPROVIDES, NOREPLACES);
+    struct package_metadata *shared = make_pkg("shared", NODEPS, NOCONFLICTS,
+                                              NOPROVIDES, NOREPLACES);
+
+    struct dep_graph *g = dep_graph_new();
+    assert(g);
+    assert(dep_graph_add(g, app1) == DEP_OK);
+    assert(dep_graph_add(g, lib1) == DEP_OK);
+    assert(dep_graph_add(g, base1) == DEP_OK);
+    assert(dep_graph_add(g, app2) == DEP_OK);
+    assert(dep_graph_add(g, lib2) == DEP_OK);
+    assert(dep_graph_add(g, base2) == DEP_OK);
+    assert(dep_graph_add(g, app3) == DEP_OK);
+    assert(dep_graph_add(g, app4) == DEP_OK);
+    assert(dep_graph_add(g, shared) == DEP_OK);
+
+    const char *targets[] = {"app1", "app2", "app3", "app4"};
+    char **order = NULL;
+    size_t count = 0;
+
+    dep_error_t err = dep_graph_resolve_parallel(g, targets, 4, &order, &count);
+    assert(err == DEP_OK);
+    assert(count == 9);
+
+    size_t idx_base1 = find_index_in_order(order, count, "base1");
+    size_t idx_lib1  = find_index_in_order(order, count, "lib1");
+    size_t idx_app1  = find_index_in_order(order, count, "app1");
+
+    size_t idx_base2 = find_index_in_order(order, count, "base2");
+    size_t idx_lib2  = find_index_in_order(order, count, "lib2");
+    size_t idx_app2  = find_index_in_order(order, count, "app2");
+
+    size_t idx_shared = find_index_in_order(order, count, "shared");
+    size_t idx_app3   = find_index_in_order(order, count, "app3");
+    size_t idx_app4   = find_index_in_order(order, count, "app4");
+
+    assert(idx_base1 < idx_lib1 && idx_lib1 < idx_app1);
+    assert(idx_base2 < idx_lib2 && idx_lib2 < idx_app2);
+    assert(idx_shared < idx_app3);
+    assert(idx_shared < idx_app4);
+
+    free(order);
+    dep_graph_free(g);
+
+    package_metadata_free(app1);
+    package_metadata_free(lib1);
+    package_metadata_free(base1);
+    package_metadata_free(app2);
+    package_metadata_free(lib2);
+    package_metadata_free(base2);
+    package_metadata_free(app3);
+    package_metadata_free(app4);
+    package_metadata_free(shared);
+
+    printf("test_parallel_resolve: PASS\n");
 }
