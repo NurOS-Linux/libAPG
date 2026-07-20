@@ -198,7 +198,7 @@ elif cpu == 'ppc64' and host_machine.endian() == 'little'
     '-DAPG_MD5_HW_AVAILABLE=1',
   ]
 elif cpu == 'ppc64' and host_machine.endian() == 'big'
-  # Targets the ELFv2 ABI (-mabi=elfv2, set in cross-ppc64.txt), not glibc's
+  # Targets the ELFv2 ABI (-mabi=elfv2, set in cross/cross-ppc64.txt), not glibc's
   # traditional ELFv1 default for big-endian ppc64.
   libapg_sources += files(
     'arch/ppc64/sha256.S',

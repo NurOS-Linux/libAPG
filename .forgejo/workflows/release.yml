@@ -120,7 +120,7 @@ jobs:
           PKG_CONFIG_LIBDIR: /usr/lib/aarch64-linux-gnu/pkgconfig:/usr/share/pkgconfig
         run: |
           meson setup build \
-            --cross-file cross-aarch64.txt \
+            --cross-file cross/cross-aarch64.txt \
             --buildtype=release \
             --prefix=/usr
           meson compile -C build
@@ -203,7 +203,7 @@ jobs:
           PKG_CONFIG_LIBDIR: /usr/lib/riscv64-linux-gnu/pkgconfig:/usr/share/pkgconfig
         run: |
           meson setup build \
-            --cross-file cross-riscv64.txt \
+            --cross-file cross/cross-riscv64.txt \
             --buildtype=release \
             --prefix=/usr
           meson compile -C build
@@ -324,7 +324,7 @@ jobs:
           PKG_CONFIG_LIBDIR: /usr/lib/mips64el-linux-gnuabi64/pkgconfig:/usr/share/pkgconfig
         run: |
           meson setup build \
-            --cross-file cross-mips64.txt \
+            --cross-file cross/cross-mips64.txt \
             --buildtype=release \
             --prefix=/usr
           meson compile -C build
