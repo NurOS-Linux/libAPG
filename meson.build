@@ -1,5 +1,9 @@
 project('libapg', 'c',
-  version: '1.10.1'
+  version: '1.10.1',
+  default_options: [
+    'libarchive:tests=disabled',
+    'libarchive:progs=[]',
+  ]
 )
 
 libapg_sources = files(
@@ -214,26 +218,16 @@ endif
 
 threads_dep = dependency('threads')
 
-libarchive_dep = dependency('libarchive', required: false)
-lmdb_dep = dependency('lmdb', required: false)
-libyyjson_dep = dependency('yyjson', required: false)
+libarchive_dep = dependency('libarchive', fallback: ['libarchive', 'libarchive_dep'])
+lmdb_dep = dependency('lmdb', fallback: ['lmdb', 'lmdb_dep'])
+libyyjson_dep = dependency('yyjson', fallback: ['yyjson', 'yyjson_dep'])
+
 gpgme_dep = dependency('gpgme', required: false)
 sodium_dep = dependency('libsodium', required: false)
 if not sodium_dep.found()
   sodium_dep = cc.find_library('sodium', required: false)
 endif
 
-if not libarchive_dep.found()
-  libarchive_dep = cc.find_library('archive', required: true)
-endif
-
-if not lmdb_dep.found()
-  lmdb_dep = cc.find_library('lmdb', required: true)
-endif
-
-if not libyyjson_dep.found()
-  libyyjson_dep = cc.find_library('yyjson', required: true)
-endif
 
 sign_dep = []
 if gpgme_dep.found()
