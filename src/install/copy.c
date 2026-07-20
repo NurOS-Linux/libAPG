@@ -11,7 +11,7 @@
 #include "../../include/apg/copy.h"
 #include "../../include/util.h"
 
-static bool
+bool
 copy_file(const char *src, const char *dst)
 {
     FILE *in = fopen(src, "rb");

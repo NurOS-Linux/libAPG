@@ -13,6 +13,7 @@
 #include <apg/install.h>
 #include <apg/db.h>
 #include <apg/package.h>
+#include <apg/scripts.h>
 #include <util.h>
 
 // concat_dirs() does not insert a separator between its arguments (despite
@@ -236,4 +237,53 @@ test_db_add_get_remove_roundtrip(void)
     package_free(pkg);
     close_tmp_db(db, db_path);
     printf("test_db_add_get_remove_roundtrip: PASS\n");
+}
+
+void
+test_run_script_root(void)
+{
+    char *pkg_dir = mktmp_dir("scriptpkg");
+    char *scripts_dir = join_path(pkg_dir, "scripts");
+    mkdir_p(scripts_dir);
+
+    char *script_path = join_path(scripts_dir, "post-install");
+    write_file(script_path, "#!/bin/sh\nexit 0\n");
+    chmod(script_path, 0755);
+
+    assert(run_script(pkg_dir, "post-install", "/"));
+    assert(run_script(pkg_dir, "post-install", NULL));
+
+    char *root = mktmp_dir("root_script");
+    chmod(root, 0755);
+    char *root_tmp = join_path(root, "tmp");
+    mkdir_p(root_tmp);
+    chmod(root_tmp, 0755);
+
+    char *alt_pkg_dir = join_path(root, "tmp/pkg");
+    char *alt_scripts_dir = join_path(alt_pkg_dir, "scripts");
+    mkdir_p(alt_scripts_dir);
+
+    char *marker_script = join_path(alt_scripts_dir, "pre-install");
+    write_file(marker_script, "#!/bin/sh\necho hello > /marker_test.txt\n");
+    chmod(marker_script, 0755);
+
+    bool res = run_script(alt_pkg_dir, "pre-install", root);
+    assert(res == true);
+
+    char *marker_file = join_path(root, "marker_test.txt");
+    struct stat st;
+    assert(stat(marker_file, &st) == 0);
+
+    free(marker_file);
+    free(marker_script);
+    free(alt_scripts_dir);
+    free(alt_pkg_dir);
+    free(root_tmp);
+    free(script_path);
+    free(scripts_dir);
+    rmtree(pkg_dir);
+    rmtree(root);
+    free(pkg_dir);
+    free(root);
+    printf("test_run_script_root: PASS\n");
 }

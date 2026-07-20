@@ -49,3 +49,4 @@ void test_install_data_dir_copies_files(void);
 void test_install_data_dir_missing_data_returns_false(void);
 void test_rollback_install_removes_files(void);
 void test_db_add_get_remove_roundtrip(void);
+void test_run_script_root(void);
