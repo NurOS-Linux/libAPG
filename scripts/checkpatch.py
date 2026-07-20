@@ -26,7 +26,8 @@ def run_clang_format() -> bool:
     sources = [str(f) for f in ROOT.rglob('*')
                if f.suffix in ('.c', '.h')
                and '.git' not in f.parts
-               and 'build' not in f.parts]
+               and 'build' not in f.parts
+               and 'subprojects' not in f.parts]
     return step('clang-format', ['clang-format', '--dry-run', '--Werror'] + sources)
 
 
