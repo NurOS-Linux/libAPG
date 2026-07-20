@@ -12,6 +12,7 @@ TARGETS = [
     (ROOT / 'meson.build',   r"(version:\s*')\d+\.\d+\.\d+(')"),
     (ROOT / 'flake.nix',     r'(version\s*=\s*")\d+\.\d+\.\d+(";\s*)'),
     (ROOT / 'docs/conf.py',  r'(release\s*=\s*")\d+\.\d+\.\d+(")')  ,
+    (ROOT / 'docs/conf.py',  r'(html_title\s*=\s*"libapg\s*)\d+\.\d+\.\d+(")') ,
     (ROOT / 'Doxyfile',      r'(PROJECT_NUMBER\s*=\s*)\d+\.\d+\.\d+()')
 ]
 
