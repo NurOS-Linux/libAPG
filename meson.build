@@ -3,6 +3,11 @@ project('libapg', 'c',
   default_options: [
     'libarchive:tests=disabled',
     'libarchive:progs=[]',
+    'libarchive:openssl=disabled',
+    'libarchive:xml2=disabled',
+    'libarchive:expat=disabled',
+    'libarchive:cng=disabled',
+    'libarchive:iconv=disabled',
   ]
 )
 
