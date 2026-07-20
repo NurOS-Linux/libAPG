@@ -124,7 +124,7 @@ struct apg_trans;
  * @brief Attach an install policy to a transaction.
  *
  * Must be called before trans_commit(). When @p policy->require_signature is
- * true, commit rejects any package whose @c <pkg_path>.sig does not verify
+ * true, commit rejects any package whose @c pkg_path.sig does not verify
  * against the keys in @p policy->keyring_dir (default: @c /etc/apg/trusted.d).
  * Pass NULL to clear a previously set policy.
  *
