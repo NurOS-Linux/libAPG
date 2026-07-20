@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Added
+
+- Meson wrap files (`subprojects/yyjson.wrap`, `subprojects/lmdb.wrap`, `subprojects/libarchive.wrap`) for automatic fallback subproject dependency building
+- Support for extracting `.tar.gz` and `.tar.zstd` package archives alongside `.tar.xz` in `src/archive.c`
+
+### Changed
+
+- Moved cross-compilation target files from root directory into `cross/` directory (`cross/cross-*.txt`)
+
+### Fixed
+
+- Disabled `openssl`, `xml2`, `expat`, `cng`, and `iconv` in `libarchive` subproject default options to prevent host OpenSSL header lookup during cross-compilation
+
 ## [1.10.1] - 2026-07-20
 
 ### Fixed
