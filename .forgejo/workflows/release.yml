@@ -348,3 +348,35 @@ jobs:
         with:
           name: pkg-mips64el
           path: libapg-${{ steps.version.outputs.version }}-mips64el.apg
+
+  release:
+    name: Create Forgejo Release
+    runs-on: ubuntu-latest
+    needs: [build-x86_64, build-aarch64, build-riscv64, build-mips64el]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Extract Changelog notes
+        id: changelog
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          awk -v ver="$version" '
+            $0 ~ "^## \\[" ver "\\]" { flag=1; next }
+            /^## \[/ { if (flag) exit }
+            flag { print }
+          ' CHANGELOG.md > release_notes.md
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: pkgs/
+          merge-multiple: true
+
+      - name: Create Forgejo Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: libapg ${{ github.ref_name }}
+          body_path: release_notes.md
+          files: pkgs/*.apg
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

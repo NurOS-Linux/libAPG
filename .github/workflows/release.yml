@@ -345,11 +345,34 @@ jobs:
           path: pkgs/
           merge-multiple: true
 
+      - name: Extract Changelog notes
+        id: changelog
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          awk -v ver="$version" '
+            $0 ~ "^## \\[" ver "\\]" { flag=1; next }
+            /^## \[/ { if (flag) exit }
+            flag { print }
+          ' CHANGELOG.md > release_notes.md
+
+          if [ -s release_notes.md ]; then
+            echo "has_notes=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_notes=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Create GitHub Release
         run: |
-          gh release create "${{ github.ref_name }}" \
-            --title "libapg ${{ github.ref_name }}" \
-            --generate-notes \
-            pkgs/*.apg
+          if [ "${{ steps.changelog.outputs.has_notes }}" = "true" ]; then
+            gh release create "${{ github.ref_name }}" \
+              --title "libapg ${{ github.ref_name }}" \
+              --notes-file release_notes.md \
+              pkgs/*.apg
+          else
+            gh release create "${{ github.ref_name }}" \
+              --title "libapg ${{ github.ref_name }}" \
+              --generate-notes \
+              pkgs/*.apg
+          fi
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
