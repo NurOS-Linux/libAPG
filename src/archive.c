@@ -18,7 +18,9 @@ extract_to_dir(const char *archive_path, const char *path_dest)
     char full_path[PATH_MAX];
 
     struct archive *a = archive_read_new();
+    archive_read_support_filter_gzip(a);
     archive_read_support_filter_xz(a);
+    archive_read_support_filter_zstd(a);
     archive_read_support_format_tar(a);
 
     struct archive *ext = archive_write_disk_new();
