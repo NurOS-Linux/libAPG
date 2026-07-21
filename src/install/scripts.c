@@ -20,7 +20,6 @@
 #elif defined(__FreeBSD__)
 
 #include <fcntl.h>
-#include <sys/capsicum.h>
 #endif
 
 #include "../../include/apg/scripts.h"
@@ -251,14 +250,6 @@ exec_script(const char *path, const char *root_path)
                 close(pipefd[1]);
                 _exit(1);
             }
-        }
-
-        if (cap_enter() < 0)
-        {
-            uint8_t err = 1;
-            (void)write(pipefd[1], &err, 1);
-            close(pipefd[1]);
-            _exit(1);
         }
 
         close(pipefd[1]);

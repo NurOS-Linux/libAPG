@@ -58,7 +58,9 @@ verify_crc32sums(const char *pkg_dir, const char *sums_path)
         char hash_str[9] = {0};
         char rel_path[PATH_MAX];
 
-        if (sscanf(line, "%8s  %4095s", hash_str, rel_path) != 2)
+        char fmt[32];
+        snprintf(fmt, sizeof(fmt), "%%8s  %%%zus", sizeof(rel_path) - 1);
+        if (sscanf(line, fmt, hash_str, rel_path) != 2)
             continue;
 
         char *full_path = concat_dirs(pkg_dir, rel_path);
@@ -99,7 +101,9 @@ verify_md5sums(const char *pkg_dir, const char *sums_path)
         char hash_str[33] = {0};
         char rel_path[PATH_MAX];
 
-        if (sscanf(line, "%32s  %4095s", hash_str, rel_path) != 2)
+        char fmt[32];
+        snprintf(fmt, sizeof(fmt), "%%32s  %%%zus", sizeof(rel_path) - 1);
+        if (sscanf(line, fmt, hash_str, rel_path) != 2)
             continue;
 
         char *full_path = concat_dirs(pkg_dir, rel_path);
@@ -148,7 +152,9 @@ verify_sha256sums(const char *pkg_dir, const char *sums_path)
         char hash_str[65] = {0};
         char rel_path[PATH_MAX];
 
-        if (sscanf(line, "%64s  %4095s", hash_str, rel_path) != 2)
+        char fmt[32];
+        snprintf(fmt, sizeof(fmt), "%%64s  %%%zus", sizeof(rel_path) - 1);
+        if (sscanf(line, fmt, hash_str, rel_path) != 2)
             continue;
 
         char *full_path = concat_dirs(pkg_dir, rel_path);
