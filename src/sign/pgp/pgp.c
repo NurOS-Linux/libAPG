@@ -14,7 +14,7 @@ is_ecc_algo(gpgme_pubkey_algo_t algo)
 }
 
 bool
-sign_verify(const char *pkg_path, const char *sig_path, bool allow_rsa)
+sign_verify_gpgme(const char *pkg_path, const char *sig_path, bool allow_rsa)
 {
     gpgme_ctx_t ctx;
     gpgme_data_t sig, data;
@@ -63,7 +63,7 @@ sign_verify(const char *pkg_path, const char *sig_path, bool allow_rsa)
 }
 
 bool
-sign_file(const char *pkg_path, const char *sig_path)
+sign_file_gpgme(const char *pkg_path, const char *sig_path)
 {
     gpgme_ctx_t ctx;
     gpgme_data_t in, out;

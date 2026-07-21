@@ -6,15 +6,15 @@
 
 #include "../../../include/apg/keyring.h"
 
-struct keyring
+struct keyring_gpgme
 {
     gpgme_ctx_t ctx;
 };
 
-struct keyring *
-keyring_load(const char *keyring_dir)
+struct keyring_gpgme *
+keyring_load_gpgme(const char *keyring_dir)
 {
-    struct keyring *kr = malloc(sizeof(*kr));
+    struct keyring_gpgme *kr = malloc(sizeof(*kr));
     if (!kr)
         return NULL;
 
@@ -31,7 +31,7 @@ keyring_load(const char *keyring_dir)
 }
 
 void
-keyring_free(struct keyring *kr)
+keyring_free_gpgme(struct keyring_gpgme *kr)
 {
     if (!kr)
         return;
@@ -40,8 +40,8 @@ keyring_free(struct keyring *kr)
 }
 
 bool
-keyring_verify(const struct keyring *kr, const char *pkg_path,
-               const char *sig_path)
+keyring_verify_gpgme(const struct keyring_gpgme *kr, const char *pkg_path,
+                     const char *sig_path)
 {
     if (!kr || !pkg_path || !sig_path)
         return false;
@@ -71,8 +71,9 @@ keyring_verify(const struct keyring *kr, const char *pkg_path,
 }
 
 bool
-keyring_add_key(const char *keyring_dir, const char *new_key_path,
-                const char *key_sig_path, const struct keyring *trusted)
+keyring_add_key_gpgme(const char *keyring_dir, const char *new_key_path,
+                      const char *key_sig_path,
+                      const struct keyring_gpgme *trusted)
 {
 
     (void)keyring_dir;

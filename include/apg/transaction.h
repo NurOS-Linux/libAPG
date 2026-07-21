@@ -125,8 +125,9 @@ struct apg_trans;
  *
  * Must be called before trans_commit(). When @p policy->require_signature is
  * true, commit rejects any package whose @c pkg_path.sig does not verify
- * against the keys in @p policy->keyring_dir (default: @c /etc/apg/trusted.d).
- * Pass NULL to clear a previously set policy.
+ * against the keys in @p policy->keyring_dir (default: @c /etc/apg/trusted.d),
+ * checked with the @p policy->backend keyring backend (default:
+ * @ref SIGN_BACKEND_SODIUM). Pass NULL to clear a previously set policy.
  *
  * @param trans  Transaction to configure.
  * @param policy Policy to apply, or NULL to disable.
