@@ -9,6 +9,8 @@
  * @brief General-purpose string and filesystem utilities.
  */
 
+#include <stdbool.h>
+
 /**
  * @brief Concatenate two strings into a new heap-allocated string.
  *
@@ -49,3 +51,12 @@ char *concat_dirs(const char *path1, const char *path2);
  *         failure. Caller must free each string and the array itself.
  */
 char **collect_files(const char *base, int *count);
+
+/**
+ * @brief Copy a single file from src to dst.
+ *
+ * @param src Source file path.
+ * @param dst Destination file path.
+ * @return true on success, false on failure.
+ */
+bool copy_file(const char *src, const char *dst);

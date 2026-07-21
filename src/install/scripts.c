@@ -20,7 +20,6 @@
 #include <sys/capsicum.h>
 #endif
 
-#include "../../include/apg/copy.h"
 #include "../../include/apg/scripts.h"
 #include "../../include/util.h"
 

@@ -11,15 +11,6 @@
 #include <stdbool.h>
 
 /**
- * @brief Copy a single file from src to dst.
- *
- * @param src Source file path.
- * @param dst Destination file path.
- * @return true on success, false on failure.
- */
-bool copy_file(const char *src, const char *dst);
-
-/**
  * @brief Recursively copy a directory tree.
  *
  * Creates @p dst if it does not exist. Existing files in @p dst are
