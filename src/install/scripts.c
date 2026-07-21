@@ -20,6 +20,7 @@
 #endif
 
 #include "../../include/apg/scripts.h"
+#include "../../include/apg/copy.h"
 #include "../../include/util.h"
 
 #ifndef PATH_MAX
@@ -317,4 +318,104 @@ run_script(const char *pkg_dir, const char *name, const char *root_path)
     bool ok = exec_script(found, root_path);
     free(found);
     return ok;
+}
+
+static void
+mkdir_p(const char *path)
+{
+    char buf[PATH_MAX];
+    size_t len = strlen(path);
+    if (len >= sizeof(buf))
+        return;
+    memcpy(buf, path, len + 1);
+
+    for (size_t i = 1; i < len; i++)
+    {
+        if (buf[i] == '/')
+        {
+            buf[i] = '\0';
+            create_dir(buf);
+            buf[i] = '/';
+        }
+    }
+    create_dir(buf);
+}
+
+static void
+rmtree(const char *path)
+{
+    DIR *dir = opendir(path);
+    if (!dir)
+    {
+        unlink(path);
+        return;
+    }
+
+    struct dirent *entry;
+    while ((entry = readdir(dir)) != NULL)
+    {
+        if (!strcmp(entry->d_name, ".") || !strcmp(entry->d_name, ".."))
+            continue;
+        char *child = concat_dirs(path, entry->d_name);
+        if (child)
+        {
+            rmtree(child);
+            free(child);
+        }
+    }
+    closedir(dir);
+    rmdir(path);
+}
+
+char *
+scripts_store_path(const char *root_path, const char *pkg_name)
+{
+    char *base = concat_dirs(root_path, "var/lib/apg/pkgscripts");
+    if (!base)
+        return NULL;
+    char *full = concat_dirs(base, pkg_name);
+    free(base);
+    return full;
+}
+
+bool
+scripts_persist(const char *pkg_dir, const char *root_path,
+                const char *pkg_name)
+{
+    char *src = concat_dirs(pkg_dir, "scripts");
+    if (!src)
+        return false;
+
+    struct stat st;
+    if (stat(src, &st) != 0 || !S_ISDIR(st.st_mode))
+    {
+        free(src);
+        return true;
+    }
+
+    char *store = scripts_store_path(root_path, pkg_name);
+    if (!store)
+    {
+        free(src);
+        return false;
+    }
+
+    mkdir_p(store);
+    char *dst = concat_dirs(store, "scripts");
+    bool ok = dst && copy_dir(src, dst);
+
+    free(dst);
+    free(store);
+    free(src);
+    return ok;
+}
+
+void
+scripts_persist_remove(const char *root_path, const char *pkg_name)
+{
+    char *store = scripts_store_path(root_path, pkg_name);
+    if (!store)
+        return;
+    rmtree(store);
+    free(store);
 }

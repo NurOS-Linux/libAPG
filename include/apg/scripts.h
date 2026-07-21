@@ -36,3 +36,47 @@
  *         or if the chroot/sandbox setup failed.
  */
 bool run_script(const char *pkg_dir, const char *name, const char *root_path);
+
+/**
+ * @brief Compute the persistent storage path for a package's scripts/
+ *        directory.
+ *
+ * This is the path used by scripts_persist() and scripts_persist_remove(),
+ * and the @p pkg_dir to pass to run_script() when running @c pre-remove or
+ * @c post-remove at removal time, once the original extracted package
+ * directory no longer exists.
+ *
+ * @param root_path Target filesystem root path (e.g. @c "/").
+ * @param pkg_name  Name of the package.
+ * @return Heap-allocated path, or NULL on allocation failure.
+ *         Caller must free().
+ */
+char *scripts_store_path(const char *root_path, const char *pkg_name);
+
+/**
+ * @brief Persist a package's scripts/ directory beyond the lifetime of its
+ *        extracted package directory, so @c pre-remove and @c post-remove
+ *        can still be run when the package is later removed.
+ *
+ * Does nothing (and returns true) if @p pkg_dir has no @c scripts/
+ * subdirectory.
+ *
+ * @param pkg_dir   Path to the extracted package directory, still on disk.
+ * @param root_path Target filesystem root path (e.g. @c "/").
+ * @param pkg_name  Name of the package being installed.
+ * @return true on success or if there was nothing to persist, false if the
+ *         scripts/ directory exists but could not be copied.
+ */
+bool scripts_persist(const char *pkg_dir, const char *root_path,
+                     const char *pkg_name);
+
+/**
+ * @brief Remove a package's persisted scripts/ directory.
+ *
+ * Call after running @c post-remove during package removal. Safe to call
+ * even if nothing was ever persisted.
+ *
+ * @param root_path Target filesystem root path (e.g. @c "/").
+ * @param pkg_name  Name of the package being removed.
+ */
+void scripts_persist_remove(const char *root_path, const char *pkg_name);
