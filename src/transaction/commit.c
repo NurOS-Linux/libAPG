@@ -13,6 +13,7 @@
 #include "../../include/apg/db.h"
 #include "../../include/apg/journal.h"
 #include "../../include/apg/keyring.h"
+#include "../../include/apg/scripts.h"
 #include "../../include/util.h"
 
 #define DEFAULT_KEYRING_DIR APG_KEYRING_DIR
@@ -64,6 +65,23 @@ struct conf_backup
     size_t size;
 };
 
+static char *
+resolve_conf_path(const char *root_path, const char *entry)
+{
+    const char *home_prefix = "$HOME";
+    size_t home_len = strlen(home_prefix);
+
+    if (strncmp(entry, home_prefix, home_len) == 0)
+    {
+        const char *home = getenv("HOME");
+        if (!home)
+            return NULL;
+        return concat_dirs(home, entry + home_len);
+    }
+
+    return concat_dirs(root_path, entry);
+}
+
 static struct conf_backup *
 save_confs(const struct package *pkg, const char *root_path, int *count)
 {
@@ -80,7 +98,7 @@ save_confs(const struct package *pkg, const char *root_path, int *count)
     {
         if (!conf->items[i])
             continue;
-        char *full = concat_dirs(root_path, conf->items[i]);
+        char *full = resolve_conf_path(root_path, conf->items[i]);
         if (!full)
             continue;
 
@@ -319,7 +337,12 @@ trans_commit(struct apg_trans *trans, const char *root_path)
         else
         {
             struct package *installed = db_get(trans->db, step->pkg_name);
-            bool ok = db_remove(trans->db, step->pkg_name);
+
+            char *scripts_dir = scripts_store_path(root_path, step->pkg_name);
+            bool pre_ok = !scripts_dir ||
+                          run_script(scripts_dir, "pre-remove", root_path);
+
+            bool ok = pre_ok && db_remove(trans->db, step->pkg_name);
             if (ok && installed)
             {
                 const struct str_list *files = &installed->package_files;
@@ -335,6 +358,16 @@ trans_commit(struct apg_trans *trans, const char *root_path)
                     }
                 }
             }
+
+            if (ok && scripts_dir)
+                run_script(scripts_dir, "post-remove", root_path);
+
+            if (scripts_dir)
+            {
+                scripts_persist_remove(root_path, step->pkg_name);
+                free(scripts_dir);
+            }
+
             package_free(installed);
             journal_write(trans->db->env, JOURNAL_REMOVE, step->pkg_name,
                           step->pkg_version,
