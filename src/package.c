@@ -152,6 +152,8 @@ install_package_in_root(struct package *pkg, const char *root_path)
         return false;
     }
 
+    scripts_persist(real_tmp, root_path, pkg->meta->name);
+
     free(real_tmp);
     return true;
 }
@@ -207,7 +209,7 @@ parse_package(const char *path, const char *root_path)
         return NULL;
     }
 
-    char *meta_path = concat_dirs(real_tmp, "meta.json");
+    char *meta_path = concat_dirs(real_tmp, "metadata.json");
     free(real_tmp);
 
     package_metadata_free(pkg->meta);
