@@ -264,12 +264,18 @@ test_run_script_root(void)
     mkdir_p(alt_scripts_dir);
 
     char *marker_script = join_path(alt_scripts_dir, "pre-install");
-    write_file(marker_script, "#!/bin/sh\nexit 0\n");
+    write_file(
+        marker_script,
+        "#!/bin/sh\necho fail > ../../../../tmp/libapg_escape_test.txt\n");
     chmod(marker_script, 0755);
 
     // Running script on a root without /bin/sh returns false (fail-closed)
     bool res = run_script(alt_pkg_dir, "pre-install", root);
     assert(res == false);
+
+    // Verify script cannot escape root_path to write on host /tmp
+    struct stat escape_st;
+    assert(stat("/tmp/libapg_escape_test.txt", &escape_st) != 0);
 
     free(marker_script);
 
