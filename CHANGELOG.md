@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.11.1] - 2026-07-21
+
+### Fixed
+
+- Fixed `run_script()` failing to execute any install script on FreeBSD, which caused the `test_run_script_root` `SIGABRT` in CI (`src/install/scripts.c`). Two issues stacked up:
+  - `cap_enter()` was entering Capsicum capability mode before `fexecve()`, but capability mode forbids the kernel from looking up an interpreter path, which any `#!`-script exec requires. Removing `cap_enter()` alone did not fix it.
+  - Independently of Capsicum, FreeBSD's `fexecve()` cannot execute interpreted (`#!`) scripts at all: the shell image activator needs a real pathname to build the interpreter's argv, not just a file descriptor.
+  - The FreeBSD-specific `open()` + `fexecve()` branch is removed; FreeBSD now falls through to the same path-based `execve()`/`chroot()` logic already used for non-Linux targets, matching what Linux does with `execl()`. Containment for an alternate install root is still provided by `chroot()`
+
 ## [1.11.0] - 2026-07-21
 
 ### Added
@@ -22,7 +31,6 @@ All notable changes to this project will be documented in this file.
 
 - Disabled `openssl`, `xml2`, `expat`, `cng`, and `iconv` in `libarchive` subproject default options to prevent host OpenSSL header lookup during cross-compilation
 - Fixed a potential stack buffer overflow in `verify_crc32sums()`, `verify_md5sums()`, and `verify_sha256sums()` (`src/checksum/checksum.c`): the `sscanf()` field width for the path column was hardcoded to `4095`, assuming a 4096-byte `PATH_MAX`, but the destination buffer is sized to the platform's actual `PATH_MAX` (1024 on FreeBSD), so a long path in a `sums` file could overflow it. The width is now computed from the buffer's actual size
-- Removed the `cap_enter()` Capsicum sandbox call from `run_script()` on FreeBSD (`src/install/scripts.c`): entering capability mode before `fexecve()` is incompatible with executing `#!`-scripts, since the kernel needs to look up the interpreter path after capability mode is entered. This made every install script fail to run on FreeBSD and was the cause of the `test_run_script_root` `SIGABRT` in CI. Containment for an alternate install root is still provided by `chroot()`
 
 ## [1.10.1] - 2026-07-20
 
