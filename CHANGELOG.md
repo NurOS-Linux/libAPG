@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.11.2] - 2026-07-22
+
+### Fixed
+
+- CI: install missing `libsodium-dev`/`libgpgme-dev` across all ISA jobs (native x86_64, aarch64, riscv64, armhf); build `libgpg-error`/`libassuan`/`gpgme` from source for mips64el
+- Read `metadata.json` instead of `meta.json` when parsing a package archive (`src/package.c`), matching the documented APG format spec
+- Expand `$HOME` in `conf` entries against the invoking user's real home directory instead of treating it as a literal path component (`src/transaction/commit.c`)
+- Persist a package's `scripts/` directory at install time so `pre-remove`/`post-remove` actually run on removal (`include/apg/scripts.h`, `src/install/scripts.c`, `src/transaction/commit.c`); previously these were documented but never invoked
+
 ## [1.11.1] - 2026-07-21
 
 ### Fixed
