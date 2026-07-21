@@ -20,22 +20,24 @@ Package management library for NurOS.
 | [libarchive](https://www.libarchive.org/) | Archive and compression library |
 | [lmdb](https://www.symas.com/lmdb) | Embedded key-value database |
 | [yyjson](https://github.com/ibireme/yyjson) | JSON library |
-| [gpgme](https://www.gnupg.org/related_software/gpgme/) **or** [libsodium](https://libsodium.org/) | Package signing |
+| [gpgme](https://www.gnupg.org/related_software/gpgme/) **and** [libsodium](https://libsodium.org/) | Package signing |
 | [libseccomp](https://github.com/seccomp/libseccomp) *(optional, Linux only)* | Syscall filtering for install script sandbox |
 
 ## Signing backends
 
-libapg supports two signing backends. The build system picks the first one available:
+libapg builds in both signing backends side by side; callers pick which one to use:
 
-- **gpgme** (preferred) — PGP signing via GnuPG. Only ECC keys are accepted by default (Ed25519, ECDSA). RSA can be enabled explicitly by passing `allow_rsa = true` to `sign_verify`.
-- **libsodium** (fallback) — Ed25519 signing. Always ECC, keys are read from `/etc/apg/keys/`.
+- **libsodium** (`sign_verify`, `sign_file`, `keyring_load`, ...; the default): Ed25519 signing. Always ECC, keys are read from `/etc/apg/keys/`.
+- **gpgme** (`sign_verify_gpgme`, `sign_file_gpgme`, `keyring_load_gpgme`, ...): PGP signing via GnuPG. Only ECC keys are accepted by default (Ed25519, ECDSA). RSA can be enabled explicitly by passing `allow_rsa = true`.
+
+`install_policy.backend` (`SIGN_BACKEND_SODIUM` by default, or `SIGN_BACKEND_GPGME`) selects which one `trans_commit()` verifies package signatures against.
 
 ## Install-script sandbox
 
 `run_script()` isolates pre/post-install scripts using the strongest primitive available on the host:
 
 - **Linux** — `unshare()` with isolated network, mount, UTS, and IPC namespaces, plus optional `libseccomp` syscall filtering.
-- **FreeBSD** — [Capsicum](https://man.freebsd.org/cgi/man.cgi?query=capsicum) capability mode (`cap_enter()`). The script binary is opened before entering capability mode and executed with `fexecve()`; once sandboxed, the process loses access to global namespaces (path-based lookups, most syscalls).
+- **FreeBSD**: `chroot()` into the alternate install root, when one is given. Capsicum capability mode is not used here, since it forbids the kernel from resolving an interpreter path, which any `#!`-script exec requires.
 - **Other POSIX platforms** — no sandbox primitive is available; scripts run without isolation.
 
 On Linux and FreeBSD, if the sandbox cannot be established the script is not executed (fail closed).
@@ -53,52 +55,52 @@ nix build
 #### Arch Linux
 
 ```bash
-sudo pacman -S meson ninja pkgconf libarchive lmdb yyjson gpgme
+sudo pacman -S meson ninja pkgconf libarchive lmdb yyjson gpgme libsodium
 ```
 
 #### Ubuntu / Debian
 
 ```bash
-sudo apt install meson ninja-build pkg-config libarchive-dev liblmdb-dev libyyjson-dev libgpgme-dev
+sudo apt install meson ninja-build pkg-config libarchive-dev liblmdb-dev libyyjson-dev libgpgme-dev libsodium-dev
 ```
 
 #### Fedora / RHEL / CentOS
 
 ```bash
-sudo dnf install meson ninja-build pkgconf libarchive-devel lmdb-devel yyjson-devel gpgme-devel
+sudo dnf install meson ninja-build pkgconf libarchive-devel lmdb-devel yyjson-devel gpgme-devel libsodium-devel
 ```
 
 #### openSUSE
 
 ```bash
-sudo zypper install meson ninja pkgconf libarchive-devel lmdb-devel yyjson-devel gpgme-devel
+sudo zypper install meson ninja pkgconf libarchive-devel lmdb-devel yyjson-devel gpgme-devel libsodium-devel
 ```
 
 #### Alpine Linux
 
 ```bash
-sudo apk add meson ninja pkgconf libarchive-dev lmdb-dev yyjson-dev gpgme-dev
+sudo apk add meson ninja pkgconf libarchive-dev lmdb-dev yyjson-dev gpgme-dev libsodium-dev
 ```
 
 #### Gentoo
 
 ```bash
-sudo emerge dev-build/meson dev-build/ninja dev-util/pkgconf app-arch/libarchive dev-db/lmdb dev-libs/yyjson app-crypt/gpgme
+sudo emerge dev-build/meson dev-build/ninja dev-util/pkgconf app-arch/libarchive dev-db/lmdb dev-libs/yyjson app-crypt/gpgme dev-libs/libsodium
 ```
 
 #### Void Linux
 
 ```bash
-sudo xbps-install meson ninja pkgconf libarchive-devel lmdb-devel gpgme-devel
+sudo xbps-install meson ninja pkgconf libarchive-devel lmdb-devel gpgme-devel libsodium-devel
 ```
 
 #### FreeBSD
 
 ```bash
-sudo pkg install meson pkgconf ninja lmdb libarchive yyjson gpgme
+sudo pkg install meson pkgconf ninja lmdb libarchive yyjson gpgme libsodium
 ```
 
-`libseccomp` is not available on FreeBSD; the install-script sandbox uses Capsicum instead (see [Install-script sandbox](#install-script-sandbox)). Default configuration paths follow FreeBSD's `hier(7)` and resolve under `/usr/local/etc/apg/` instead of `/etc/apg/`.
+`libseccomp` is not available on FreeBSD; the install-script sandbox falls back to `chroot()` only there (see [Install-script sandbox](#install-script-sandbox)). Default configuration paths follow FreeBSD's `hier(7)` and resolve under `/usr/local/etc/apg/` instead of `/etc/apg/`.
 
 #### Build
 
