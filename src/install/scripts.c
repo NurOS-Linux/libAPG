@@ -3,8 +3,11 @@
 
 #include <ctype.h>
 #include <dirent.h>
+#include <inttypes.h>
 #include <limits.h>
+#include <stdatomic.h>
 #include <stdint.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -40,13 +43,15 @@ normalize(const char *src, char *dst, size_t dst_size)
     dst[j] = '\0';
 }
 
+static _Atomic uint64_t g_script_seq = 0;
+
 static bool
 exec_script(const char *path, const char *root_path)
 {
     bool do_chroot = (root_path != NULL && strcmp(root_path, "/") != 0 &&
                       *root_path != '\0');
     char *exec_path = NULL;
-    bool is_temp_script = false;
+    char *stage_full_path = NULL;
 
     if (do_chroot)
     {
@@ -64,16 +69,19 @@ exec_script(const char *path, const char *root_path)
                 exec_path = strdup(rel);
         }
         else
-
         {
+            uint64_t seq = ++g_script_seq;
+            pid_t pid = getpid();
+
             char stage_dir[PATH_MAX];
             snprintf(stage_dir, sizeof(stage_dir), "%.*s/tmp", (int)root_len,
                      root_path);
             create_dir(stage_dir);
 
             char stage_path[PATH_MAX];
-            snprintf(stage_path, sizeof(stage_path), "%.*s/tmp/.apg_script_tmp",
-                     (int)root_len, root_path);
+            snprintf(stage_path, sizeof(stage_path),
+                     "%.*s/tmp/.apg_script_%d_%" PRIu64, (int)root_len,
+                     root_path, (int)pid, seq);
 
             bool cpy_ok = copy_file(path, stage_path);
             if (cpy_ok)
@@ -82,12 +90,23 @@ exec_script(const char *path, const char *root_path)
             if (!cpy_ok)
                 return false;
 
-            is_temp_script = true;
-            exec_path = strdup("/tmp/.apg_script_tmp");
+            stage_full_path = strdup(stage_path);
+
+            char exec_buf[128];
+            snprintf(exec_buf, sizeof(exec_buf), "/tmp/.apg_script_%d_%" PRIu64,
+                     (int)pid, seq);
+            exec_path = strdup(exec_buf);
         }
 
         if (!exec_path)
+        {
+            if (stage_full_path)
+            {
+                unlink(stage_full_path);
+                free(stage_full_path);
+            }
             return false;
+        }
     }
     else
     {
@@ -100,11 +119,10 @@ exec_script(const char *path, const char *root_path)
     int pipefd[2];
     if (pipe(pipefd) < 0)
     {
-        if (is_temp_script && do_chroot)
+        if (stage_full_path)
         {
-            char stage[PATH_MAX];
-            snprintf(stage, sizeof(stage), "%s/tmp/.apg_script_tmp", root_path);
-            unlink(stage);
+            unlink(stage_full_path);
+            free(stage_full_path);
         }
         free(exec_path);
         return false;
@@ -115,11 +133,10 @@ exec_script(const char *path, const char *root_path)
     {
         close(pipefd[0]);
         close(pipefd[1]);
-        if (is_temp_script && do_chroot)
+        if (stage_full_path)
         {
-            char stage[PATH_MAX];
-            snprintf(stage, sizeof(stage), "%s/tmp/.apg_script_tmp", root_path);
-            unlink(stage);
+            unlink(stage_full_path);
+            free(stage_full_path);
         }
         free(exec_path);
         return false;
@@ -171,11 +188,10 @@ exec_script(const char *path, const char *root_path)
         waitpid(pid, NULL, 0);
     }
 
-    if (is_temp_script && do_chroot)
+    if (stage_full_path)
     {
-        char stage[PATH_MAX];
-        snprintf(stage, sizeof(stage), "%s/tmp/.apg_script_tmp", root_path);
-        unlink(stage);
+        unlink(stage_full_path);
+        free(stage_full_path);
     }
     free(exec_path);
     return success;
@@ -184,11 +200,10 @@ exec_script(const char *path, const char *root_path)
     int pipefd[2];
     if (pipe(pipefd) < 0)
     {
-        if (is_temp_script && do_chroot)
+        if (stage_full_path)
         {
-            char stage[PATH_MAX];
-            snprintf(stage, sizeof(stage), "%s/tmp/.apg_script_tmp", root_path);
-            unlink(stage);
+            unlink(stage_full_path);
+            free(stage_full_path);
         }
         free(exec_path);
         return false;
@@ -199,68 +214,25 @@ exec_script(const char *path, const char *root_path)
     {
         close(pipefd[0]);
         close(pipefd[1]);
-        if (is_temp_script && do_chroot)
+        if (stage_full_path)
         {
-            char stage[PATH_MAX];
-            snprintf(stage, sizeof(stage), "%s/tmp/.apg_script_tmp", root_path);
-            unlink(stage);
+            unlink(stage_full_path);
+            free(stage_full_path);
         }
         free(exec_path);
         return false;
     }
 
-    pid_t pid = fork();
-    if (pid < 0)
-    {
-        close(fd);
-        close(pipefd[0]);
-        close(pipefd[1]);
-        if (is_temp_script && do_chroot)
-        {
-            char stage[PATH_MAX];
-            snprintf(stage, sizeof(stage), "%s/tmp/.apg_script_tmp", root_path);
-            unlink(stage);
-        }
-        free(exec_path);
-        return false;
-    }
+    free(exec_path);
+    return false;
+}
 
-    if (pid == 0)
-    {
-        close(pipefd[0]);
-
-        if (do_chroot)
-        {
-            if (chroot(root_path) < 0 || chdir("/") < 0)
-            {
-                uint8_t err = 1;
-                (void)write(pipefd[1], &err, 1);
-                close(pipefd[1]);
-                _exit(1);
-            }
-        }
-
-        if (cap_enter() < 0)
-        {
-            uint8_t err = 1;
-            (void)write(pipefd[1], &err, 1);
-            close(pipefd[1]);
-            _exit(1);
-        }
-
-        close(pipefd[1]);
-        char *const argv[] = {(char *)exec_path, NULL};
-        char *const envp[] = {NULL};
-        fexecve(fd, argv, envp);
-        _exit(1);
-    }
-
+pid_t pid = fork();
+if (pid < 0)
+{
     close(fd);
-    close(pipefd[1]);
-    uint8_t err = 0;
-    ssize_t n = read(pipefd[0], &err, 1);
     close(pipefd[0]);
-
+    close(pipefd[1]);
     if (is_temp_script && do_chroot)
     {
         char stage[PATH_MAX];
@@ -268,17 +240,63 @@ exec_script(const char *path, const char *root_path)
         unlink(stage);
     }
     free(exec_path);
+    return false;
+}
 
-    if (n > 0)
+if (pid == 0)
+{
+    close(pipefd[0]);
+
+    if (do_chroot)
     {
-        waitpid(pid, NULL, 0);
-        return false;
+        if (chroot(root_path) < 0 || chdir("/") < 0)
+        {
+            uint8_t err = 1;
+            (void)write(pipefd[1], &err, 1);
+            close(pipefd[1]);
+            _exit(1);
+        }
     }
 
-    int status;
-    if (waitpid(pid, &status, 0) < 0)
-        return false;
-    return WIFEXITED(status) && WEXITSTATUS(status) == 0;
+    if (cap_enter() < 0)
+    {
+        uint8_t err = 1;
+        (void)write(pipefd[1], &err, 1);
+        close(pipefd[1]);
+        _exit(1);
+    }
+
+    close(pipefd[1]);
+    char *const argv[] = {(char *)exec_path, NULL};
+    char *const envp[] = {NULL};
+    fexecve(fd, argv, envp);
+    _exit(1);
+}
+
+close(fd);
+close(pipefd[1]);
+uint8_t err = 0;
+ssize_t n = read(pipefd[0], &err, 1);
+close(pipefd[0]);
+
+if (is_temp_script && do_chroot)
+{
+    char stage[PATH_MAX];
+    snprintf(stage, sizeof(stage), "%s/tmp/.apg_script_tmp", root_path);
+    unlink(stage);
+}
+free(exec_path);
+
+if (n > 0)
+{
+    waitpid(pid, NULL, 0);
+    return false;
+}
+
+int status;
+if (waitpid(pid, &status, 0) < 0)
+    return false;
+return WIFEXITED(status) && WEXITSTATUS(status) == 0;
 #else
     int pipefd[2];
     if (pipe(pipefd) < 0)
