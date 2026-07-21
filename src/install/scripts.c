@@ -17,9 +17,6 @@
 
 #ifdef __linux__
 #include <sched.h>
-#elif defined(__FreeBSD__)
-
-#include <fcntl.h>
 #endif
 
 #include "../../include/apg/scripts.h"
@@ -195,96 +192,9 @@ exec_script(const char *path, const char *root_path)
     free(exec_path);
     return success;
 
-#elif defined(__FreeBSD__)
-    int pipefd[2];
-    if (pipe(pipefd) < 0)
-    {
-        if (stage_full_path)
-        {
-            unlink(stage_full_path);
-            free(stage_full_path);
-        }
-        free(exec_path);
-        return false;
-    }
-
-    int fd = open(do_chroot ? path : exec_path, O_EXEC);
-    if (fd < 0)
-    {
-        close(pipefd[0]);
-        close(pipefd[1]);
-        if (stage_full_path)
-        {
-            unlink(stage_full_path);
-            free(stage_full_path);
-        }
-        free(exec_path);
-        return false;
-    }
-
-    pid_t pid = fork();
-    if (pid < 0)
-    {
-        close(fd);
-        close(pipefd[0]);
-        close(pipefd[1]);
-        if (stage_full_path)
-        {
-            unlink(stage_full_path);
-            free(stage_full_path);
-        }
-        free(exec_path);
-        return false;
-    }
-
-    if (pid == 0)
-    {
-        close(pipefd[0]);
-
-        if (do_chroot)
-        {
-            if (chroot(root_path) < 0 || chdir("/") < 0)
-            {
-                uint8_t err = 1;
-                (void)write(pipefd[1], &err, 1);
-                close(pipefd[1]);
-                _exit(1);
-            }
-        }
-
-        close(pipefd[1]);
-        char *const argv[] = {(char *)exec_path, NULL};
-        char *const envp[] = {NULL};
-        fexecve(fd, argv, envp);
-        _exit(1);
-    }
-
-    close(fd);
-    close(pipefd[1]);
-    uint8_t err = 0;
-    ssize_t n = read(pipefd[0], &err, 1);
-    close(pipefd[0]);
-
-    bool success = false;
-    int status;
-    if (n == 0 && waitpid(pid, &status, 0) == pid)
-    {
-        success = WIFEXITED(status) && WEXITSTATUS(status) == 0;
-    }
-    else if (n > 0)
-    {
-        waitpid(pid, NULL, 0);
-    }
-
-    if (stage_full_path)
-    {
-        unlink(stage_full_path);
-        free(stage_full_path);
-    }
-    free(exec_path);
-    return success;
-
 #else
+    // fexecve() can't run #! scripts on FreeBSD (no pathname for the
+    // interpreter's argv), so this execs by path instead, like execl().
     int pipefd[2];
     if (pipe(pipefd) < 0)
     {
