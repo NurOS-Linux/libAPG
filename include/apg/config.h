@@ -6,7 +6,7 @@
 
 /**
  * @file config.h
- * @brief Runtime configuration parsed from @c /etc/apg.conf.
+ * @brief Install-time security policy passed to trans_set_policy().
  */
 
 #include <stdbool.h>
@@ -28,39 +28,3 @@ typedef struct
     sign_backend_t backend; /**< Keyring backend to verify against; defaults
                              to @ref SIGN_BACKEND_SODIUM (zero value). */
 } install_policy;
-
-/**
- * @brief Global runtime configuration.
- *
- * Populated by parse_config() and applied globally with set_config().
- * Free with config_free().
- */
-typedef struct
-{
-    int db_size;   /**< Maximum size of the package database in bytes. */
-    char *tmp_dir; /**< Temporary directory used during package operations. */
-    install_policy policy; /**< Install-time security policy. */
-} config;
-
-/**
- * @brief Parse the configuration file at the given path.
- *
- * @param path Path to the configuration file (typically @c /etc/apg.conf).
- * @return Heap-allocated config on success, NULL on parse failure.
- *         Free with config_free().
- */
-config *parse_config(char *path);
-
-/**
- * @brief Install a parsed configuration as the process-wide active config.
- *
- * @param cfg Configuration to activate. Ownership is transferred.
- */
-void set_config(config *cfg);
-
-/**
- * @brief Free a config and all its owned resources.
- *
- * @param cfg Configuration to free. May be NULL.
- */
-void config_free(config *cfg);
