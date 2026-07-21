@@ -4,18 +4,25 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.11.0] - 2026-07-21
+
 ### Added
 
 - Meson wrap files (`subprojects/yyjson.wrap`, `subprojects/lmdb.wrap`, `subprojects/libarchive.wrap`) for automatic fallback subproject dependency building
 - Support for extracting `.tar.gz` and `.tar.zstd` package archives alongside `.tar.xz` in `src/archive.c`
+- gpgme and libsodium signing backends are now built into `libapg` side by side instead of picking one at build time: libsodium keeps the plain `sign_verify`/`sign_file`/`keyring_load`/`keyring_verify`/`keyring_free`/`keyring_add_key`/`struct keyring` names (`include/apg/sign.h`, `include/apg/keyring.h`), and gpgme is exposed under a `_gpgme` suffix (`sign_verify_gpgme`, `sign_file_gpgme`, `keyring_load_gpgme`, `keyring_verify_gpgme`, `keyring_free_gpgme`, `keyring_add_key_gpgme`, `struct keyring_gpgme`)
+- `sign_backend_t` enum (`SIGN_BACKEND_SODIUM`, `SIGN_BACKEND_GPGME`) and a new `backend` field on `install_policy` (`include/apg/config.h`), defaulting to `SIGN_BACKEND_SODIUM`, so callers can pick which keyring backend `trans_commit()` verifies package signatures against (`src/transaction/commit.c`)
 
 ### Changed
 
 - Moved cross-compilation target files from root directory into `cross/` directory (`cross/cross-*.txt`)
+- `gpgme` and `libsodium` are now both required build dependencies instead of an either/or choice; `meson.build` always links both signing backends into `libapg.so`
 
 ### Fixed
 
 - Disabled `openssl`, `xml2`, `expat`, `cng`, and `iconv` in `libarchive` subproject default options to prevent host OpenSSL header lookup during cross-compilation
+- Fixed a potential stack buffer overflow in `verify_crc32sums()`, `verify_md5sums()`, and `verify_sha256sums()` (`src/checksum/checksum.c`): the `sscanf()` field width for the path column was hardcoded to `4095`, assuming a 4096-byte `PATH_MAX`, but the destination buffer is sized to the platform's actual `PATH_MAX` (1024 on FreeBSD), so a long path in a `sums` file could overflow it. The width is now computed from the buffer's actual size
+- Removed the `cap_enter()` Capsicum sandbox call from `run_script()` on FreeBSD (`src/install/scripts.c`): entering capability mode before `fexecve()` is incompatible with executing `#!`-scripts, since the kernel needs to look up the interpreter path after capability mode is entered. This made every install script fail to run on FreeBSD and was the cause of the `test_run_script_root` `SIGABRT` in CI. Containment for an alternate install root is still provided by `chroot()`
 
 ## [1.10.1] - 2026-07-20
 
