@@ -223,89 +223,84 @@ exec_script(const char *path, const char *root_path)
         return false;
     }
 
-    free(exec_path);
-    return false;
-}
-
-pid_t pid = fork();
-if (pid < 0)
-{
-    close(fd);
-    close(pipefd[0]);
-    close(pipefd[1]);
-    if (is_temp_script && do_chroot)
+    pid_t pid = fork();
+    if (pid < 0)
     {
-        char stage[PATH_MAX];
-        snprintf(stage, sizeof(stage), "%s/tmp/.apg_script_tmp", root_path);
-        unlink(stage);
+        close(fd);
+        close(pipefd[0]);
+        close(pipefd[1]);
+        if (stage_full_path)
+        {
+            unlink(stage_full_path);
+            free(stage_full_path);
+        }
+        free(exec_path);
+        return false;
     }
-    free(exec_path);
-    return false;
-}
 
-if (pid == 0)
-{
-    close(pipefd[0]);
-
-    if (do_chroot)
+    if (pid == 0)
     {
-        if (chroot(root_path) < 0 || chdir("/") < 0)
+        close(pipefd[0]);
+
+        if (do_chroot)
+        {
+            if (chroot(root_path) < 0 || chdir("/") < 0)
+            {
+                uint8_t err = 1;
+                (void)write(pipefd[1], &err, 1);
+                close(pipefd[1]);
+                _exit(1);
+            }
+        }
+
+        if (cap_enter() < 0)
         {
             uint8_t err = 1;
             (void)write(pipefd[1], &err, 1);
             close(pipefd[1]);
             _exit(1);
         }
-    }
 
-    if (cap_enter() < 0)
-    {
-        uint8_t err = 1;
-        (void)write(pipefd[1], &err, 1);
         close(pipefd[1]);
+        char *const argv[] = {(char *)exec_path, NULL};
+        char *const envp[] = {NULL};
+        fexecve(fd, argv, envp);
         _exit(1);
     }
 
+    close(fd);
     close(pipefd[1]);
-    char *const argv[] = {(char *)exec_path, NULL};
-    char *const envp[] = {NULL};
-    fexecve(fd, argv, envp);
-    _exit(1);
-}
+    uint8_t err = 0;
+    ssize_t n = read(pipefd[0], &err, 1);
+    close(pipefd[0]);
 
-close(fd);
-close(pipefd[1]);
-uint8_t err = 0;
-ssize_t n = read(pipefd[0], &err, 1);
-close(pipefd[0]);
+    bool success = false;
+    int status;
+    if (n == 0 && waitpid(pid, &status, 0) == pid)
+    {
+        success = WIFEXITED(status) && WEXITSTATUS(status) == 0;
+    }
+    else if (n > 0)
+    {
+        waitpid(pid, NULL, 0);
+    }
 
-if (is_temp_script && do_chroot)
-{
-    char stage[PATH_MAX];
-    snprintf(stage, sizeof(stage), "%s/tmp/.apg_script_tmp", root_path);
-    unlink(stage);
-}
-free(exec_path);
+    if (stage_full_path)
+    {
+        unlink(stage_full_path);
+        free(stage_full_path);
+    }
+    free(exec_path);
+    return success;
 
-if (n > 0)
-{
-    waitpid(pid, NULL, 0);
-    return false;
-}
-
-int status;
-if (waitpid(pid, &status, 0) < 0)
-    return false;
-return WIFEXITED(status) && WEXITSTATUS(status) == 0;
 #else
     int pipefd[2];
     if (pipe(pipefd) < 0)
     {
-        if (is_temp_script && do_chroot)
+        if (stage_full_path)
         {
-            char stage[PATH_MAX];
-            snprintf(stage, sizeof(stage), "%s/tmp/.apg_script_tmp", root_path);
-            unlink(stage);
+            unlink(stage_full_path);
+            free(stage_full_path);
         }
         free(exec_path);
         return false;
@@ -316,11 +311,10 @@ return WIFEXITED(status) && WEXITSTATUS(status) == 0;
     {
         close(pipefd[0]);
         close(pipefd[1]);
-        if (is_temp_script && do_chroot)
+        if (stage_full_path)
         {
-            char stage[PATH_MAX];
-            snprintf(stage, sizeof(stage), "%s/tmp/.apg_script_tmp", root_path);
-            unlink(stage);
+            unlink(stage_full_path);
+            free(stage_full_path);
         }
         free(exec_path);
         return false;
@@ -351,24 +345,24 @@ return WIFEXITED(status) && WEXITSTATUS(status) == 0;
     ssize_t n = read(pipefd[0], &err, 1);
     close(pipefd[0]);
 
-    if (is_temp_script && do_chroot)
+    bool success = false;
+    int status;
+    if (n == 0 && waitpid(pid, &status, 0) == pid)
     {
-        char stage[PATH_MAX];
-        snprintf(stage, sizeof(stage), "%s/tmp/.apg_script_tmp", root_path);
-        unlink(stage);
+        success = WIFEXITED(status) && WEXITSTATUS(status) == 0;
     }
-    free(exec_path);
-
-    if (n > 0)
+    else if (n > 0)
     {
         waitpid(pid, NULL, 0);
-        return false;
     }
 
-    int status;
-    if (waitpid(pid, &status, 0) < 0)
-        return false;
-    return WIFEXITED(status) && WEXITSTATUS(status) == 0;
+    if (stage_full_path)
+    {
+        unlink(stage_full_path);
+        free(stage_full_path);
+    }
+    free(exec_path);
+    return success;
 #endif
 }
 
