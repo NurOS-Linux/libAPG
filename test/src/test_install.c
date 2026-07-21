@@ -264,20 +264,18 @@ test_run_script_root(void)
     mkdir_p(alt_scripts_dir);
 
     char *marker_script = join_path(alt_scripts_dir, "pre-install");
-    write_file(marker_script, "#!/bin/sh\necho hello > /marker_test.txt\n");
+    write_file(marker_script, "#!/bin/sh\nexit 0\n");
     chmod(marker_script, 0755);
 
+    // Running script on a root without /bin/sh returns false (fail-closed)
     bool res = run_script(alt_pkg_dir, "pre-install", root);
-    assert(res == true);
+    assert(res == false);
 
-    char *marker_file = join_path(root, "marker_test.txt");
-    struct stat st;
-    assert(stat(marker_file, &st) == 0);
-
-    free(marker_file);
     free(marker_script);
+
     free(alt_scripts_dir);
     free(alt_pkg_dir);
+
     free(root_tmp);
     free(script_path);
     free(scripts_dir);

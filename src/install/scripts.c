@@ -14,8 +14,8 @@
 
 #ifdef __linux__
 #include <sched.h>
-#include <sys/mount.h>
 #elif defined(__FreeBSD__)
+
 #include <fcntl.h>
 #include <sys/capsicum.h>
 #endif
@@ -141,26 +141,6 @@ exec_script(const char *path, const char *root_path)
 
         if (do_chroot)
         {
-            char check_sh[PATH_MAX];
-            snprintf(check_sh, sizeof(check_sh), "%s/bin/sh", root_path);
-            if (access(check_sh, F_OK) != 0)
-            {
-                const char *bind_dirs[] = {"/bin", "/lib", "/lib64", "/usr"};
-                for (size_t b = 0; b < sizeof(bind_dirs) / sizeof(bind_dirs[0]);
-                     b++)
-                {
-                    if (access(bind_dirs[b], F_OK) == 0)
-                    {
-                        char target_dir[PATH_MAX];
-                        snprintf(target_dir, sizeof(target_dir), "%s%s",
-                                 root_path, bind_dirs[b]);
-                        create_dir(target_dir);
-                        mount(bind_dirs[b], target_dir, NULL, MS_BIND | MS_REC,
-                              NULL);
-                    }
-                }
-            }
-
             if (chroot(root_path) < 0 || chdir("/") < 0)
             {
                 uint8_t err = 1;
