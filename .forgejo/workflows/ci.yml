@@ -361,7 +361,7 @@ jobs:
           cd /tmp/gpgme-1.18.0
           PKG_CONFIG_LIBDIR=${SYSROOT}/pkgconfig PKG_CONFIG_PATH= \
           ./configure --host=${TRIPLET} CC="${CC}" --prefix=/usr --libdir=${SYSROOT} --disable-shared \
-            --disable-gpg-test --disable-gpgsm-test --disable-g13-test --disable-gpgconf-test --disable-uiserver-test
+            --disable-gpg-test --disable-gpgsm-test --disable-g13-test --disable-gpgconf-test --enable-languages=
           make -j$(nproc) && sudo make install
           printf 'Name: gpgme\nVersion: 1.18.0\nLibs: -L%s -lgpgme -lassuan -lgpg-error\nCflags: -I/usr/include\n' "${SYSROOT}" | sudo tee ${SYSROOT}/pkgconfig/gpgme.pc
 
