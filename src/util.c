@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <sys/stat.h>
 #include <dirent.h>
+#include <unistd.h>
 
 #include "../include/util.h"
 
@@ -155,4 +156,43 @@ collect_files(const char *base, int *count)
         return NULL;
     collect_recursive(base, strlen(base), &files, count, &cap);
     return files;
+}
+
+void
+remove_dir_recursive(const char *path)
+{
+    if (!path)
+        return;
+
+    struct stat st;
+    if (stat(path, &st) != 0)
+        return;
+
+    if (!S_ISDIR(st.st_mode))
+    {
+        unlink(path);
+        return;
+    }
+
+    DIR *dir = opendir(path);
+    if (!dir)
+        return;
+
+    struct dirent *entry;
+    while ((entry = readdir(dir)) != NULL)
+    {
+        if (!strcmp(entry->d_name, ".") || !strcmp(entry->d_name, ".."))
+            continue;
+
+        size_t len = strlen(path) + 1 + strlen(entry->d_name) + 1;
+        char *child = malloc(len);
+        if (!child)
+            continue;
+        snprintf(child, len, "%s/%s", path, entry->d_name);
+        remove_dir_recursive(child);
+        free(child);
+    }
+
+    closedir(dir);
+    rmdir(path);
 }

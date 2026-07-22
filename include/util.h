@@ -60,3 +60,10 @@ char **collect_files(const char *base, int *count);
  * @return true on success, false on failure.
  */
 bool copy_file(const char *src, const char *dst);
+
+/**
+ * @brief Recursively remove a directory and everything under it.
+ *
+ * @param path Directory (or file) path to remove. May be NULL.
+ */
+void remove_dir_recursive(const char *path);

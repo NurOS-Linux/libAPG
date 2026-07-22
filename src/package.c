@@ -2,7 +2,10 @@
 // SPDX-FileCopyrightText: 2026 Ruzen42
 // SPDX-FileCopyrightText: 2026 AnmiTaliDev <anmitalidev@nuros.org>
 
+#include <inttypes.h>
 #include <limits.h>
+#include <stdatomic.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -18,6 +21,26 @@
 #include "../include/util.h"
 
 static const char *tmp_path = APG_TMP_DIR "/";
+static _Atomic uint64_t g_extract_seq = 0;
+
+static char *
+unique_tmp_dir(const char *root_path)
+{
+    char *base = concat_dirs(root_path, tmp_path);
+    if (!base)
+        return NULL;
+    create_dir(base);
+
+    char leaf[64];
+    snprintf(leaf, sizeof(leaf), "pkg-%d-%" PRIu64, (int)getpid(),
+             ++g_extract_seq);
+
+    char *unique = concat_dirs(base, leaf);
+    free(base);
+    if (unique)
+        create_dir(unique);
+    return unique;
+}
 
 struct package_metadata *
 package_metadata_new(void)
@@ -100,31 +123,34 @@ install_package(struct package *pkg)
 bool
 install_package_in_root(struct package *pkg, const char *root_path)
 {
-    char *real_tmp = concat_dirs(root_path, tmp_path);
+    char *real_tmp = unique_tmp_dir(root_path);
     if (!real_tmp)
         return false;
-    create_dir(real_tmp);
 
     if (!unarchive_package_in_root(pkg, real_tmp))
     {
+        remove_dir_recursive(real_tmp);
         free(real_tmp);
         return false;
     }
 
     if (!verify_checksums(real_tmp))
     {
+        remove_dir_recursive(real_tmp);
         free(real_tmp);
         return false;
     }
 
     if (!run_script(real_tmp, "pre-install", root_path))
     {
+        remove_dir_recursive(real_tmp);
         free(real_tmp);
         return false;
     }
 
     if (!install_data_dir(real_tmp, root_path))
     {
+        remove_dir_recursive(real_tmp);
         free(real_tmp);
         return false;
     }
@@ -148,12 +174,14 @@ install_package_in_root(struct package *pkg, const char *root_path)
     if (!run_script(real_tmp, "post-install", root_path))
     {
         rollback_install(real_tmp, root_path);
+        remove_dir_recursive(real_tmp);
         free(real_tmp);
         return false;
     }
 
     scripts_persist(real_tmp, root_path, pkg->meta->name);
 
+    remove_dir_recursive(real_tmp);
     free(real_tmp);
     return true;
 }
@@ -164,25 +192,30 @@ package_collect_files(struct package *pkg, const char *root_path)
     if (!pkg || !pkg->pkg_path)
         return false;
 
-    char *real_tmp = concat_dirs(root_path, tmp_path);
+    char *real_tmp = unique_tmp_dir(root_path);
     if (!real_tmp)
         return false;
-    create_dir(real_tmp);
 
     if (!unarchive_package_in_root(pkg, real_tmp))
     {
+        remove_dir_recursive(real_tmp);
         free(real_tmp);
         return false;
     }
 
     char *data_src = concat_dirs(real_tmp, "data");
-    free(real_tmp);
     if (!data_src)
+    {
+        remove_dir_recursive(real_tmp);
+        free(real_tmp);
         return false;
+    }
 
     int file_count = 0;
     char **files = collect_files(data_src, &file_count);
     free(data_src);
+    remove_dir_recursive(real_tmp);
+    free(real_tmp);
 
     str_list_free(&pkg->package_files);
     pkg->package_files.items = files;
@@ -199,22 +232,29 @@ parse_package(const char *path, const char *root_path)
 
     pkg->pkg_path = realpath(path, NULL);
 
-    char *real_tmp = concat_dirs(root_path, tmp_path);
-    create_dir(real_tmp);
+    char *real_tmp = unique_tmp_dir(root_path);
+    if (!real_tmp)
+    {
+        package_free(pkg);
+        return NULL;
+    }
 
     if (!unarchive_package_in_root(pkg, real_tmp))
     {
+        remove_dir_recursive(real_tmp);
         free(real_tmp);
         package_free(pkg);
         return NULL;
     }
 
     char *meta_path = concat_dirs(real_tmp, "metadata.json");
-    free(real_tmp);
 
     package_metadata_free(pkg->meta);
-    pkg->meta = package_metadata_from_file(meta_path);
+    pkg->meta = meta_path ? package_metadata_from_file(meta_path) : NULL;
     free(meta_path);
+
+    remove_dir_recursive(real_tmp);
+    free(real_tmp);
 
     if (!pkg->meta)
     {
