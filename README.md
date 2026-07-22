@@ -3,11 +3,10 @@
 Package management library for NurOS.
 
 > [!NOTE]
-> **Repository Mirror & Issue Tracking**
-> 
-> - **Primary Repository:** Active development takes place on our self-hosted Forgejo instance at [git.nuros.org](https://git.nuros.org/core/libapg) (accounts are restricted to the core team).
-> - **GitHub Mirror:** This GitHub repository is a **read-only mirror**.
-> - **Issues & Contributions:** External contributors are welcome and encouraged to open Issues and Pull Requests directly here on GitHub! The team will review and process them.
+> **Repository Mirrors**
+>
+> - **git.nuros.org** ([core/libapg](https://git.nuros.org/core/libapg)): primary, self-hosted Forgejo instance, accounts restricted to the core team.
+> - **GitHub** ([NurOS-Linux/libapg](https://github.com/NurOS-Linux/libapg)): mirror for external contributors. Issues and Pull Requests opened here are welcome and are reviewed and processed by the core team.
 
 
 ## Dependencies
