@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.11.3] - 2026-07-22
+
+### Fixed
+
+- `parse_package()`, `package_collect_files()`, and `install_package_in_root()` (`src/package.c`) now extract each package into a unique, per-call temp directory instead of the same fixed shared path; previously a package's recorded file list could silently include leftover files from any prior package extracted into that same directory, causing spurious `TRANS_ERR_FILE_CONFLICT` errors and incorrect ownership records
+- Added `remove_dir_recursive()` (`include/util.h`, `src/util.c`) and use it to clean up each package's temp extraction directory after use
+
 ## [1.11.2] - 2026-07-22
 
 ### Fixed
