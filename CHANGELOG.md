@@ -14,6 +14,8 @@ All notable changes to this project will be documented in this file.
 ### Changed
 
 - CI/release workflows (`.github/workflows/`, `.forgejo/workflows/`) no longer build `yyjson` from an unpinned `git clone` of upstream HEAD (or, on FreeBSD, the `pkg` system package); every job now falls through to the pinned, hash-verified `subprojects/yyjson.wrap` fallback that `meson.build` already declares, so `yyjson` comes from exactly one, integrity-checked source on every platform
+- `ci.yml` now declares a top-level `permissions: contents: read` (both mirrors); previously the workflow ran with whatever the repository's default `GITHUB_TOKEN` permissions were, wider than any of its read-only build/test/sanitizer/cross-compile jobs need
+- `.forgejo/workflows/release.yml` now declares `permissions: contents: write`, matching the equivalent GitHub workflow (previously unset there, relying on the Forgejo instance's default token scope for the release-creation job)
 
 ## [1.11.3] - 2026-07-22
 
