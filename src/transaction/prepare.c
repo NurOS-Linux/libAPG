@@ -112,18 +112,26 @@ plan_push(struct apg_trans *trans, trans_op_t op, const char *name,
         trans->plan = malloc(8 * sizeof(*trans->plan));
         trans->plan_pkgs = malloc(8 * sizeof(*trans->plan_pkgs));
         if (!trans->plan || !trans->plan_pkgs)
+        {
+            free(trans->plan);
+            free(trans->plan_pkgs);
+            trans->plan = NULL;
+            trans->plan_pkgs = NULL;
             return TRANS_ERR_NOMEM;
+        }
         trans->plan_cap = 8;
     }
     else if (trans->plan_count == trans->plan_cap)
     {
-        size_t new_cap = trans->plan_cap * 2;
+        size_t new_cap = trans->plan_cap == 0 ? 8 : trans->plan_cap * 2;
         struct trans_step *tp = realloc(trans->plan, new_cap * sizeof(*tp));
+        if (tp)
+            trans->plan = tp;
         struct package **pp = realloc(trans->plan_pkgs, new_cap * sizeof(*pp));
+        if (pp)
+            trans->plan_pkgs = pp;
         if (!tp || !pp)
             return TRANS_ERR_NOMEM;
-        trans->plan = tp;
-        trans->plan_pkgs = pp;
         trans->plan_cap = new_cap;
     }
 

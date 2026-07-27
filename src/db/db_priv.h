@@ -9,8 +9,6 @@
 #include "../../include/apg/db.h"
 #include "../../include/apg/package.h"
 
-struct package *db_get(struct db_handle *db, const char *name);
-
 struct db_handle
 {
     MDB_env *env;

@@ -11,11 +11,12 @@
 
 #define PATH_MAX 4096
 
-bool
+static bool
 extract_to_dir(const char *archive_path, const char *path_dest)
 {
     struct archive_entry *entry;
     char full_path[PATH_MAX];
+    bool ok = true;
 
     struct archive *a = archive_read_new();
     archive_read_support_filter_gzip(a);
@@ -42,21 +43,29 @@ extract_to_dir(const char *archive_path, const char *path_dest)
                  archive_entry_pathname(entry));
         archive_entry_set_pathname(entry, full_path);
 
-        int r = archive_write_header(ext, entry);
-        if (r == ARCHIVE_OK)
+        if (archive_write_header(ext, entry) != ARCHIVE_OK)
         {
-            const void *buff;
-            size_t size;
-            la_int64_t offset;
+            ok = false;
+            continue;
+        }
 
-            while ((r = archive_read_data_block(a, &buff, &size, &offset)) ==
-                   ARCHIVE_OK)
+        const void *buff;
+        size_t size;
+        la_int64_t offset;
+        int r;
+
+        while ((r = archive_read_data_block(a, &buff, &size, &offset)) ==
+               ARCHIVE_OK)
+        {
+            if (archive_write_data_block(ext, buff, size, offset) !=
+                ARCHIVE_OK)
             {
-                if (archive_write_data_block(ext, buff, size, offset) !=
-                    ARCHIVE_OK)
-                    break;
+                ok = false;
+                break;
             }
         }
+        if (r != ARCHIVE_EOF && r != ARCHIVE_OK)
+            ok = false;
     }
 
     archive_read_close(a);
@@ -64,17 +73,17 @@ extract_to_dir(const char *archive_path, const char *path_dest)
     archive_write_close(ext);
     archive_write_free(ext);
 
-    return true;
+    return ok;
 }
 
 bool
-unarchive_package(const struct package *pkg, const char *path)
+unarchive_package(const struct package *pkg, const char *path) // NOLINT(misc-use-internal-linkage)
 {
     return extract_to_dir(pkg->pkg_path, path);
 }
 
 bool
-unarchive_package_in_root(const struct package *pkg, const char *root)
+unarchive_package_in_root(const struct package *pkg, const char *root) // NOLINT(misc-use-internal-linkage)
 {
     return extract_to_dir(pkg->pkg_path, root);
 }

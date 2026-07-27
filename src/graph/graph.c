@@ -75,7 +75,7 @@ add_alias(struct dep_graph *g, const char *alias, size_t node_idx)
 {
     if (g->alias_count == g->alias_cap)
     {
-        size_t new_cap = g->alias_cap * 2;
+        size_t new_cap = g->alias_cap == 0 ? GRAPH_INITIAL_CAP : g->alias_cap * 2;
         struct alias_entry *tmp = realloc(g->aliases, new_cap * sizeof(*tmp));
         if (!tmp)
             return DEP_ERR_NOMEM;
@@ -101,7 +101,7 @@ dep_graph_add(struct dep_graph *g, const struct package_metadata *pkg)
 
     if (g->count == g->cap)
     {
-        size_t new_cap = g->cap * 2;
+        size_t new_cap = g->cap == 0 ? GRAPH_INITIAL_CAP : g->cap * 2;
         struct dep_node **tmp = realloc(g->nodes, new_cap * sizeof(*tmp));
         if (!tmp)
             return DEP_ERR_NOMEM;

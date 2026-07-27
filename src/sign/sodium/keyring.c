@@ -116,6 +116,11 @@ keyring_verify(const struct keyring *kr, const char *pkg_path,
     size_t n;
     while ((n = fread(buf, 1, sizeof(buf), pf)) > 0)
         crypto_sign_update(&base, buf, n);
+    if (ferror(pf))
+    {
+        fclose(pf);
+        return false;
+    }
     fclose(pf);
 
     for (size_t i = 0; i < kr->count; i++)

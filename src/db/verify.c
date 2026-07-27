@@ -44,7 +44,7 @@ db_verify(struct db_handle *db, const char *root_path, int *count)
 
             char *full = concat_dirs(root_path, rel);
             if (!full)
-                goto oom;
+                goto oom_missing;
 
             struct stat st;
             bool exists = stat(full, &st) == 0;
@@ -57,13 +57,13 @@ db_verify(struct db_handle *db, const char *root_path, int *count)
                     int new_cap = missing_cap == 0 ? 4 : missing_cap * 2;
                     char **tmp = realloc(missing, new_cap * sizeof(*tmp));
                     if (!tmp)
-                        goto oom;
+                        goto oom_missing;
                     missing = tmp;
                     missing_cap = new_cap;
                 }
                 missing[missing_count] = strdup(rel);
                 if (!missing[missing_count])
-                    goto oom;
+                    goto oom_missing;
                 missing_count++;
             }
         }
@@ -80,17 +80,25 @@ db_verify(struct db_handle *db, const char *root_path, int *count)
             struct db_verify_issue *tmp =
                 realloc(issues, new_cap * sizeof(*tmp));
             if (!tmp)
-                goto oom;
+                goto oom_missing;
             issues = tmp;
             issue_cap = new_cap;
         }
 
         struct db_verify_issue *issue = &issues[issue_count++];
+        issue->missing_files = missing;
+        issue->missing_count = missing_count;
         issue->pkg_name = strdup(pkg->meta->name);
         if (!issue->pkg_name)
             goto oom;
-        issue->missing_files = missing;
-        issue->missing_count = missing_count;
+
+        continue;
+
+    oom_missing:
+        for (int k = 0; k < missing_count; k++)
+            free(missing[k]);
+        free(missing);
+        goto oom;
     }
 
     for (int i = 0; i < pkg_count; i++)

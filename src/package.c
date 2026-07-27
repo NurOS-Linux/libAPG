@@ -18,7 +18,6 @@
 #include "../include/apg/checksum.h"
 #include "../include/apg/archive.h"
 #include "../include/apg/json.h"
-#include "../include/util.h"
 
 static const char *tmp_path = APG_TMP_DIR "/";
 static _Atomic uint64_t g_extract_seq = 0;

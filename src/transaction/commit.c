@@ -164,7 +164,7 @@ free_confs(struct conf_backup *bk, int count)
 }
 
 static void
-rollback_committed(struct apg_trans *trans, size_t *committed_idx,
+rollback_committed(struct apg_trans *trans, const size_t *committed_idx,
                    size_t committed_count, const char *root_path)
 {
     for (size_t j = committed_count; j-- > 0;)

@@ -186,6 +186,12 @@ compute_sha256(const char *path, uint8_t digest[32])
     while ((n = fread(buf, 1, sizeof(buf), f)) > 0)
         sha256_update(&ctx, buf, n);
 
+    if (ferror(f))
+    {
+        fclose(f);
+        return false;
+    }
+
     fclose(f);
     sha256_final(&ctx, digest);
     return true;

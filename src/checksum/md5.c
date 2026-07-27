@@ -57,11 +57,11 @@ md5_transform(uint32_t state[4], const uint8_t block[64])
     }
 #endif
     uint32_t a = state[0], b = state[1], c = state[2], d = state[3];
-    uint32_t M[16];
+    uint32_t m[16];
 
     for (int i = 0; i < 16; i++)
     {
-        M[i] = (uint32_t)block[i * 4] | ((uint32_t)block[i * 4 + 1] << 8) |
+        m[i] = (uint32_t)block[i * 4] | ((uint32_t)block[i * 4 + 1] << 8) |
                ((uint32_t)block[i * 4 + 2] << 16) |
                ((uint32_t)block[i * 4 + 3] << 24);
     }
@@ -93,7 +93,7 @@ md5_transform(uint32_t state[4], const uint8_t block[64])
         uint32_t tmp = d;
         d = c;
         c = b;
-        b = b + ROTL(a + f + M[g] + T[i], S[i]);
+        b = b + ROTL(a + f + m[g] + T[i], S[i]);
         a = tmp;
     }
 
@@ -139,7 +139,7 @@ md5_update(md5_ctx *ctx, const uint8_t *data, size_t len)
         i = 0;
     }
 
-    memcpy(&ctx->buf[idx], &data[i], len - i);
+    memcpy(&ctx->buf[idx], &data[i], len - i); // NOLINT(clang-analyzer-security.ArrayBound)
 }
 
 void
@@ -182,6 +182,12 @@ compute_md5(const char *path, uint8_t digest[16])
     size_t n;
     while ((n = fread(buf, 1, sizeof(buf), f)) > 0)
         md5_update(&ctx, buf, n);
+
+    if (ferror(f))
+    {
+        fclose(f);
+        return false;
+    }
 
     fclose(f);
     md5_final(digest, &ctx);

@@ -59,6 +59,11 @@ sign_verify(const char *pkg_path, const char *sig_path, bool allow_rsa)
     size_t bytes_read;
     while ((bytes_read = fread(buffer, 1, sizeof(buffer), pkg_f)) > 0)
         crypto_sign_update(&state, buffer, bytes_read);
+    if (ferror(pkg_f))
+    {
+        fclose(pkg_f);
+        return false;
+    }
     fclose(pkg_f);
 
     return crypto_sign_final_verify(&state, signature, public_key) == 0;
@@ -97,6 +102,11 @@ sign_file(const char *pkg_path, const char *sig_path)
     size_t bytes_read;
     while ((bytes_read = fread(buffer, 1, sizeof(buffer), pkg_f)) > 0)
         crypto_sign_update(&state, buffer, bytes_read);
+    if (ferror(pkg_f))
+    {
+        fclose(pkg_f);
+        return false;
+    }
     fclose(pkg_f);
 
     unsigned char signature[crypto_sign_BYTES];
