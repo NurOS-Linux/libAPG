@@ -62,9 +62,10 @@ sha256_transform(sha256_ctx *ctx, const uint8_t data[64])
 
     for (i = 0; i < 16; i++)
     {
-        m[i] = ((uint32_t)data[i * 4] << 24) |
-               ((uint32_t)data[i * 4 + 1] << 16) |
-               ((uint32_t)data[i * 4 + 2] << 8) | ((uint32_t)data[i * 4 + 3]);
+        size_t off = (size_t)i * 4;
+        m[i] = ((uint32_t)data[off] << 24) |
+               ((uint32_t)data[off + 1] << 16) |
+               ((uint32_t)data[off + 2] << 8) | ((uint32_t)data[off + 3]);
     }
     for (; i < 64; i++)
         m[i] = SIG1(m[i - 2]) + m[i - 7] + SIG0(m[i - 15]) + m[i - 16];
@@ -164,10 +165,11 @@ sha256_final(sha256_ctx *ctx, uint8_t digest[32])
 
     for (int i = 0; i < 8; i++)
     {
-        digest[i * 4] = (uint8_t)(ctx->state[i] >> 24);
-        digest[i * 4 + 1] = (uint8_t)(ctx->state[i] >> 16);
-        digest[i * 4 + 2] = (uint8_t)(ctx->state[i] >> 8);
-        digest[i * 4 + 3] = (uint8_t)(ctx->state[i]);
+        size_t off = (size_t)i * 4;
+        digest[off] = (uint8_t)(ctx->state[i] >> 24);
+        digest[off + 1] = (uint8_t)(ctx->state[i] >> 16);
+        digest[off + 2] = (uint8_t)(ctx->state[i] >> 8);
+        digest[off + 3] = (uint8_t)(ctx->state[i]);
     }
 }
 
@@ -188,11 +190,11 @@ compute_sha256(const char *path, uint8_t digest[32])
 
     if (ferror(f))
     {
-        fclose(f);
+        (void)fclose(f);
         return false;
     }
 
-    fclose(f);
+    (void)fclose(f);
     sha256_final(&ctx, digest);
     return true;
 }
@@ -201,6 +203,6 @@ void
 sha256_hex(const uint8_t digest[32], char *hex)
 {
     for (int i = 0; i < 32; i++)
-        snprintf(&hex[i * 2], 3, "%02x", digest[i]);
+        (void)snprintf(&hex[(size_t)i * 2], 3, "%02x", digest[i]);
     hex[64] = '\0';
 }

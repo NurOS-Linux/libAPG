@@ -71,12 +71,12 @@ exec_script(const char *path, const char *root_path)
             pid_t pid = getpid();
 
             char stage_dir[PATH_MAX];
-            snprintf(stage_dir, sizeof(stage_dir), "%.*s/tmp", (int)root_len,
+            (void)snprintf(stage_dir, sizeof(stage_dir), "%.*s/tmp", (int)root_len,
                      root_path);
             create_dir(stage_dir);
 
             char stage_path[PATH_MAX];
-            snprintf(stage_path, sizeof(stage_path),
+            (void)snprintf(stage_path, sizeof(stage_path),
                      "%.*s/tmp/.apg_script_%d_%" PRIu64, (int)root_len,
                      root_path, (int)pid, seq);
 
@@ -90,7 +90,7 @@ exec_script(const char *path, const char *root_path)
             stage_full_path = strdup(stage_path);
 
             char exec_buf[128];
-            snprintf(exec_buf, sizeof(exec_buf), "/tmp/.apg_script_%d_%" PRIu64,
+            (void)snprintf(exec_buf, sizeof(exec_buf), "/tmp/.apg_script_%d_%" PRIu64,
                      (int)pid, seq);
             exec_path = strdup(exec_buf);
         }

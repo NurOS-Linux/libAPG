@@ -66,7 +66,7 @@ keyring_load(const char *keyring_dir)
             continue;
 
         char path[PATH_MAX];
-        snprintf(path, sizeof(path), "%s/%s", keyring_dir, entry->d_name);
+        (void)snprintf(path, sizeof(path), "%s/%s", keyring_dir, entry->d_name);
 
         FILE *f = fopen(path, "rb");
         if (!f)
@@ -75,7 +75,7 @@ keyring_load(const char *keyring_dir)
         unsigned char key[KEY_BYTES];
         if (fread(key, 1, KEY_BYTES, f) == KEY_BYTES)
             push_key(kr, key);
-        fclose(f);
+        (void)fclose(f);
     }
     closedir(dir);
     return kr;
@@ -102,7 +102,7 @@ keyring_verify(const struct keyring *kr, const char *pkg_path,
     if (!sf)
         return false;
     bool ok = fread(sig, 1, crypto_sign_BYTES, sf) == crypto_sign_BYTES;
-    fclose(sf);
+    (void)fclose(sf);
     if (!ok)
         return false;
 
@@ -118,10 +118,10 @@ keyring_verify(const struct keyring *kr, const char *pkg_path,
         crypto_sign_update(&base, buf, n);
     if (ferror(pf))
     {
-        fclose(pf);
+        (void)fclose(pf);
         return false;
     }
-    fclose(pf);
+    (void)fclose(pf);
 
     for (size_t i = 0; i < kr->count; i++)
     {
@@ -146,7 +146,7 @@ keyring_add_key(const char *keyring_dir, const char *new_key_path,
     if (!kf)
         return false;
     bool ok = fread(new_key, 1, KEY_BYTES, kf) == KEY_BYTES;
-    fclose(kf);
+    (void)fclose(kf);
     if (!ok)
         return false;
 
@@ -155,7 +155,7 @@ keyring_add_key(const char *keyring_dir, const char *new_key_path,
     if (!sf)
         return false;
     ok = fread(key_sig, 1, crypto_sign_BYTES, sf) == crypto_sign_BYTES;
-    fclose(sf);
+    (void)fclose(sf);
     if (!ok)
         return false;
 
@@ -174,12 +174,13 @@ keyring_add_key(const char *keyring_dir, const char *new_key_path,
     base = base ? base + 1 : new_key_path;
 
     char dst[PATH_MAX];
-    snprintf(dst, sizeof(dst), "%s/%s", keyring_dir, base);
+    (void)snprintf(dst, sizeof(dst), "%s/%s", keyring_dir, base);
 
     FILE *df = fopen(dst, "wb");
     if (!df)
         return false;
     ok = fwrite(new_key, 1, KEY_BYTES, df) == KEY_BYTES;
-    fclose(df);
+    if (fclose(df) != 0)
+        ok = false;
     return ok;
 }

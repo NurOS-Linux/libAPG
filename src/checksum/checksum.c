@@ -19,24 +19,24 @@ compute_crc32_file(const char *path, uint32_t *out)
     if (!f)
         return false;
 
-    fseek(f, 0, SEEK_END);
+    (void)fseek(f, 0, SEEK_END);
     long size = ftell(f);
-    fseek(f, 0, SEEK_SET);
+    (void)fseek(f, 0, SEEK_SET);
 
     unsigned char *data = malloc((size_t)size);
     if (!data)
     {
-        fclose(f);
+        (void)fclose(f);
         return false;
     }
 
     if (fread(data, 1, (size_t)size, f) != (size_t)size)
     {
         free(data);
-        fclose(f);
+        (void)fclose(f);
         return false;
     }
-    fclose(f);
+    (void)fclose(f);
 
     *out = crc32(data, (unsigned int)size);
     free(data);
@@ -59,7 +59,7 @@ verify_crc32sums(const char *pkg_dir, const char *sums_path)
         char rel_path[PATH_MAX];
 
         char fmt[32];
-        snprintf(fmt, sizeof(fmt), "%%8s  %%%zus", sizeof(rel_path) - 1);
+        (void)snprintf(fmt, sizeof(fmt), "%%8s  %%%zus", sizeof(rel_path) - 1);
         if (sscanf(line, fmt, hash_str, rel_path) != 2)
             continue;
 
@@ -82,7 +82,7 @@ verify_crc32sums(const char *pkg_dir, const char *sums_path)
         }
     }
 
-    fclose(f);
+    (void)fclose(f);
     return ok;
 }
 
@@ -102,7 +102,7 @@ verify_md5sums(const char *pkg_dir, const char *sums_path)
         char rel_path[PATH_MAX];
 
         char fmt[32];
-        snprintf(fmt, sizeof(fmt), "%%32s  %%%zus", sizeof(rel_path) - 1);
+        (void)snprintf(fmt, sizeof(fmt), "%%32s  %%%zus", sizeof(rel_path) - 1);
         if (sscanf(line, fmt, hash_str, rel_path) != 2)
             continue;
 
@@ -124,7 +124,7 @@ verify_md5sums(const char *pkg_dir, const char *sums_path)
 
         char computed_str[33];
         for (int i = 0; i < 16; i++)
-            snprintf(&computed_str[i * 2], 3, "%02x", digest[i]);
+            (void)snprintf(&computed_str[(size_t)i * 2], 3, "%02x", digest[i]);
 
         if (strncmp(computed_str, hash_str, 32) != 0)
         {
@@ -133,7 +133,7 @@ verify_md5sums(const char *pkg_dir, const char *sums_path)
         }
     }
 
-    fclose(f);
+    (void)fclose(f);
     return ok;
 }
 
@@ -153,7 +153,7 @@ verify_sha256sums(const char *pkg_dir, const char *sums_path)
         char rel_path[PATH_MAX];
 
         char fmt[32];
-        snprintf(fmt, sizeof(fmt), "%%64s  %%%zus", sizeof(rel_path) - 1);
+        (void)snprintf(fmt, sizeof(fmt), "%%64s  %%%zus", sizeof(rel_path) - 1);
         if (sscanf(line, fmt, hash_str, rel_path) != 2)
             continue;
 
@@ -183,7 +183,7 @@ verify_sha256sums(const char *pkg_dir, const char *sums_path)
         }
     }
 
-    fclose(f);
+    (void)fclose(f);
     return ok;
 }
 
@@ -193,27 +193,27 @@ verify_checksums(const char *pkg_dir)
     char path[PATH_MAX];
     FILE *f;
 
-    snprintf(path, sizeof(path), "%s/sha256sums", pkg_dir);
+    (void)snprintf(path, sizeof(path), "%s/sha256sums", pkg_dir);
     f = fopen(path, "r");
     if (f)
     {
-        fclose(f);
+        (void)fclose(f);
         return verify_sha256sums(pkg_dir, path);
     }
 
-    snprintf(path, sizeof(path), "%s/crc32sums", pkg_dir);
+    (void)snprintf(path, sizeof(path), "%s/crc32sums", pkg_dir);
     f = fopen(path, "r");
     if (f)
     {
-        fclose(f);
+        (void)fclose(f);
         return verify_crc32sums(pkg_dir, path);
     }
 
-    snprintf(path, sizeof(path), "%s/md5sums", pkg_dir);
+    (void)snprintf(path, sizeof(path), "%s/md5sums", pkg_dir);
     f = fopen(path, "r");
     if (f)
     {
-        fclose(f);
+        (void)fclose(f);
         return verify_md5sums(pkg_dir, path);
     }
 

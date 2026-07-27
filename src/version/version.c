@@ -91,7 +91,7 @@ dep_constraint_to_str(const struct dep_constraint *c)
     size_t len = strlen(c->name) + strlen(op_str) + strlen(c->version) + 5;
     char *buf = malloc(len);
     if (buf)
-        snprintf(buf, len, "%s %s %s", c->name, op_str, c->version);
+        (void)snprintf(buf, len, "%s %s %s", c->name, op_str, c->version);
     return buf;
 }
 

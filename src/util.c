@@ -114,7 +114,7 @@ collect_recursive(const char *dir, size_t base_len, char ***out, int *count,
         char *abs = malloc(len);
         if (!abs)
             continue;
-        snprintf(abs, len, "%s/%s", dir, entry->d_name);
+        (void)snprintf(abs, len, "%s/%s", dir, entry->d_name);
 
         struct stat st;
         if (stat(abs, &st) == 0)
@@ -188,7 +188,7 @@ remove_dir_recursive(const char *path)
         char *child = malloc(len);
         if (!child)
             continue;
-        snprintf(child, len, "%s/%s", path, entry->d_name);
+        (void)snprintf(child, len, "%s/%s", path, entry->d_name);
         remove_dir_recursive(child);
         free(child);
     }

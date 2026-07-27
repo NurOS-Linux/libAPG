@@ -6,10 +6,10 @@
 
 #include "../../include/apg/md5.h"
 
-#define F(b, c, d) ((b & c) | (~b & d))
-#define G(b, c, d) ((b & d) | (c & ~d))
-#define H(b, c, d) (b ^ c ^ d)
-#define I(b, c, d) (c ^ (b | ~d))
+#define F(b, c, d) (((b) & (c)) | (~(b) & (d)))
+#define G(b, c, d) (((b) & (d)) | ((c) & ~(d)))
+#define H(b, c, d) ((b) ^ (c) ^ (d))
+#define I(b, c, d) ((c) ^ ((b) | ~(d)))
 #define ROTL(x, n) (((x) << (n)) | ((x) >> (32 - (n))))
 
 static const uint32_t T[64] = {
@@ -61,9 +61,10 @@ md5_transform(uint32_t state[4], const uint8_t block[64])
 
     for (int i = 0; i < 16; i++)
     {
-        m[i] = (uint32_t)block[i * 4] | ((uint32_t)block[i * 4 + 1] << 8) |
-               ((uint32_t)block[i * 4 + 2] << 16) |
-               ((uint32_t)block[i * 4 + 3] << 24);
+        size_t off = (size_t)i * 4;
+        m[i] = (uint32_t)block[off] | ((uint32_t)block[off + 1] << 8) |
+               ((uint32_t)block[off + 2] << 16) |
+               ((uint32_t)block[off + 3] << 24);
     }
 
     for (int i = 0; i < 64; i++)
@@ -77,12 +78,12 @@ md5_transform(uint32_t state[4], const uint8_t block[64])
         else if (i < 32)
         {
             f = G(b, c, d);
-            g = (5 * i + 1) % 16;
+            g = ((5 * i) + 1) % 16;
         }
         else if (i < 48)
         {
             f = H(b, c, d);
-            g = (3 * i + 5) % 16;
+            g = ((3 * i) + 5) % 16;
         }
         else
         {
@@ -161,10 +162,11 @@ md5_final(uint8_t digest[16], md5_ctx *ctx)
 
     for (int i = 0; i < 4; i++)
     {
-        digest[i * 4] = ctx->state[i] & 0xff;
-        digest[i * 4 + 1] = (ctx->state[i] >> 8) & 0xff;
-        digest[i * 4 + 2] = (ctx->state[i] >> 16) & 0xff;
-        digest[i * 4 + 3] = (ctx->state[i] >> 24) & 0xff;
+        size_t off = (size_t)i * 4;
+        digest[off] = ctx->state[i] & 0xff;
+        digest[off + 1] = (ctx->state[i] >> 8) & 0xff;
+        digest[off + 2] = (ctx->state[i] >> 16) & 0xff;
+        digest[off + 3] = (ctx->state[i] >> 24) & 0xff;
     }
 }
 
@@ -185,11 +187,11 @@ compute_md5(const char *path, uint8_t digest[16])
 
     if (ferror(f))
     {
-        fclose(f);
+        (void)fclose(f);
         return false;
     }
 
-    fclose(f);
+    (void)fclose(f);
     md5_final(digest, &ctx);
     return true;
 }

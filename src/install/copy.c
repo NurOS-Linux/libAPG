@@ -21,7 +21,7 @@ copy_file(const char *src, const char *dst)
     FILE *out = fopen(dst, "wb");
     if (!out)
     {
-        fclose(in);
+        (void)fclose(in);
         return false;
     }
 
@@ -39,8 +39,9 @@ copy_file(const char *src, const char *dst)
     if (ferror(in))
         ok = false;
 
-    fclose(in);
-    fclose(out);
+    (void)fclose(in);
+    if (fclose(out) != 0)
+        ok = false;
     return ok;
 }
 

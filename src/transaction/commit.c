@@ -108,19 +108,19 @@ save_confs(const struct package *pkg, const char *root_path, int *count)
             free(full);
             continue;
         }
-        fseek(f, 0, SEEK_END);
+        (void)fseek(f, 0, SEEK_END);
         long sz = ftell(f);
-        fseek(f, 0, SEEK_SET);
+        (void)fseek(f, 0, SEEK_SET);
 
         void *data = malloc((size_t)sz);
         if (!data || fread(data, 1, (size_t)sz, f) != (size_t)sz)
         {
             free(data);
-            fclose(f);
+            (void)fclose(f);
             free(full);
             continue;
         }
-        fclose(f);
+        (void)fclose(f);
 
         bk[*count].path = full;
         bk[*count].data = data;
@@ -137,14 +137,14 @@ restore_confs(struct conf_backup *bk, int count, const char *root_path)
     for (int i = 0; i < count; i++)
     {
         char apg_new[PATH_MAX];
-        snprintf(apg_new, sizeof(apg_new), "%s.apg-new", bk[i].path);
-        rename(bk[i].path, apg_new);
+        (void)snprintf(apg_new, sizeof(apg_new), "%s.apg-new", bk[i].path);
+        (void)rename(bk[i].path, apg_new);
 
         FILE *f = fopen(bk[i].path, "wb");
         if (f)
         {
-            fwrite(bk[i].data, 1, bk[i].size, f);
-            fclose(f);
+            (void)fwrite(bk[i].data, 1, bk[i].size, f);
+            (void)fclose(f);
         }
         free(bk[i].path);
         free(bk[i].data);
@@ -196,7 +196,7 @@ rollback_committed(struct apg_trans *trans, const size_t *committed_idx,
 }
 
 trans_error_t
-trans_commit(struct apg_trans *trans, const char *root_path)
+trans_commit(struct apg_trans *trans, const char *root_path) // NOLINT(readability-function-cognitive-complexity)
 {
     if (!trans || !root_path)
         return TRANS_ERR_NOMEM;

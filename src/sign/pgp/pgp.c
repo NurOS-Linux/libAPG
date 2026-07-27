@@ -108,11 +108,19 @@ sign_file_gpgme(const char *pkg_path, const char *sig_path)
 
     char buf[4096];
     ssize_t n;
+    bool ok = true;
     while ((n = gpgme_data_read(out, buf, sizeof(buf))) > 0)
-        fwrite(buf, 1, (size_t)n, f);
+    {
+        if (fwrite(buf, 1, (size_t)n, f) != (size_t)n)
+        {
+            ok = false;
+            break;
+        }
+    }
 
-    fclose(f);
+    if (fclose(f) != 0)
+        ok = false;
     gpgme_data_release(out);
     gpgme_release(ctx);
-    return true;
+    return ok;
 }

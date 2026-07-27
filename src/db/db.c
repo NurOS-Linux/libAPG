@@ -16,7 +16,7 @@ static int
 acquire_write_lock(const char *db_path)
 {
     char lock_path[4096];
-    snprintf(lock_path, sizeof(lock_path), "%s/db.lock", db_path);
+    (void)snprintf(lock_path, sizeof(lock_path), "%s/db.lock", db_path);
 
     int fd = open(lock_path, O_CREAT | O_RDWR, 0644);
     if (fd < 0)

@@ -39,7 +39,7 @@ extract_to_dir(const char *archive_path, const char *path_dest)
 
     while (archive_read_next_header(a, &entry) == ARCHIVE_OK)
     {
-        snprintf(full_path, sizeof(full_path), "%s/%s", path_dest,
+        (void)snprintf(full_path, sizeof(full_path), "%s/%s", path_dest,
                  archive_entry_pathname(entry));
         archive_entry_set_pathname(entry, full_path);
 
