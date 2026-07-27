@@ -13,7 +13,7 @@ jobs:
     name: Build APG package (x86_64)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
       - name: Install dependencies
         run: |
@@ -47,7 +47,7 @@ jobs:
             metadata.json md5sums data/
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: pkg-x86_64
           path: libapg-${{ steps.version.outputs.version }}-x86_64.apg
@@ -56,7 +56,7 @@ jobs:
     name: Build APG package (aarch64)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
       - name: Add arm64 architecture
         run: |
@@ -115,7 +115,7 @@ jobs:
             metadata.json md5sums data/
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: pkg-aarch64
           path: libapg-${{ steps.version.outputs.version }}-aarch64.apg
@@ -124,7 +124,7 @@ jobs:
     name: Build APG package (riscv64)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
       - name: Add riscv64 architecture
         run: |
@@ -183,7 +183,7 @@ jobs:
             metadata.json md5sums data/
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: pkg-riscv64
           path: libapg-${{ steps.version.outputs.version }}-riscv64.apg
@@ -192,7 +192,7 @@ jobs:
     name: Build APG package (mips64el)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
       - name: Add mips64el architecture
         run: |
@@ -309,7 +309,7 @@ jobs:
             metadata.json md5sums data/
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: pkg-mips64el
           path: libapg-${{ steps.version.outputs.version }}-mips64el.apg
@@ -319,14 +319,14 @@ jobs:
     runs-on: ubuntu-latest
     needs: [build-x86_64, build-aarch64, build-riscv64, build-mips64el]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
       - name: Get version
         id: version
         run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
 
       - name: Download artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           path: pkgs/
           merge-multiple: true

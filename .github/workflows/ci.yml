@@ -14,7 +14,7 @@ jobs:
     name: Code quality
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
       - name: Install tools
         run: |
@@ -28,7 +28,7 @@ jobs:
     name: Build and test
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
       - name: Install dependencies
         run: |
@@ -53,7 +53,7 @@ jobs:
       ASAN_OPTIONS: halt_on_error=1
       UBSAN_OPTIONS: halt_on_error=1:print_stacktrace=1
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
       - name: Install dependencies
         run: |
@@ -78,7 +78,7 @@ jobs:
     name: Assembly (minor arch validation)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
       - name: Install clang + lld
         run: |
@@ -111,7 +111,7 @@ jobs:
     name: Cross-compile (aarch64)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
       - name: Add arm64 architecture
         run: |
@@ -154,7 +154,7 @@ jobs:
     name: Cross-compile (riscv64)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
       - name: Add riscv64 architecture
         run: |
@@ -197,7 +197,7 @@ jobs:
     name: Cross-compile (mips64el)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
       - name: Add mips64el architecture
         run: |
@@ -303,7 +303,7 @@ jobs:
     name: Cross-compile (armhf)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
       - name: Add armhf architecture
         run: |
@@ -346,10 +346,10 @@ jobs:
     name: Build (FreeBSD x86_64)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
       - name: Build and test on FreeBSD
-        uses: cross-platform-actions/action@v1.3.0
+        uses: cross-platform-actions/action@5ea7e8e4677bd726033a10b094ba1c5762b15dee # v1.3.0
         with:
           operating_system: freebsd
           architecture: x86-64

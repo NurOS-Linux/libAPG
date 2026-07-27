@@ -20,7 +20,7 @@ jobs:
         run: |
           apt-get update && apt-get install -y git sudo curl ca-certificates
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
       - name: Install tools
         run: |
@@ -40,7 +40,7 @@ jobs:
         run: |
           apt-get update && apt-get install -y git sudo curl ca-certificates
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
       - name: Install dependencies
         run: |
@@ -71,7 +71,7 @@ jobs:
         run: |
           apt-get update && apt-get install -y git sudo curl ca-certificates
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
       - name: Install dependencies
         run: |
@@ -102,7 +102,7 @@ jobs:
         run: |
           apt-get update && apt-get install -y git sudo curl ca-certificates
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
       - name: Install clang + lld
         run: |
@@ -141,7 +141,7 @@ jobs:
         run: |
           apt-get update && apt-get install -y git sudo curl ca-certificates
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
       - name: Add arm64 architecture
         run: |
@@ -190,7 +190,7 @@ jobs:
         run: |
           apt-get update && apt-get install -y git sudo curl ca-certificates
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
       - name: Add riscv64 architecture
         run: |
@@ -239,7 +239,7 @@ jobs:
         run: |
           apt-get update && apt-get install -y git sudo curl ca-certificates
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
       - name: Add mips64el architecture
         run: |
@@ -351,7 +351,7 @@ jobs:
         run: |
           apt-get update && apt-get install -y git sudo curl ca-certificates
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
       - name: Add armhf architecture
         run: |
