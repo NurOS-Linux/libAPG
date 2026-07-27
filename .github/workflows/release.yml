@@ -23,14 +23,6 @@ jobs:
             libarchive-dev liblmdb-dev libgpgme-dev libseccomp-dev \
             libsodium-dev
 
-      - name: Install yyjson
-        run: |
-          git clone --depth=1 https://github.com/ibireme/yyjson.git /tmp/yyjson
-          gcc -O2 -shared -fPIC -o /tmp/libyyjson.so /tmp/yyjson/src/yyjson.c
-          sudo cp /tmp/libyyjson.so /usr/local/lib/
-          sudo cp /tmp/yyjson/src/yyjson.h /usr/local/include/
-          sudo ldconfig
-
       - name: Get version
         id: version
         run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
@@ -93,16 +85,6 @@ jobs:
             libsodium-dev:arm64 \
             libgpgme-dev:arm64 \
             libseccomp-dev:arm64
-
-      - name: Build yyjson for arm64
-        run: |
-          git clone --depth=1 https://github.com/ibireme/yyjson.git /tmp/yyjson
-          clang --target=aarch64-linux-gnu -O2 -shared -fPIC \
-            -o /tmp/libyyjson.so /tmp/yyjson/src/yyjson.c
-          sudo cp /tmp/libyyjson.so /usr/lib/aarch64-linux-gnu/
-          sudo cp /tmp/yyjson/src/yyjson.h /usr/include/
-          printf 'Name: yyjson\nDescription: Fast JSON library\nVersion: 0.0.0\nLibs: -L/usr/lib/aarch64-linux-gnu -lyyjson\nCflags: -I/usr/include\n' | \
-            sudo tee /usr/lib/aarch64-linux-gnu/pkgconfig/yyjson.pc
 
       - name: Get version
         id: version
@@ -171,16 +153,6 @@ jobs:
             libsodium-dev:riscv64 \
             libgpgme-dev:riscv64 \
             libseccomp-dev:riscv64
-
-      - name: Build yyjson for riscv64
-        run: |
-          git clone --depth=1 https://github.com/ibireme/yyjson.git /tmp/yyjson
-          clang --target=riscv64-linux-gnu -O2 -shared -fPIC \
-            -o /tmp/libyyjson.so /tmp/yyjson/src/yyjson.c
-          sudo cp /tmp/libyyjson.so /usr/lib/riscv64-linux-gnu/
-          sudo cp /tmp/yyjson/src/yyjson.h /usr/include/
-          printf 'Name: yyjson\nDescription: Fast JSON library\nVersion: 0.0.0\nLibs: -L/usr/lib/riscv64-linux-gnu -lyyjson\nCflags: -I/usr/include\n' | \
-            sudo tee /usr/lib/riscv64-linux-gnu/pkgconfig/yyjson.pc
 
       - name: Get version
         id: version
@@ -307,16 +279,6 @@ jobs:
             --disable-gpg-test --disable-gpgsm-test --disable-g13-test --disable-gpgconf-test --enable-languages=
           make -j$(nproc) && sudo make install
           printf 'Name: gpgme\nVersion: 1.18.0\nLibs: -L%s -lgpgme -lassuan -lgpg-error\nCflags: -I/usr/include\n' "${SYSROOT}" | sudo tee ${SYSROOT}/pkgconfig/gpgme.pc
-
-      - name: Build yyjson for mips64el
-        run: |
-          git clone --depth=1 https://github.com/ibireme/yyjson.git /tmp/yyjson
-          clang --target=mips64el-linux-gnuabi64 -O2 -shared -fPIC \
-            -o /tmp/libyyjson.so /tmp/yyjson/src/yyjson.c
-          sudo cp /tmp/libyyjson.so /usr/lib/mips64el-linux-gnuabi64/
-          sudo cp /tmp/yyjson/src/yyjson.h /usr/include/
-          printf 'Name: yyjson\nDescription: Fast JSON library\nVersion: 0.0.0\nLibs: -L/usr/lib/mips64el-linux-gnuabi64 -lyyjson\nCflags: -I/usr/include\n' | \
-            sudo tee /usr/lib/mips64el-linux-gnuabi64/pkgconfig/yyjson.pc
 
       - name: Get version
         id: version

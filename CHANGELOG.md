@@ -11,6 +11,10 @@ All notable changes to this project will be documented in this file.
 - Proper pkg-config metadata: `pkg.generate()` now sets `name`/`filebase` to `libapg` (previously defaulted to the library target name `apg`, so consumers had to look up `apg.pc` instead of the documented project name), plus `description` and `url` (`meson.build`)
 - CMake support (`cmake/libapg-config.cmake`, installed to `<libdir>/cmake/libapg/`): `find_package(libapg REQUIRED)` resolves via pkg-config and exposes the `libapg::libapg` imported target
 
+### Changed
+
+- CI/release workflows (`.github/workflows/`, `.forgejo/workflows/`) no longer build `yyjson` from an unpinned `git clone` of upstream HEAD (or, on FreeBSD, the `pkg` system package); every job now falls through to the pinned, hash-verified `subprojects/yyjson.wrap` fallback that `meson.build` already declares, so `yyjson` comes from exactly one, integrity-checked source on every platform
+
 ## [1.11.3] - 2026-07-22
 
 ### Fixed
