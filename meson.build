@@ -289,7 +289,16 @@ install_headers(
 )
 
 pkg = import('pkgconfig')
-pkg.generate(libapg)
+pkg.generate(libapg,
+  name: 'libapg',
+  filebase: 'libapg',
+  description: 'Package management library for NurOS',
+  url: 'https://git.nuros.org/core/libapg',
+)
+
+install_data('cmake/libapg-config.cmake',
+  install_dir: get_option('libdir') / 'cmake' / 'libapg',
+)
 
 doxygen = find_program('doxygen', required: false)
 if doxygen.found()

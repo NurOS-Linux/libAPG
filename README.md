@@ -114,6 +114,21 @@ meson compile -C build
 sudo meson install -C build
 ```
 
+## Using libapg
+
+Installing `libapg` also installs a `libapg.pc` pkg-config file and a CMake package config module, so it can be picked up either way:
+
+```bash
+pkg-config --cflags --libs libapg
+```
+
+```cmake
+find_package(libapg REQUIRED)
+target_link_libraries(your_target PRIVATE libapg::libapg)
+```
+
+The CMake module resolves through pkg-config, so `pkg-config` must be installed and discoverable on the consuming system.
+
 ## License
 
 This project is licensed under the **GNU General Public License v3.0** (GPL-3.0).

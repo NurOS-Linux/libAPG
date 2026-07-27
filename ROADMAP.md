@@ -4,8 +4,8 @@
 
 - [ ] ABI stabilization and documentation
 - [ ] Bindings for other languages (Python, C++)
-- [ ] Correctness tests: checksum fuzzing, installation unit tests
-- [ ] pkg-config and CMake find module
+- [x] Correctness tests: checksum fuzzing, installation unit tests
+- [x] pkg-config and CMake find module
 
 ## Maybe in the future
 
