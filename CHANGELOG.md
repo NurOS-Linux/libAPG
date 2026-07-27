@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- `test/src/test_checksum_fuzz.c`: fuzz and edge-case coverage for `verify_checksums()` across all three backends (sha256sums, crc32sums, md5sums), including a randomized-input loop targeting the class of buffer-handling bug fixed in 1.11.3
+- `test_parse_package_install_roundtrip` and `test_install_package_in_root_uses_isolated_temp_dirs` (`test/src/test_install.c`): end-to-end `parse_package()`/`install_package_in_root()`/`package_collect_files()` tests against real built `.apg` archives, the latter a regression test for the per-call temp directory isolation fixed in 1.11.3
+
 ## [1.11.3] - 2026-07-22
 
 ### Fixed

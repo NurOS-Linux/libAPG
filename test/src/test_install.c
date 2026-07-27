@@ -14,6 +14,7 @@
 #include <apg/db.h>
 #include <apg/package.h>
 #include <apg/scripts.h>
+#include <apg/sha256.h>
 #include <util.h>
 
 // concat_dirs() does not insert a separator between its arguments (despite
@@ -290,4 +291,137 @@ test_run_script_root(void)
     free(pkg_dir);
     free(root);
     printf("test_run_script_root: PASS\n");
+}
+
+static void
+build_test_package(const char *staging_dir, const char *archive_path,
+                    const char *name, const char *rel_file,
+                    const char *file_content)
+{
+    mkdir_p(staging_dir);
+
+    char meta_path[PATH_MAX];
+    snprintf(meta_path, sizeof(meta_path), "%s/metadata.json", staging_dir);
+    char meta_json[512];
+    snprintf(meta_json, sizeof(meta_json),
+             "{\"name\": \"%s\", \"version\": \"1.0.0\", \"type\": \"app\"}",
+             name);
+    write_file(meta_path, meta_json);
+
+    char *data_dir = join_path(staging_dir, "data");
+    const char *rel_dir_end = strrchr(rel_file, '/');
+    if (rel_dir_end)
+    {
+        char rel_dir[PATH_MAX];
+        size_t dir_len = (size_t)(rel_dir_end - rel_file);
+        memcpy(rel_dir, rel_file, dir_len);
+        rel_dir[dir_len] = '\0';
+        char *nested = join_path(data_dir, rel_dir);
+        mkdir_p(nested);
+        free(nested);
+    }
+    else
+    {
+        mkdir_p(data_dir);
+    }
+
+    char *file_path = join_path(data_dir, rel_file);
+    write_file(file_path, file_content);
+
+    uint8_t digest[32];
+    assert(compute_sha256(file_path, digest));
+    char hex[65];
+    sha256_hex(digest, hex);
+
+    char sums_path[PATH_MAX];
+    snprintf(sums_path, sizeof(sums_path), "%s/sha256sums", staging_dir);
+    char sums_line[PATH_MAX + 80];
+    snprintf(sums_line, sizeof(sums_line), "%s  data/%s\n", hex, rel_file);
+    write_file(sums_path, sums_line);
+
+    char cmd[PATH_MAX * 2];
+    snprintf(cmd, sizeof(cmd), "tar -czf '%s' -C '%s' metadata.json data sha256sums",
+             archive_path, staging_dir);
+    assert(system(cmd) == 0);
+
+    free(file_path);
+    free(data_dir);
+}
+
+void
+test_parse_package_install_roundtrip(void)
+{
+    char *pkg_src = mktmp_dir("pkgsrc");
+    char *arch_dir = mktmp_dir("archdir");
+    char *archive_path = join_path(arch_dir, "pkg.tar.gz");
+
+    build_test_package(pkg_src, archive_path, "roundtrip-pkg",
+                        "usr/share/roundtrip/file.txt",
+                        "install roundtrip content");
+
+    char *root = mktmp_dir("iroot");
+
+    struct package *pkg = parse_package(archive_path, root);
+    assert(pkg);
+    assert(strcmp(pkg->meta->name, "roundtrip-pkg") == 0);
+    assert(strcmp(pkg->meta->version, "1.0.0") == 0);
+
+    assert(install_package_in_root(pkg, root));
+
+    char *installed_path = join_path(root, "usr/share/roundtrip/file.txt");
+    assert(file_contains(installed_path, "install roundtrip content"));
+
+    free(installed_path);
+    package_free(pkg);
+    free(archive_path);
+    rmtree(arch_dir);
+    rmtree(pkg_src);
+    rmtree(root);
+    free(arch_dir);
+    free(pkg_src);
+    free(root);
+    printf("test_parse_package_install_roundtrip: PASS\n");
+}
+
+void
+test_install_package_in_root_uses_isolated_temp_dirs(void)
+{
+    char *pkg_src_a = mktmp_dir("pkgsrc-a");
+    char *pkg_src_b = mktmp_dir("pkgsrc-b");
+    char *arch_dir = mktmp_dir("archdir2");
+    char *archive_a = join_path(arch_dir, "a.tar.gz");
+    char *archive_b = join_path(arch_dir, "b.tar.gz");
+
+    build_test_package(pkg_src_a, archive_a, "pkg-a", "a.txt", "AAAA-content");
+    build_test_package(pkg_src_b, archive_b, "pkg-b", "b.txt", "BBBB-content");
+
+    char *root = mktmp_dir("isoroot");
+
+    struct package *pkg_a = parse_package(archive_a, root);
+    struct package *pkg_b = parse_package(archive_b, root);
+    assert(pkg_a);
+    assert(pkg_b);
+
+    assert(package_collect_files(pkg_a, root));
+    assert(pkg_a->package_files.count == 1);
+    assert(strstr(pkg_a->package_files.items[0], "a.txt"));
+
+    assert(package_collect_files(pkg_b, root));
+    assert(pkg_b->package_files.count == 1);
+    assert(strstr(pkg_b->package_files.items[0], "b.txt"));
+    assert(!strstr(pkg_b->package_files.items[0], "a.txt"));
+
+    package_free(pkg_a);
+    package_free(pkg_b);
+    free(archive_a);
+    free(archive_b);
+    rmtree(arch_dir);
+    rmtree(pkg_src_a);
+    rmtree(pkg_src_b);
+    rmtree(root);
+    free(arch_dir);
+    free(pkg_src_a);
+    free(pkg_src_b);
+    free(root);
+    printf("test_install_package_in_root_uses_isolated_temp_dirs: PASS\n");
 }

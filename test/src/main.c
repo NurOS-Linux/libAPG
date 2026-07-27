@@ -54,7 +54,16 @@ main(void)
     test_rollback_install_removes_files();
     test_db_add_get_remove_roundtrip();
     test_run_script_root();
+    test_parse_package_install_roundtrip();
+    test_install_package_in_root_uses_isolated_temp_dirs();
 
-    printf("All 43 tests passed.\n");
+    test_verify_checksums_sha256_valid_passes();
+    test_verify_checksums_sha256_tampered_fails();
+    test_verify_checksums_crc32_fallback_passes();
+    test_verify_checksums_md5_fallback_passes();
+    test_verify_checksums_missing_sums_file_fails();
+    test_verify_checksums_fuzz_malformed_input_no_crash();
+
+    printf("All 50 tests passed.\n");
     return 0;
 }
