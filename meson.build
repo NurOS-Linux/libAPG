@@ -227,7 +227,7 @@ libarchive_dep = dependency('libarchive', fallback: ['libarchive', 'libarchive_d
 lmdb_dep = dependency('lmdb', fallback: ['lmdb', 'lmdb_dep'])
 libyyjson_dep = dependency('yyjson', fallback: ['yyjson', 'yyjson_dep'])
 
-gpgme_dep = dependency('gpgme', required: true)
+gpgme_dep = dependency('gpgme', required: get_option('gpgme'))
 sodium_dep = dependency('libsodium', required: false)
 if not sodium_dep.found()
   sodium_dep = cc.find_library('sodium', required: true)
@@ -235,14 +235,21 @@ endif
 
 # Both signing backends are built in and exposed side by side (libsodium
 # under the plain sign_*/keyring_* names, gpgme under the _gpgme suffix);
-# callers of libapg pick whichever they need.
+# callers of libapg pick whichever they need. gpgme is optional (see the
+# 'gpgme' meson option) for platforms where it can't be built/found.
 libapg_sources += files(
   'src/sign/sodium/sodium.c',
   'src/sign/sodium/keyring.c',
-  'src/sign/pgp/pgp.c',
-  'src/sign/pgp/keyring.c',
 )
-sign_dep = [gpgme_dep, sodium_dep]
+sign_dep = [sodium_dep]
+if gpgme_dep.found()
+  add_project_arguments('-DAPG_HAVE_GPGME=1', language: 'c')
+  libapg_sources += files(
+    'src/sign/pgp/pgp.c',
+    'src/sign/pgp/keyring.c',
+  )
+  sign_dep += [gpgme_dep]
+endif
 
 seccomp_dep = dependency('libseccomp', required: false)
 if seccomp_dep.found()

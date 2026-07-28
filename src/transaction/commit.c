@@ -24,7 +24,9 @@ struct active_keyring
 {
     bool use_gpgme;
     struct keyring *sodium;
+#ifdef APG_HAVE_GPGME
     struct keyring_gpgme *gpgme;
+#endif
 };
 
 static bool
@@ -34,8 +36,12 @@ active_keyring_load(struct active_keyring *ak, sign_backend_t backend,
     ak->use_gpgme = (backend == SIGN_BACKEND_GPGME);
     if (ak->use_gpgme)
     {
+#ifdef APG_HAVE_GPGME
         ak->gpgme = keyring_load_gpgme(keyring_dir);
         return ak->gpgme != NULL;
+#else
+        return false;
+#endif
     }
     ak->sodium = keyring_load(keyring_dir);
     return ak->sodium != NULL;
@@ -45,16 +51,22 @@ static bool
 active_keyring_verify(const struct active_keyring *ak, const char *pkg_path,
                       const char *sig_path)
 {
+#ifdef APG_HAVE_GPGME
     return ak->use_gpgme ? keyring_verify_gpgme(ak->gpgme, pkg_path, sig_path)
                          : keyring_verify(ak->sodium, pkg_path, sig_path);
+#else
+    return keyring_verify(ak->sodium, pkg_path, sig_path);
+#endif
 }
 
 static void
 active_keyring_free(struct active_keyring *ak)
 {
+#ifdef APG_HAVE_GPGME
     if (ak->use_gpgme)
         keyring_free_gpgme(ak->gpgme);
     else
+#endif
         keyring_free(ak->sodium);
 }
 
