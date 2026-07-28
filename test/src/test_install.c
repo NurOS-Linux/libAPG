@@ -295,8 +295,8 @@ test_run_script_root(void)
 
 static void
 build_test_package(const char *staging_dir, const char *archive_path,
-                    const char *name, const char *rel_file,
-                    const char *file_content)
+                   const char *name, const char *rel_file,
+                   const char *file_content)
 {
     mkdir_p(staging_dir);
 
@@ -340,7 +340,8 @@ build_test_package(const char *staging_dir, const char *archive_path,
     write_file(sums_path, sums_line);
 
     char cmd[PATH_MAX * 2];
-    snprintf(cmd, sizeof(cmd), "tar -czf '%s' -C '%s' metadata.json data sha256sums",
+    snprintf(cmd, sizeof(cmd),
+             "tar -czf '%s' -C '%s' metadata.json data sha256sums",
              archive_path, staging_dir);
     assert(system(cmd) == 0);
 
@@ -356,8 +357,8 @@ test_parse_package_install_roundtrip(void)
     char *archive_path = join_path(arch_dir, "pkg.tar.gz");
 
     build_test_package(pkg_src, archive_path, "roundtrip-pkg",
-                        "usr/share/roundtrip/file.txt",
-                        "install roundtrip content");
+                       "usr/share/roundtrip/file.txt",
+                       "install roundtrip content");
 
     char *root = mktmp_dir("iroot");
 

@@ -63,8 +63,7 @@ sha256_transform(sha256_ctx *ctx, const uint8_t data[64])
     for (i = 0; i < 16; i++)
     {
         size_t off = (size_t)i * 4;
-        m[i] = ((uint32_t)data[off] << 24) |
-               ((uint32_t)data[off + 1] << 16) |
+        m[i] = ((uint32_t)data[off] << 24) | ((uint32_t)data[off + 1] << 16) |
                ((uint32_t)data[off + 2] << 8) | ((uint32_t)data[off + 3]);
     }
     for (; i < 64; i++)

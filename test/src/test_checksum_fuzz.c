@@ -103,7 +103,8 @@ test_verify_checksums_crc32_fallback_passes(void)
     const char *content = "crc32 fallback payload";
     write_file_at(pkg_dir, "payload.bin", content, strlen(content));
 
-    unsigned int crc = crc32((const unsigned char *)content, (unsigned int)strlen(content));
+    unsigned int crc =
+        crc32((const unsigned char *)content, (unsigned int)strlen(content));
 
     char line[128];
     snprintf(line, sizeof(line), "%08x  payload.bin\n", crc);

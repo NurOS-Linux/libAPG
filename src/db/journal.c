@@ -89,8 +89,8 @@ journal_write(MDB_env *env, journal_op_t op, const char *pkg_name,
 
     char val[512];
     (void)snprintf(val, sizeof(val), "%s|%s|%s|%s|%u|%d", op_to_str(op),
-             pkg_name ? pkg_name : "-", pkg_version ? pkg_version : "-",
-             status_to_str(status), (unsigned)uid, explicit_op ? 1 : 0);
+                   pkg_name ? pkg_name : "-", pkg_version ? pkg_version : "-",
+                   status_to_str(status), (unsigned)uid, explicit_op ? 1 : 0);
 
     MDB_val k = {sizeof(raw_key), raw_key};
     MDB_val v = {strlen(val), val};

@@ -32,7 +32,7 @@ unique_tmp_dir(const char *root_path)
 
     char leaf[64];
     (void)snprintf(leaf, sizeof(leaf), "pkg-%d-%" PRIu64, (int)getpid(),
-             ++g_extract_seq);
+                   ++g_extract_seq);
 
     char *unique = concat_dirs(base, leaf);
     free(base);
