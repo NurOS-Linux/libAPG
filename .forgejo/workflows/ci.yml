@@ -25,7 +25,10 @@ jobs:
       - name: Install tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y clang-format python3
+          sudo apt-get install -y clang-format clang-tidy python3 \
+            meson ninja-build pkg-config \
+            libarchive-dev liblmdb-dev libgpgme-dev libseccomp-dev \
+            libsodium-dev
 
       - name: Run checks
         run: python3 scripts/checkpatch.py

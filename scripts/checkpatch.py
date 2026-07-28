@@ -40,7 +40,26 @@ def run_doc() -> bool:
     return step('doxygen coverage', [sys.executable, str(SCRIPTS / 'check-doc.py'), 'include'])
 
 
-CHECKS = [run_clang_format, run_spdx, run_doc]
+def ensure_build_dir() -> Path | None:
+    build_dir = ROOT / 'build'
+    if (build_dir / 'compile_commands.json').exists():
+        return build_dir
+    r = subprocess.run(['meson', 'setup', str(build_dir)], cwd=ROOT,
+                        capture_output=True, text=True)
+    return build_dir if r.returncode == 0 else None
+
+
+def run_clang_tidy() -> bool:
+    build_dir = ensure_build_dir()
+    if build_dir is None:
+        print('FAIL  clang-tidy')
+        print('      meson setup build failed')
+        return False
+    sources = [str(f) for f in (ROOT / 'src').rglob('*.c')]
+    return step('clang-tidy', ['clang-tidy', '-p', str(build_dir)] + sources)
+
+
+CHECKS = [run_clang_format, run_spdx, run_doc, run_clang_tidy]
 
 if __name__ == '__main__':
     failed = sum(1 for c in CHECKS if not c())
