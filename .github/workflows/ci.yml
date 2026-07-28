@@ -272,33 +272,13 @@ jobs:
           make -j$(nproc) && sudo make install
           printf 'Name: libseccomp\nVersion: 2.5.5\nLibs: -L%s -lseccomp\nCflags: -I/usr/include\n' "${SYSROOT}" | sudo tee ${SYSROOT}/pkgconfig/libseccomp.pc
 
-          curl -fsSL https://gnupg.org/ftp/gcrypt/libgpg-error/libgpg-error-1.51.tar.bz2 | tar xj -C /tmp
-          cd /tmp/libgpg-error-1.51
-          ./configure --host=${TRIPLET} CC="${CC}" --prefix=/usr --libdir=${SYSROOT} --disable-shared --disable-doc
-          make -j$(nproc) && sudo make install
-          printf 'Name: gpg-error\nVersion: 1.51\nLibs: -L%s -lgpg-error\nCflags: -I/usr/include\n' "${SYSROOT}" | sudo tee ${SYSROOT}/pkgconfig/gpg-error.pc
-
-          curl -fsSL https://gnupg.org/ftp/gcrypt/libassuan/libassuan-2.5.7.tar.bz2 | tar xj -C /tmp
-          cd /tmp/libassuan-2.5.7
-          PKG_CONFIG_LIBDIR=${SYSROOT}/pkgconfig PKG_CONFIG_PATH= \
-          ./configure --host=${TRIPLET} CC="${CC}" --prefix=/usr --libdir=${SYSROOT} --disable-shared
-          make -j$(nproc) && sudo make install
-          printf 'Name: libassuan\nVersion: 2.5.7\nLibs: -L%s -lassuan\nCflags: -I/usr/include\n' "${SYSROOT}" | sudo tee ${SYSROOT}/pkgconfig/libassuan.pc
-
-          curl -fsSL https://gnupg.org/ftp/gcrypt/gpgme/gpgme-1.18.0.tar.bz2 | tar xj -C /tmp
-          cd /tmp/gpgme-1.18.0
-          PKG_CONFIG_LIBDIR=${SYSROOT}/pkgconfig PKG_CONFIG_PATH= \
-          ./configure --host=${TRIPLET} CC="${CC}" --prefix=/usr --libdir=${SYSROOT} --disable-shared \
-            --disable-gpg-test --disable-gpgsm-test --disable-g13-test --disable-gpgconf-test --enable-languages=
-          make -j$(nproc) && sudo make install
-          printf 'Name: gpgme\nVersion: 1.18.0\nLibs: -L%s -lgpgme -lassuan -lgpg-error\nCflags: -I/usr/include\n' "${SYSROOT}" | sudo tee ${SYSROOT}/pkgconfig/gpgme.pc
-
       - name: Cross-compile
         env:
           PKG_CONFIG_LIBDIR: /usr/lib/mips64el-linux-gnuabi64/pkgconfig:/usr/share/pkgconfig
         run: |
           meson setup build-mips64el \
             --cross-file cross/cross-mips64.txt \
+            -Dgpgme=disabled \
             --buildtype=release
           meson compile -C build-mips64el
 
