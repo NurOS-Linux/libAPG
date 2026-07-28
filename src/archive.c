@@ -40,7 +40,7 @@ extract_to_dir(const char *archive_path, const char *path_dest)
     while (archive_read_next_header(a, &entry) == ARCHIVE_OK)
     {
         (void)snprintf(full_path, sizeof(full_path), "%s/%s", path_dest,
-                 archive_entry_pathname(entry));
+                       archive_entry_pathname(entry));
         archive_entry_set_pathname(entry, full_path);
 
         if (archive_write_header(ext, entry) != ARCHIVE_OK)
@@ -57,8 +57,7 @@ extract_to_dir(const char *archive_path, const char *path_dest)
         while ((r = archive_read_data_block(a, &buff, &size, &offset)) ==
                ARCHIVE_OK)
         {
-            if (archive_write_data_block(ext, buff, size, offset) !=
-                ARCHIVE_OK)
+            if (archive_write_data_block(ext, buff, size, offset) != ARCHIVE_OK)
             {
                 ok = false;
                 break;
@@ -77,13 +76,15 @@ extract_to_dir(const char *archive_path, const char *path_dest)
 }
 
 bool
-unarchive_package(const struct package *pkg, const char *path) // NOLINT(misc-use-internal-linkage)
+// NOLINTNEXTLINE(misc-use-internal-linkage)
+unarchive_package(const struct package *pkg, const char *path)
 {
     return extract_to_dir(pkg->pkg_path, path);
 }
 
 bool
-unarchive_package_in_root(const struct package *pkg, const char *root) // NOLINT(misc-use-internal-linkage)
+// NOLINTNEXTLINE(misc-use-internal-linkage)
+unarchive_package_in_root(const struct package *pkg, const char *root)
 {
     return extract_to_dir(pkg->pkg_path, root);
 }

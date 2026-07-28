@@ -140,7 +140,8 @@ md5_update(md5_ctx *ctx, const uint8_t *data, size_t len)
         i = 0;
     }
 
-    memcpy(&ctx->buf[idx], &data[i], len - i); // NOLINT(clang-analyzer-security.ArrayBound)
+    // NOLINTNEXTLINE(clang-analyzer-security.ArrayBound)
+    memcpy(&ctx->buf[idx], &data[i], len - i);
 }
 
 void

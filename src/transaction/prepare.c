@@ -180,7 +180,8 @@ conflict_push(struct apg_trans *trans, const char *pkg_name,
 }
 
 trans_error_t
-trans_prepare(struct apg_trans *trans) // NOLINT(readability-function-cognitive-complexity)
+// NOLINTNEXTLINE(readability-function-cognitive-complexity)
+trans_prepare(struct apg_trans *trans)
 {
     if (!trans)
         return TRANS_ERR_NOMEM;

@@ -196,7 +196,8 @@ rollback_committed(struct apg_trans *trans, const size_t *committed_idx,
 }
 
 trans_error_t
-trans_commit(struct apg_trans *trans, const char *root_path) // NOLINT(readability-function-cognitive-complexity)
+// NOLINTNEXTLINE(readability-function-cognitive-complexity)
+trans_commit(struct apg_trans *trans, const char *root_path)
 {
     if (!trans || !root_path)
         return TRANS_ERR_NOMEM;
