@@ -117,7 +117,8 @@ sign_file(const char *pkg_path, const char *sig_path)
     if (!sig_f)
         return false;
 
-    bool ok = fwrite(signature, 1, crypto_sign_BYTES, sig_f) == crypto_sign_BYTES;
+    bool ok =
+        fwrite(signature, 1, crypto_sign_BYTES, sig_f) == crypto_sign_BYTES;
     if (fclose(sig_f) != 0)
         ok = false;
     return ok;
