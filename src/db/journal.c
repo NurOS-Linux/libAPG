@@ -11,6 +11,17 @@
 
 #include "../../include/apg/journal.h"
 
+struct journal_entry
+{
+    journal_op_t op;
+    char *pkg_name;
+    char *pkg_version;
+    time_t timestamp;
+    journal_status_t status;
+    uid_t uid;
+    bool explicit_op;
+};
+
 static _Atomic uint32_t seq_counter = 0;
 
 // Key layout: 8 bytes big-endian timestamp || 4 bytes big-endian sequence.
@@ -225,4 +236,46 @@ journal_free_all(struct journal_entry **entries, int count)
     for (int i = 0; i < count; i++)
         journal_entry_free(entries[i]);
     free(entries);
+}
+
+journal_op_t
+journal_entry_op(const struct journal_entry *e)
+{
+    return e->op;
+}
+
+const char *
+journal_entry_pkg_name(const struct journal_entry *e)
+{
+    return e->pkg_name;
+}
+
+const char *
+journal_entry_pkg_version(const struct journal_entry *e)
+{
+    return e->pkg_version;
+}
+
+time_t
+journal_entry_timestamp(const struct journal_entry *e)
+{
+    return e->timestamp;
+}
+
+journal_status_t
+journal_entry_status(const struct journal_entry *e)
+{
+    return e->status;
+}
+
+uid_t
+journal_entry_uid(const struct journal_entry *e)
+{
+    return e->uid;
+}
+
+bool
+journal_entry_explicit(const struct journal_entry *e)
+{
+    return e->explicit_op;
 }

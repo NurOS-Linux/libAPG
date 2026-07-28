@@ -64,6 +64,11 @@ main(void)
     test_verify_checksums_missing_sums_file_fails();
     test_verify_checksums_fuzz_malformed_input_no_crash();
 
-    printf("All 50 tests passed.\n");
+    test_trans_plan_accessors();
+    test_trans_conflict_accessors();
+    test_db_verify_issue_accessors();
+    test_journal_entry_accessors();
+
+    printf("All 54 tests passed.\n");
     return 0;
 }

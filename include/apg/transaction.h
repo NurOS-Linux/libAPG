@@ -11,8 +11,8 @@
  * 1. Create with trans_new().
  * 2. Queue operations with trans_add_install() / trans_add_remove().
  * 3. Prepare (resolve deps, detect conflicts) with trans_prepare().
- * 4. Inspect the plan with trans_get_plan() or conflicts with
- * trans_get_conflicts().
+ * 4. Inspect the plan with trans_plan_count()/trans_plan_at() or conflicts
+ * with trans_conflict_count()/trans_conflict_at().
  * 5. Execute with trans_commit().
  * 6. Free with trans_free().
  *
@@ -59,66 +59,129 @@ typedef enum
 /**
  * @brief One step in the resolved execution plan.
  *
- * The array is owned by the transaction and valid until trans_free().
+ * Opaque; read fields with trans_step_op(), trans_step_pkg_name(), etc.
+ * Owned by the transaction and valid until trans_free().
  */
-struct trans_step
-{
-    trans_op_t op;     /**< Operation to perform. */
-    char *pkg_name;    /**< Package name. */
-    char *pkg_version; /**< Package version string. */
-    bool explicit;     /**< True when directly requested by the caller. */
-};
+struct trans_step;
 
 /**
  * @brief A detected conflict between two packages.
  *
- * The array is owned by the transaction and valid until trans_free().
+ * Opaque; read fields with trans_conflict_pkg_name(), etc.
+ * Owned by the transaction and valid until trans_free().
  */
-struct trans_conflict
-{
-    char *pkg_name;       /**< Package being installed or removed. */
-    char *conflicts_with; /**< Existing package that conflicts with it. */
-};
+struct trans_conflict;
 
 /**
  * @brief A file conflict between a package being installed and an existing one.
  *
- * The array is owned by the transaction and valid until trans_free().
+ * Opaque; read fields with trans_file_conflict_path(), etc.
+ * Owned by the transaction and valid until trans_free().
  */
-struct trans_file_conflict
-{
-    char *path;         /**< Conflicting file path. */
-    char *requested_by; /**< Package being installed that claims the file. */
-    char *owned_by;     /**< Currently installed package that owns the file. */
-};
+struct trans_file_conflict;
 
 /**
  * @brief An operation blocked because the target package is held.
  *
- * The array is owned by the transaction and valid until trans_free().
+ * Opaque; read fields with trans_held_pkg_name(), etc.
+ * Owned by the transaction and valid until trans_free().
  */
-struct trans_held_pkg
-{
-    char *pkg_name; /**< Name of the held package. */
-    trans_op_t op;  /**< Operation that was blocked (REMOVE or UPGRADE). */
-};
+struct trans_held_pkg;
 
 /**
  * @brief A removal blocked by installed dependents.
  *
- * The array is owned by the transaction and valid until trans_free().
+ * Opaque; read fields with trans_blocked_remove_pkg_name(), etc.
+ * Owned by the transaction and valid until trans_free().
  */
-struct trans_blocked_remove
-{
-    char *pkg_name;    /**< Package that cannot be removed. */
-    char **dependents; /**< Names of packages that depend on it. */
-    int dependent_count;
-};
+struct trans_blocked_remove;
 
 /**
  * @brief Opaque transaction handle.
  */
 struct apg_trans;
+
+/**
+ * @brief Operation this step performs.
+ */
+trans_op_t trans_step_op(const struct trans_step *step);
+
+/**
+ * @brief Name of the package this step applies to.
+ */
+const char *trans_step_pkg_name(const struct trans_step *step);
+
+/**
+ * @brief Version string of the package this step applies to.
+ */
+const char *trans_step_pkg_version(const struct trans_step *step);
+
+/**
+ * @brief True when this step was directly requested by the caller (as
+ *        opposed to pulled in as a dependency).
+ */
+bool trans_step_explicit(const struct trans_step *step);
+
+/**
+ * @brief Name of the package being installed or removed.
+ */
+const char *trans_conflict_pkg_name(const struct trans_conflict *conflict);
+
+/**
+ * @brief Name of the existing package it conflicts with.
+ */
+const char *
+trans_conflict_conflicts_with(const struct trans_conflict *conflict);
+
+/**
+ * @brief Conflicting file path.
+ */
+const char *
+trans_file_conflict_path(const struct trans_file_conflict *conflict);
+
+/**
+ * @brief Name of the package being installed that claims the file.
+ */
+const char *
+trans_file_conflict_requested_by(const struct trans_file_conflict *conflict);
+
+/**
+ * @brief Name of the currently installed package that owns the file.
+ */
+const char *
+trans_file_conflict_owned_by(const struct trans_file_conflict *conflict);
+
+/**
+ * @brief Name of the held package.
+ */
+const char *trans_held_pkg_name(const struct trans_held_pkg *held);
+
+/**
+ * @brief Operation that was blocked (REMOVE or UPGRADE).
+ */
+trans_op_t trans_held_pkg_op(const struct trans_held_pkg *held);
+
+/**
+ * @brief Name of the package that cannot be removed.
+ */
+const char *
+trans_blocked_remove_pkg_name(const struct trans_blocked_remove *blocked);
+
+/**
+ * @brief Number of dependent packages blocking the removal.
+ */
+int trans_blocked_remove_dependent_count(
+    const struct trans_blocked_remove *blocked);
+
+/**
+ * @brief Name of the dependent package at @p index.
+ *
+ * @param blocked Entry to query.
+ * @param index   Index in [0, trans_blocked_remove_dependent_count()).
+ */
+const char *
+trans_blocked_remove_dependent_at(const struct trans_blocked_remove *blocked,
+                                  int index);
 
 /**
  * @brief Attach an install policy to a transaction.
@@ -189,8 +252,8 @@ trans_error_t trans_add_upgrade(struct apg_trans *trans, struct package *pkg);
 /**
  * @brief Resolve dependencies, detect conflicts, and build the execution plan.
  *
- * Must be called before trans_get_plan() or trans_commit(). If conflicts are
- * found, @ref TRANS_ERR_CONFLICT is returned; call trans_get_conflicts() to
+ * Must be called before trans_plan_at() or trans_commit(). If conflicts are
+ * found, @ref TRANS_ERR_CONFLICT is returned; call trans_conflict_at() to
  * inspect them.
  *
  * @param trans Transaction to prepare.
@@ -199,71 +262,115 @@ trans_error_t trans_add_upgrade(struct apg_trans *trans, struct package *pkg);
 trans_error_t trans_prepare(struct apg_trans *trans);
 
 /**
- * @brief Retrieve the ordered execution plan after a successful
- * trans_prepare().
- *
- * The returned array is owned by the transaction and valid until trans_free().
+ * @brief Number of steps in the ordered execution plan after a successful
+ *        trans_prepare().
  *
  * @param trans Transaction that has been successfully prepared.
- * @param count Output parameter set to the number of steps.
- * @return Pointer to the first step, or NULL if the plan is empty.
+ * @return Number of steps in the plan.
  */
-const struct trans_step *trans_get_plan(const struct apg_trans *trans,
-                                        size_t *count);
+size_t trans_plan_count(const struct apg_trans *trans);
 
 /**
- * @brief Retrieve the list of conflicts detected by trans_prepare().
+ * @brief Retrieve one step of the ordered execution plan.
  *
- * The returned array is owned by the transaction and valid until trans_free().
+ * Owned by the transaction and valid until trans_free().
+ *
+ * @param trans Transaction that has been successfully prepared.
+ * @param index Index in [0, trans_plan_count()).
+ * @return Pointer to the step, or NULL if @p index is out of range.
+ */
+const struct trans_step *trans_plan_at(const struct apg_trans *trans,
+                                       size_t index);
+
+/**
+ * @brief Number of conflicts detected by trans_prepare().
  *
  * @param trans Transaction after a trans_prepare() call that returned
  *              @ref TRANS_ERR_CONFLICT.
- * @param count Output parameter set to the number of conflicts.
- * @return Pointer to the first conflict, or NULL if none.
+ * @return Number of conflicts.
  */
-const struct trans_conflict *trans_get_conflicts(const struct apg_trans *trans,
-                                                 size_t *count);
+size_t trans_conflict_count(const struct apg_trans *trans);
 
 /**
- * @brief Retrieve removals blocked by installed dependents.
+ * @brief Retrieve one conflict detected by trans_prepare().
+ *
+ * Owned by the transaction and valid until trans_free().
+ *
+ * @param trans Transaction after a trans_prepare() call that returned
+ *              @ref TRANS_ERR_CONFLICT.
+ * @param index Index in [0, trans_conflict_count()).
+ * @return Pointer to the conflict, or NULL if @p index is out of range.
+ */
+const struct trans_conflict *trans_conflict_at(const struct apg_trans *trans,
+                                               size_t index);
+
+/**
+ * @brief Number of removals blocked by installed dependents.
  *
  * Valid after a trans_prepare() call that returned
- * @ref TRANS_ERR_HAS_DEPENDENTS. The returned array is owned by the
- * transaction and valid until trans_free().
+ * @ref TRANS_ERR_HAS_DEPENDENTS.
  *
  * @param trans Transaction after trans_prepare().
- * @param count Output parameter set to the number of blocked removes.
- * @return Pointer to the first entry, or NULL if none.
+ * @return Number of blocked removes.
+ */
+size_t trans_blocked_remove_count(const struct apg_trans *trans);
+
+/**
+ * @brief Retrieve one removal blocked by installed dependents.
+ *
+ * Owned by the transaction and valid until trans_free().
+ *
+ * @param trans Transaction after trans_prepare().
+ * @param index Index in [0, trans_blocked_remove_count()).
+ * @return Pointer to the entry, or NULL if @p index is out of range.
  */
 const struct trans_blocked_remove *
-trans_get_blocked_removes(const struct apg_trans *trans, size_t *count);
+trans_blocked_remove_at(const struct apg_trans *trans, size_t index);
 
 /**
- * @brief Retrieve file conflicts detected by trans_prepare().
+ * @brief Number of file conflicts detected by trans_prepare().
  *
  * Valid after a trans_prepare() call that returned
- * @ref TRANS_ERR_FILE_CONFLICT. The returned array is owned by the transaction
- * and valid until trans_free().
+ * @ref TRANS_ERR_FILE_CONFLICT.
  *
  * @param trans Transaction after trans_prepare().
- * @param count Output parameter set to the number of conflicts.
- * @return Pointer to the first entry, or NULL if none.
+ * @return Number of file conflicts.
  */
-const struct trans_file_conflict *
-trans_get_file_conflicts(const struct apg_trans *trans, size_t *count);
+size_t trans_file_conflict_count(const struct apg_trans *trans);
 
 /**
- * @brief Retrieve operations blocked by held packages.
+ * @brief Retrieve one file conflict detected by trans_prepare().
  *
- * Valid after a trans_prepare() call that returned @ref TRANS_ERR_HELD.
- * The returned array is owned by the transaction and valid until trans_free().
+ * Owned by the transaction and valid until trans_free().
  *
  * @param trans Transaction after trans_prepare().
- * @param count Output parameter set to the number of blocked operations.
- * @return Pointer to the first entry, or NULL if none.
+ * @param index Index in [0, trans_file_conflict_count()).
+ * @return Pointer to the entry, or NULL if @p index is out of range.
  */
-const struct trans_held_pkg *trans_get_held_pkgs(const struct apg_trans *trans,
-                                                 size_t *count);
+const struct trans_file_conflict *
+trans_file_conflict_at(const struct apg_trans *trans, size_t index);
+
+/**
+ * @brief Number of operations blocked by held packages.
+ *
+ * Valid after a trans_prepare() call that returned @ref TRANS_ERR_HELD.
+ *
+ * @param trans Transaction after trans_prepare().
+ * @return Number of blocked operations.
+ */
+size_t trans_held_pkg_count(const struct apg_trans *trans);
+
+/**
+ * @brief Retrieve one operation blocked by a held package.
+ *
+ * Owned by the transaction and valid until trans_free().
+ *
+ * @param trans Transaction after trans_prepare().
+ * @param index Index in [0, trans_held_pkg_count()).
+ * @return Pointer to the entry, or NULL if @p index is out of range.
+ */
+const struct trans_held_pkg *trans_held_pkg_at(const struct apg_trans *trans,
+                                               size_t index);
 
 /**
  * @brief Execute the prepared plan.

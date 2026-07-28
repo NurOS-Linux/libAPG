@@ -36,21 +36,11 @@ typedef enum
 /**
  * @brief A single journal entry describing one install or remove event.
  *
- * All heap-allocated fields are owned by this structure.
- * Free with journal_entry_free() or journal_free_all().
+ * Opaque; read fields with journal_entry_op(), journal_entry_pkg_name(), etc.
+ * Owned by the entry itself. Free with journal_entry_free() or
+ * journal_free_all().
  */
-struct journal_entry
-{
-    journal_op_t op;   /**< Type of operation. */
-    char *pkg_name;    /**< Package name. Heap-allocated; may be NULL. */
-    char *pkg_version; /**< Package version string. Heap-allocated; may be NULL.
-                        */
-    time_t timestamp;  /**< Unix timestamp of the operation. */
-    journal_status_t status; /**< Outcome of the operation. */
-    uid_t uid;        /**< UID of the user who initiated the operation. */
-    bool explicit_op; /**< True when directly requested by the user; false when
-                           pulled in as a dependency or during rollback. */
-};
+struct journal_entry;
 
 /**
  * @brief Append an entry to the journal.
@@ -92,3 +82,39 @@ void journal_entry_free(struct journal_entry *e);
  * @param count   Number of entries in the array.
  */
 void journal_free_all(struct journal_entry **entries, int count);
+
+/**
+ * @brief Type of operation this entry describes.
+ */
+journal_op_t journal_entry_op(const struct journal_entry *e);
+
+/**
+ * @brief Package name recorded on this entry. May be NULL.
+ */
+const char *journal_entry_pkg_name(const struct journal_entry *e);
+
+/**
+ * @brief Package version string recorded on this entry. May be NULL.
+ */
+const char *journal_entry_pkg_version(const struct journal_entry *e);
+
+/**
+ * @brief Unix timestamp of the operation.
+ */
+time_t journal_entry_timestamp(const struct journal_entry *e);
+
+/**
+ * @brief Outcome of the operation.
+ */
+journal_status_t journal_entry_status(const struct journal_entry *e);
+
+/**
+ * @brief UID of the user who initiated the operation.
+ */
+uid_t journal_entry_uid(const struct journal_entry *e);
+
+/**
+ * @brief True when directly requested by the user; false when pulled in as
+ *        a dependency or during rollback.
+ */
+bool journal_entry_explicit(const struct journal_entry *e);

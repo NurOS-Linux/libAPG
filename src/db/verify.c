@@ -130,3 +130,31 @@ db_verify_free(struct db_verify_issue *issues, int count)
     }
     free(issues);
 }
+
+const struct db_verify_issue *
+db_verify_issue_at(const struct db_verify_issue *issues, int count, int index)
+{
+    if (!issues || index < 0 || index >= count)
+        return NULL;
+    return &issues[index];
+}
+
+const char *
+db_verify_issue_pkg_name(const struct db_verify_issue *issue)
+{
+    return issue->pkg_name;
+}
+
+int
+db_verify_issue_missing_count(const struct db_verify_issue *issue)
+{
+    return issue->missing_count;
+}
+
+const char *
+db_verify_issue_missing_file_at(const struct db_verify_issue *issue, int index)
+{
+    if (index < 0 || index >= issue->missing_count)
+        return NULL;
+    return issue->missing_files[index];
+}

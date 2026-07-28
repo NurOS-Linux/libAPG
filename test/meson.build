@@ -7,6 +7,7 @@ apg_test = executable('apg-test',
   'src/test_checksum.c',
   'src/test_checksum_fuzz.c',
   'src/test_install.c',
+  'src/test_accessors.c',
   dependencies: libapg_dep,
   build_by_default: false,
 )

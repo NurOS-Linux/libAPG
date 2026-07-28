@@ -219,13 +219,11 @@ char **db_get_dependents(struct db_handle *db, const char *pkg_name,
 
 /**
  * @brief A single package integrity issue found by db_verify().
+ *
+ * Opaque; read fields with db_verify_issue_at(), db_verify_issue_pkg_name(),
+ * etc.
  */
-struct db_verify_issue
-{
-    char *pkg_name;       /**< Name of the affected package. */
-    char **missing_files; /**< Paths of files absent from disk. */
-    int missing_count;    /**< Number of missing files. */
-};
+struct db_verify_issue;
 
 /**
  * @brief Verify that every file recorded for each installed package exists
@@ -254,3 +252,33 @@ struct db_verify_issue *db_verify(struct db_handle *db, const char *root_path,
  * @param count  Number of elements in @p issues.
  */
 void db_verify_free(struct db_verify_issue *issues, int count);
+
+/**
+ * @brief Retrieve one entry of the array returned by db_verify().
+ *
+ * @param issues Array returned by db_verify().
+ * @param count  Element count, as returned by db_verify().
+ * @param index  Index in [0, count).
+ * @return Pointer to the entry, or NULL if @p index is out of range.
+ */
+const struct db_verify_issue *
+db_verify_issue_at(const struct db_verify_issue *issues, int count, int index);
+
+/**
+ * @brief Name of the package affected by this issue.
+ */
+const char *db_verify_issue_pkg_name(const struct db_verify_issue *issue);
+
+/**
+ * @brief Number of missing files recorded for this issue.
+ */
+int db_verify_issue_missing_count(const struct db_verify_issue *issue);
+
+/**
+ * @brief Path of the missing file at @p index.
+ *
+ * @param issue Issue to query.
+ * @param index Index in [0, db_verify_issue_missing_count()).
+ */
+const char *db_verify_issue_missing_file_at(const struct db_verify_issue *issue,
+                                            int index);

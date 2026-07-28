@@ -9,6 +9,13 @@
 #include "../../include/apg/db.h"
 #include "../../include/apg/package.h"
 
+struct db_verify_issue
+{
+    char *pkg_name;
+    char **missing_files;
+    int missing_count;
+};
+
 struct db_handle
 {
     MDB_env *env;

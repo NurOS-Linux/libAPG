@@ -5,6 +5,40 @@
 
 #include "../../include/apg/transaction.h"
 
+struct trans_step
+{
+    trans_op_t op;
+    char *pkg_name;
+    char *pkg_version;
+    bool explicit;
+};
+
+struct trans_conflict
+{
+    char *pkg_name;
+    char *conflicts_with;
+};
+
+struct trans_file_conflict
+{
+    char *path;
+    char *requested_by;
+    char *owned_by;
+};
+
+struct trans_held_pkg
+{
+    char *pkg_name;
+    trans_op_t op;
+};
+
+struct trans_blocked_remove
+{
+    char *pkg_name;
+    char **dependents;
+    int dependent_count;
+};
+
 struct apg_trans
 {
     struct db_handle *db;

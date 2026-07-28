@@ -59,3 +59,8 @@ void test_verify_checksums_crc32_fallback_passes(void);
 void test_verify_checksums_md5_fallback_passes(void);
 void test_verify_checksums_missing_sums_file_fails(void);
 void test_verify_checksums_fuzz_malformed_input_no_crash(void);
+
+void test_trans_plan_accessors(void);
+void test_trans_conflict_accessors(void);
+void test_db_verify_issue_accessors(void);
+void test_journal_entry_accessors(void);

@@ -184,47 +184,159 @@ trans_add_remove(struct apg_trans *trans, const char *pkg_name)
     return TRANS_OK;
 }
 
+size_t
+trans_plan_count(const struct apg_trans *trans)
+{
+    return trans ? trans->plan_count : 0;
+}
+
 const struct trans_step *
-trans_get_plan(const struct apg_trans *trans, size_t *count)
+trans_plan_at(const struct apg_trans *trans, size_t index)
 {
-    if (!trans || !count)
+    if (!trans || index >= trans->plan_count)
         return NULL;
-    *count = trans->plan_count;
-    return trans->plan;
+    return &trans->plan[index];
 }
 
-const struct trans_file_conflict *
-trans_get_file_conflicts(const struct apg_trans *trans, size_t *count)
+size_t
+trans_conflict_count(const struct apg_trans *trans)
 {
-    if (!trans || !count)
-        return NULL;
-    *count = trans->file_conflict_count;
-    return trans->file_conflicts;
-}
-
-const struct trans_blocked_remove *
-trans_get_blocked_removes(const struct apg_trans *trans, size_t *count)
-{
-    if (!trans || !count)
-        return NULL;
-    *count = trans->blocked_remove_count;
-    return trans->blocked_removes;
+    return trans ? trans->conflict_count : 0;
 }
 
 const struct trans_conflict *
-trans_get_conflicts(const struct apg_trans *trans, size_t *count)
+trans_conflict_at(const struct apg_trans *trans, size_t index)
 {
-    if (!trans || !count)
+    if (!trans || index >= trans->conflict_count)
         return NULL;
-    *count = trans->conflict_count;
-    return trans->conflicts;
+    return &trans->conflicts[index];
+}
+
+size_t
+trans_blocked_remove_count(const struct apg_trans *trans)
+{
+    return trans ? trans->blocked_remove_count : 0;
+}
+
+const struct trans_blocked_remove *
+trans_blocked_remove_at(const struct apg_trans *trans, size_t index)
+{
+    if (!trans || index >= trans->blocked_remove_count)
+        return NULL;
+    return &trans->blocked_removes[index];
+}
+
+size_t
+trans_file_conflict_count(const struct apg_trans *trans)
+{
+    return trans ? trans->file_conflict_count : 0;
+}
+
+const struct trans_file_conflict *
+trans_file_conflict_at(const struct apg_trans *trans, size_t index)
+{
+    if (!trans || index >= trans->file_conflict_count)
+        return NULL;
+    return &trans->file_conflicts[index];
+}
+
+size_t
+trans_held_pkg_count(const struct apg_trans *trans)
+{
+    return trans ? trans->held_count : 0;
 }
 
 const struct trans_held_pkg *
-trans_get_held_pkgs(const struct apg_trans *trans, size_t *count)
+trans_held_pkg_at(const struct apg_trans *trans, size_t index)
 {
-    if (!trans || !count)
+    if (!trans || index >= trans->held_count)
         return NULL;
-    *count = trans->held_count;
-    return trans->held_pkgs;
+    return &trans->held_pkgs[index];
+}
+
+trans_op_t
+trans_step_op(const struct trans_step *step)
+{
+    return step->op;
+}
+
+const char *
+trans_step_pkg_name(const struct trans_step *step)
+{
+    return step->pkg_name;
+}
+
+const char *
+trans_step_pkg_version(const struct trans_step *step)
+{
+    return step->pkg_version;
+}
+
+bool
+trans_step_explicit(const struct trans_step *step)
+{
+    return step->explicit;
+}
+
+const char *
+trans_conflict_pkg_name(const struct trans_conflict *conflict)
+{
+    return conflict->pkg_name;
+}
+
+const char *
+trans_conflict_conflicts_with(const struct trans_conflict *conflict)
+{
+    return conflict->conflicts_with;
+}
+
+const char *
+trans_file_conflict_path(const struct trans_file_conflict *conflict)
+{
+    return conflict->path;
+}
+
+const char *
+trans_file_conflict_requested_by(const struct trans_file_conflict *conflict)
+{
+    return conflict->requested_by;
+}
+
+const char *
+trans_file_conflict_owned_by(const struct trans_file_conflict *conflict)
+{
+    return conflict->owned_by;
+}
+
+const char *
+trans_held_pkg_name(const struct trans_held_pkg *held)
+{
+    return held->pkg_name;
+}
+
+trans_op_t
+trans_held_pkg_op(const struct trans_held_pkg *held)
+{
+    return held->op;
+}
+
+const char *
+trans_blocked_remove_pkg_name(const struct trans_blocked_remove *blocked)
+{
+    return blocked->pkg_name;
+}
+
+int
+trans_blocked_remove_dependent_count(const struct trans_blocked_remove *blocked)
+{
+    return blocked->dependent_count;
+}
+
+const char *
+trans_blocked_remove_dependent_at(const struct trans_blocked_remove *blocked,
+                                  int index)
+{
+    if (index < 0 || index >= blocked->dependent_count)
+        return NULL;
+    return blocked->dependents[index];
 }

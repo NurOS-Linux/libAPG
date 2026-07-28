@@ -11,7 +11,7 @@ Lifecycle
 1. :c:func:`trans_new` — allocate a transaction bound to an open database.
 2. :c:func:`trans_add_install` / :c:func:`trans_add_remove` — queue operations.
 3. :c:func:`trans_prepare` — resolve deps and detect conflicts.
-4. :c:func:`trans_get_plan` / :c:func:`trans_get_conflicts` — inspect results.
+4. :c:func:`trans_plan_at` / :c:func:`trans_conflict_at` — inspect results.
 5. :c:func:`trans_commit` — execute (once only).
 6. :c:func:`trans_free` — release resources.
 
