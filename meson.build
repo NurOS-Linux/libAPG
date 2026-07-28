@@ -270,6 +270,10 @@ libapg = library('apg', libapg_sources,
 libapg_dep = declare_dependency(
   link_with: libapg,
   include_directories: libapg_inc,
+  # journal.h (a public header) includes <lmdb.h> directly; consumers built
+  # via this in-tree dependency object need lmdb's include path too. External
+  # consumers going through pkg-config already get this via Requires.private.
+  dependencies: [lmdb_dep],
 )
 
 install_headers(
