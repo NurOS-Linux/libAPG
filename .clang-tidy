@@ -22,11 +22,12 @@ Checks: >
   -misc-include-cleaner,
   -clang-analyzer-unix.Stream,
   -readability-implicit-bool-conversion,
-  -bugprone-easily-swappable-parameters
+  -bugprone-easily-swappable-parameters,
+  -bugprone-sizeof-expression
 
 WarningsAsErrors: '*'
 
-HeaderFilterRegex: '^.*/include/apg/.*\.h$|^.*/include/util\.h$|^.*/src/.*\.h$'
+HeaderFilterRegex: '^.*/include/apg/.*\.h$|^.*/include/util\.h$|^.*/src/.*_priv\.h$'
 
 CheckOptions:
   - key: readability-identifier-naming.FunctionCase

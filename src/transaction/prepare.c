@@ -324,7 +324,7 @@ trans_prepare(struct apg_trans *trans)
         {
             if (tasks[i].err != DEP_OK)
             {
-                for (size_t k = 0; k < trans->install_count; k++)
+                for (size_t k = i; k < trans->install_count; k++)
                     free(tasks[k].breaks);
                 free(tasks);
                 ret = TRANS_ERR_NOMEM;
@@ -337,7 +337,7 @@ trans_prepare(struct apg_trans *trans)
                     conflict_push(trans, tasks[i].pkg_name, tasks[i].breaks[j]);
                 if (cerr != TRANS_OK)
                 {
-                    for (size_t k = 0; k < trans->install_count; k++)
+                    for (size_t k = i; k < trans->install_count; k++)
                         free(tasks[k].breaks);
                     free(tasks);
                     ret = cerr;
