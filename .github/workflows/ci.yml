@@ -77,6 +77,34 @@ jobs:
       - name: Test
         run: meson test -C build-san --print-errorlogs
 
+  fuzz:
+    name: Fuzzing (smoke test)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            meson ninja-build pkg-config clang \
+            libarchive-dev liblmdb-dev libgpgme-dev libseccomp-dev \
+            libsodium-dev
+
+      - name: Build fuzzers
+        run: |
+          CC=clang meson setup build-fuzz \
+            --buildtype=debug \
+            -Dfuzzing=enabled \
+            -Db_lundef=false
+          meson compile -C build-fuzz fuzz/fuzz-package-json fuzz/fuzz-dep-constraint
+
+      - name: Run fuzz-package-json
+        run: ./build-fuzz/fuzz/fuzz-package-json -max_total_time=60 fuzz/corpus/package-json
+
+      - name: Run fuzz-dep-constraint
+        run: ./build-fuzz/fuzz/fuzz-dep-constraint -max_total_time=60 fuzz/corpus/dep-constraint
+
   arch-asm:
     name: Assembly (minor arch validation)
     runs-on: ubuntu-latest

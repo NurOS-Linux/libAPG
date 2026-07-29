@@ -27,3 +27,9 @@ option('gpgme',
   value: 'enabled',
   description: 'Build the gpgme (OpenPGP) signing backend, alongside the always-built libsodium one',
 )
+
+option('fuzzing',
+  type: 'feature',
+  value: 'disabled',
+  description: 'Build libFuzzer harnesses under fuzz/ (requires clang; not part of a normal build)',
+)

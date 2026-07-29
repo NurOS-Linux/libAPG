@@ -72,6 +72,15 @@ libapg_inc = include_directories('include')
 cc = meson.get_compiler('c')
 cpu = host_machine.cpu_family()
 
+if get_option('fuzzing').enabled()
+  if cc.get_id() != 'clang'
+    error('fuzzing requires clang (libFuzzer)')
+  endif
+  add_project_arguments('-fsanitize=fuzzer-no-link,address,undefined',
+                        language: 'c')
+  add_project_link_arguments('-fsanitize=address,undefined', language: 'c')
+endif
+
 hw_args = []
 if cpu == 'x86_64'
   # arch/x86_64/sha256.S is disabled: its hardware SHA-256 transform
@@ -322,3 +331,4 @@ if doxygen.found()
 endif
 
 subdir('test')
+subdir('fuzz')
