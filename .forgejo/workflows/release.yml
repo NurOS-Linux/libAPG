@@ -48,9 +48,8 @@ jobs:
           sed 's/@VERSION@/${{ steps.version.outputs.version }}/g' \
             pkg/metadata.json > /tmp/apg-pkg/metadata.json
           cd /tmp/apg-pkg
-          find data -type f | sort | xargs md5sum > md5sums
           tar -cJf ${{ github.workspace }}/libapg-${{ steps.version.outputs.version }}-x86_64.apg \
-            metadata.json md5sums data/
+            metadata.json data/
 
       - name: Upload artifact
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
@@ -122,9 +121,8 @@ jobs:
           sed 's/@VERSION@/${{ steps.version.outputs.version }}/g' \
             pkg/metadata.json > /tmp/apg-pkg/metadata.json
           cd /tmp/apg-pkg
-          find data -type f | sort | xargs md5sum > md5sums
           tar -cJf ${{ github.workspace }}/libapg-${{ steps.version.outputs.version }}-aarch64.apg \
-            metadata.json md5sums data/
+            metadata.json data/
 
       - name: Upload artifact
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
@@ -196,9 +194,8 @@ jobs:
           sed 's/@VERSION@/${{ steps.version.outputs.version }}/g' \
             pkg/metadata.json > /tmp/apg-pkg/metadata.json
           cd /tmp/apg-pkg
-          find data -type f | sort | xargs md5sum > md5sums
           tar -cJf ${{ github.workspace }}/libapg-${{ steps.version.outputs.version }}-riscv64.apg \
-            metadata.json md5sums data/
+            metadata.json data/
 
       - name: Upload artifact
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
@@ -308,9 +305,8 @@ jobs:
           sed 's/@VERSION@/${{ steps.version.outputs.version }}/g' \
             pkg/metadata.json > /tmp/apg-pkg/metadata.json
           cd /tmp/apg-pkg
-          find data -type f | sort | xargs md5sum > md5sums
           tar -cJf ${{ github.workspace }}/libapg-${{ steps.version.outputs.version }}-mips64el.apg \
-            metadata.json md5sums data/
+            metadata.json data/
 
       - name: Upload artifact
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2

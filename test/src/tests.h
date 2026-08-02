@@ -38,13 +38,6 @@ void test_policy_unsigned(void);
 void test_policy_no_sig_required(void);
 void test_policy_clear(void);
 
-void test_crc32_known_vectors(void);
-void test_crc32_matches_simple_reference(void);
-void test_md5_known_vectors(void);
-void test_md5_chunking_invariant(void);
-void test_sha256_known_vectors(void);
-void test_sha256_chunking_invariant(void);
-
 void test_install_data_dir_copies_files(void);
 void test_install_data_dir_missing_data_returns_false(void);
 void test_rollback_install_removes_files(void);
@@ -52,13 +45,6 @@ void test_db_add_get_remove_roundtrip(void);
 void test_run_script_root(void);
 void test_parse_package_install_roundtrip(void);
 void test_install_package_in_root_uses_isolated_temp_dirs(void);
-
-void test_verify_checksums_sha256_valid_passes(void);
-void test_verify_checksums_sha256_tampered_fails(void);
-void test_verify_checksums_crc32_fallback_passes(void);
-void test_verify_checksums_md5_fallback_passes(void);
-void test_verify_checksums_missing_sums_file_fails(void);
-void test_verify_checksums_fuzz_malformed_input_no_crash(void);
 
 void test_trans_plan_accessors(void);
 void test_trans_conflict_accessors(void);

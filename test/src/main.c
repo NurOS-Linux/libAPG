@@ -42,13 +42,6 @@ main(void)
     test_policy_no_sig_required();
     test_policy_clear();
 
-    test_crc32_known_vectors();
-    test_crc32_matches_simple_reference();
-    test_md5_known_vectors();
-    test_md5_chunking_invariant();
-    test_sha256_known_vectors();
-    test_sha256_chunking_invariant();
-
     test_install_data_dir_copies_files();
     test_install_data_dir_missing_data_returns_false();
     test_rollback_install_removes_files();
@@ -57,18 +50,11 @@ main(void)
     test_parse_package_install_roundtrip();
     test_install_package_in_root_uses_isolated_temp_dirs();
 
-    test_verify_checksums_sha256_valid_passes();
-    test_verify_checksums_sha256_tampered_fails();
-    test_verify_checksums_crc32_fallback_passes();
-    test_verify_checksums_md5_fallback_passes();
-    test_verify_checksums_missing_sums_file_fails();
-    test_verify_checksums_fuzz_malformed_input_no_crash();
-
     test_trans_plan_accessors();
     test_trans_conflict_accessors();
     test_db_verify_issue_accessors();
     test_journal_entry_accessors();
 
-    printf("All 54 tests passed.\n");
+    printf("All 42 tests passed.\n");
     return 0;
 }

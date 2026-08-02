@@ -14,7 +14,6 @@
 #include <apg/db.h>
 #include <apg/package.h>
 #include <apg/scripts.h>
-#include <apg/sha256.h>
 #include <util.h>
 
 // concat_dirs() does not insert a separator between its arguments (despite
@@ -328,20 +327,8 @@ build_test_package(const char *staging_dir, const char *archive_path,
     char *file_path = join_path(data_dir, rel_file);
     write_file(file_path, file_content);
 
-    uint8_t digest[32];
-    assert(compute_sha256(file_path, digest));
-    char hex[65];
-    sha256_hex(digest, hex);
-
-    char sums_path[PATH_MAX];
-    snprintf(sums_path, sizeof(sums_path), "%s/sha256sums", staging_dir);
-    char sums_line[PATH_MAX + 80];
-    snprintf(sums_line, sizeof(sums_line), "%s  data/%s\n", hex, rel_file);
-    write_file(sums_path, sums_line);
-
     char cmd[PATH_MAX * 2];
-    snprintf(cmd, sizeof(cmd),
-             "tar -czf '%s' -C '%s' metadata.json data sha256sums",
+    snprintf(cmd, sizeof(cmd), "tar -czf '%s' -C '%s' metadata.json data",
              archive_path, staging_dir);
     assert(system(cmd) == 0);
 

@@ -6,7 +6,6 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
-- `test/src/test_checksum_fuzz.c`: fuzz and edge-case coverage for `verify_checksums()` across all three backends (sha256sums, crc32sums, md5sums), including a randomized-input loop targeting the class of buffer-handling bug fixed in 1.11.3
 - `test_parse_package_install_roundtrip` and `test_install_package_in_root_uses_isolated_temp_dirs` (`test/src/test_install.c`): end-to-end `parse_package()`/`install_package_in_root()`/`package_collect_files()` tests against real built `.apg` archives, the latter a regression test for the per-call temp directory isolation fixed in 1.11.3
 - Proper pkg-config metadata: `pkg.generate()` now sets `name`/`filebase` to `libapg` (previously defaulted to the library target name `apg`, so consumers had to look up `apg.pc` instead of the documented project name), plus `description` and `url` (`meson.build`)
 - CMake support (`cmake/libapg-config.cmake`, installed to `<libdir>/cmake/libapg/`): `find_package(libapg REQUIRED)` resolves via pkg-config and exposes the `libapg::libapg` imported target
@@ -22,6 +21,10 @@ All notable changes to this project will be documented in this file.
 ### Fixed
 
 - `libapg_dep` (`meson.build`) now carries `lmdb_dep`'s include path; `include/apg/journal.h` includes `<lmdb.h>` directly (for `MDB_env`), but nothing depending on the in-tree `libapg_dep` object got lmdb's headers on its include path unless it happened to come from elsewhere. Went unnoticed until `test/src/test_accessors.c` became the first test to pull in `<apg/audit.h>` → `<apg/journal.h>`, breaking the FreeBSD CI job. External consumers via pkg-config were never affected (`Requires.private: lmdb` already covers them)
+
+### Removed
+
+- **Breaking:** all checksum verification. `include/apg/checksum.h`, `include/apg/crc32.h`, `include/apg/md5.h`, `include/apg/sha256.h`, `src/checksum/`, and every architecture's `arch/*/{crc32,md5,sha256}.S` backend are gone; `install_package_in_root()` (`src/package.c`) no longer calls `verify_checksums()`, and the `crc32sums`/`md5sums`/`sha256sums` files inside a `.apg` archive are no longer read or required. Package integrity/authenticity is provided solely by the existing libsodium (Ed25519) and gpgme (OpenPGP) signature verification. Removed the corresponding tests (`test_checksum.c`, `test_checksum_fuzz.c`) and docs pages (`docs/api/checksum.rst`, `docs/api/crypto.rst`), and dropped the now-dead `arch-asm` CI job and the release workflows' `md5sums` generation
 
 ## [1.11.3] - 2026-07-22
 

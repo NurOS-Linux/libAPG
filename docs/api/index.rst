@@ -11,8 +11,6 @@ API Reference
    graph
    journal
    sign
-   checksum
-   crypto
    archive
    install
    json

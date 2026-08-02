@@ -129,45 +129,6 @@ jobs:
       - name: Run fuzz-dep-constraint
         run: ./build-fuzz/fuzz/fuzz-dep-constraint -max_total_time=60 fuzz/corpus/dep-constraint
 
-  arch-asm:
-    name: Assembly (minor arch validation)
-    runs-on: ubuntu-latest
-    container:
-      image: ubuntu:22.04
-    steps:
-      - name: Install basic tools
-        run: |
-          apt-get update && apt-get install -y git sudo curl ca-certificates
-
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
-
-      - name: Install clang + lld
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y clang lld
-
-      - name: Assemble and PIC-link each minor arch backend
-        run: |
-          set -e
-          assemble() {
-            dir="$1"; shift
-            for a in crc32 md5 sha256; do
-              clang "$@" -fPIC -c "arch/$dir/$a.S" -o "/tmp/${dir}_$a.o"
-            done
-            clang "$@" -shared -fPIC -fuse-ld=lld -Wl,-z,text -nostdlib \
-              "/tmp/${dir}_crc32.o" "/tmp/${dir}_md5.o" "/tmp/${dir}_sha256.o" \
-              -o "/tmp/${dir}.so"
-            echo "OK: $dir"
-          }
-          assemble arm     -target arm-linux-gnueabihf -march=armv7-a
-          assemble x86     -target i386-linux-gnu
-          assemble riscv32 -target riscv32-linux-gnu -march=rv32gc -mabi=ilp32
-          assemble mips    -target mipsel-linux-gnu -march=mips32r2
-          assemble ppc32   -target powerpc-linux-gnu
-          assemble ppc32le -target powerpcle-linux-gnu
-          assemble ppc64   -target powerpc64-linux-gnu -mabi=elfv2
-          assemble ppc64le -target powerpc64le-linux-gnu
-
   cross-aarch64:
     name: Cross-compile (aarch64)
     runs-on: ubuntu-latest

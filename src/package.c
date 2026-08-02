@@ -15,7 +15,6 @@
 #include "../include/apg/install.h"
 #include "../include/util.h"
 #include "../include/apg/scripts.h"
-#include "../include/apg/checksum.h"
 #include "../include/apg/archive.h"
 #include "../include/apg/json.h"
 
@@ -127,13 +126,6 @@ install_package_in_root(struct package *pkg, const char *root_path)
         return false;
 
     if (!unarchive_package_in_root(pkg, real_tmp))
-    {
-        remove_dir_recursive(real_tmp);
-        free(real_tmp);
-        return false;
-    }
-
-    if (!verify_checksums(real_tmp))
     {
         remove_dir_recursive(real_tmp);
         free(real_tmp);
