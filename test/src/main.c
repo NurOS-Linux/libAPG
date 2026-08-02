@@ -43,6 +43,7 @@ main(void)
     test_policy_clear();
 
     test_install_data_dir_copies_files();
+    test_install_data_dir_preserves_file_permissions();
     test_install_data_dir_missing_data_returns_false();
     test_rollback_install_removes_files();
     test_db_add_get_remove_roundtrip();
@@ -55,6 +56,6 @@ main(void)
     test_db_verify_issue_accessors();
     test_journal_entry_accessors();
 
-    printf("All 42 tests passed.\n");
+    printf("All 43 tests passed.\n");
     return 0;
 }

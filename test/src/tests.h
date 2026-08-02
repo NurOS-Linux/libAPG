@@ -39,6 +39,7 @@ void test_policy_no_sig_required(void);
 void test_policy_clear(void);
 
 void test_install_data_dir_copies_files(void);
+void test_install_data_dir_preserves_file_permissions(void);
 void test_install_data_dir_missing_data_returns_false(void);
 void test_rollback_install_removes_files(void);
 void test_db_add_get_remove_roundtrip(void);

@@ -136,6 +136,49 @@ test_install_data_dir_copies_files(void)
 }
 
 void
+test_install_data_dir_preserves_file_permissions(void)
+{
+    char *pkg_dir = mktmp_dir("pkgperm");
+    char *root = mktmp_dir("rootperm");
+
+    char *data_dir = join_path(pkg_dir, "data");
+    char *nested_dir = join_path(data_dir, "usr/bin");
+    mkdir_p(nested_dir);
+
+    char *file_path = join_path(nested_dir, "apg-tool");
+    write_file(file_path, "#!/bin/sh\necho hi\n");
+    assert(chmod(file_path, 0751) == 0);
+
+    char *dir_path = join_path(nested_dir, "sub");
+    mkdir_p(dir_path);
+    assert(chmod(dir_path, 0705) == 0);
+
+    assert(install_data_dir(pkg_dir, root));
+
+    char *installed_file = join_path(root, "usr/bin/apg-tool");
+    struct stat file_st;
+    assert(stat(installed_file, &file_st) == 0);
+    assert((file_st.st_mode & 07777) == 0751);
+
+    char *installed_dir = join_path(root, "usr/bin/sub");
+    struct stat dir_st;
+    assert(stat(installed_dir, &dir_st) == 0);
+    assert((dir_st.st_mode & 07777) == 0705);
+
+    free(installed_dir);
+    free(installed_file);
+    free(dir_path);
+    free(file_path);
+    free(nested_dir);
+    free(data_dir);
+    rmtree(pkg_dir);
+    rmtree(root);
+    free(pkg_dir);
+    free(root);
+    printf("test_install_data_dir_preserves_file_permissions: PASS\n");
+}
+
+void
 test_install_data_dir_missing_data_returns_false(void)
 {
     char *pkg_dir = mktmp_dir("nodata");

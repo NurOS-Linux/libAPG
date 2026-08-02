@@ -21,6 +21,7 @@ All notable changes to this project will be documented in this file.
 ### Fixed
 
 - `libapg_dep` (`meson.build`) now carries `lmdb_dep`'s include path; `include/apg/journal.h` includes `<lmdb.h>` directly (for `MDB_env`), but nothing depending on the in-tree `libapg_dep` object got lmdb's headers on its include path unless it happened to come from elsewhere. Went unnoticed until `test/src/test_accessors.c` became the first test to pull in `<apg/audit.h>` → `<apg/journal.h>`, breaking the FreeBSD CI job. External consumers via pkg-config were never affected (`Requires.private: lmdb` already covers them)
+- `copy_file()`/`copy_dir()` (`src/install/copy.c`), used by `install_data_dir()`/`install_home_dir()` to copy a package's already-extracted files into the real install root, never applied the source file's/directory's permission bits to the destination — every installed file and directory silently got whatever default mode `fopen()`/`mkdir()` produced (e.g. executables losing their `+x` bit), even though the earlier libarchive extraction step into the temp directory had preserved them correctly. Both functions now `chmod()` the destination to match the source's mode bits after creating it; for directories, only ones newly created by this call are re-chmod'd, so pre-existing shared directories (`/usr/bin`, `/etc`, ...) are never touched
 
 ### Removed
 

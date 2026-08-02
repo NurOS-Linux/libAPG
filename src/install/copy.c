@@ -14,6 +14,10 @@
 bool
 copy_file(const char *src, const char *dst)
 {
+    struct stat st;
+    if (stat(src, &st) != 0)
+        return false;
+
     FILE *in = fopen(src, "rb");
     if (!in)
         return false;
@@ -42,13 +46,27 @@ copy_file(const char *src, const char *dst)
     (void)fclose(in);
     if (fclose(out) != 0)
         ok = false;
+
+    if (ok && chmod(dst, st.st_mode & 07777) != 0)
+        ok = false;
+
     return ok;
 }
 
 bool
 copy_dir(const char *src, const char *dst)
 {
+    struct stat src_st;
+    if (stat(src, &src_st) != 0)
+        return false;
+
+    struct stat dst_st;
+    bool dst_existed = stat(dst, &dst_st) == 0;
+
     create_dir(dst);
+
+    if (!dst_existed && chmod(dst, src_st.st_mode & 07777) != 0)
+        return false;
 
     DIR *dir = opendir(src);
     if (!dir)
