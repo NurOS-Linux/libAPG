@@ -18,58 +18,6 @@
 
 #define DEFAULT_KEYRING_DIR APG_KEYRING_DIR
 
-// Wraps whichever keyring backend struct apg_trans::sign_backend selected,
-// so trans_commit() can load/verify/free without caring which one it is.
-struct active_keyring
-{
-    bool use_gpgme;
-    struct keyring *sodium;
-#ifdef APG_HAVE_GPGME
-    struct keyring_gpgme *gpgme;
-#endif
-};
-
-static bool
-active_keyring_load(struct active_keyring *ak, sign_backend_t backend,
-                    const char *keyring_dir)
-{
-    ak->use_gpgme = (backend == SIGN_BACKEND_GPGME);
-    if (ak->use_gpgme)
-    {
-#ifdef APG_HAVE_GPGME
-        ak->gpgme = keyring_load_gpgme(keyring_dir);
-        return ak->gpgme != NULL;
-#else
-        return false;
-#endif
-    }
-    ak->sodium = keyring_load(keyring_dir);
-    return ak->sodium != NULL;
-}
-
-static bool
-active_keyring_verify(const struct active_keyring *ak, const char *pkg_path,
-                      const char *sig_path)
-{
-#ifdef APG_HAVE_GPGME
-    return ak->use_gpgme ? keyring_verify_gpgme(ak->gpgme, pkg_path, sig_path)
-                         : keyring_verify(ak->sodium, pkg_path, sig_path);
-#else
-    return keyring_verify(ak->sodium, pkg_path, sig_path);
-#endif
-}
-
-static void
-active_keyring_free(struct active_keyring *ak)
-{
-#ifdef APG_HAVE_GPGME
-    if (ak->use_gpgme)
-        keyring_free_gpgme(ak->gpgme);
-    else
-#endif
-        keyring_free(ak->sodium);
-}
-
 struct conf_backup
 {
     char *path;
@@ -218,15 +166,14 @@ trans_commit(struct apg_trans *trans, const char *root_path)
     if (trans->committed)
         return TRANS_ERR_ALREADY_COMMITTED;
 
-    struct active_keyring ak = {0};
-    bool have_kr = false;
+    struct keyring *kr = NULL;
     if (trans->require_signature)
     {
         const char *kdir =
             trans->keyring_dir ? trans->keyring_dir : DEFAULT_KEYRING_DIR;
-        if (!active_keyring_load(&ak, trans->sign_backend, kdir))
+        kr = keyring_load(kdir);
+        if (!kr)
             return TRANS_ERR_UNSIGNED;
-        have_kr = true;
     }
 
     size_t *committed_idx =
@@ -235,8 +182,7 @@ trans_commit(struct apg_trans *trans, const char *root_path)
             : NULL;
     if (!committed_idx && trans->plan_count > 0)
     {
-        if (have_kr)
-            active_keyring_free(&ak);
+        keyring_free(kr);
         return TRANS_ERR_NOMEM;
     }
 
@@ -253,13 +199,13 @@ trans_commit(struct apg_trans *trans, const char *root_path)
         {
             struct package *pkg = trans->plan_pkgs[i];
 
-            if (have_kr)
+            if (trans->require_signature)
             {
                 char sig_path[PATH_MAX];
                 if (!pkg->pkg_path ||
                     snprintf(sig_path, sizeof(sig_path), "%s.sig",
                              pkg->pkg_path) >= (int)sizeof(sig_path) ||
-                    !active_keyring_verify(&ak, pkg->pkg_path, sig_path))
+                    !keyring_verify(kr, pkg->pkg_path, sig_path))
                 {
                     journal_write(trans->db->env, JOURNAL_INSTALL,
                                   step->pkg_name, step->pkg_version,
@@ -267,7 +213,7 @@ trans_commit(struct apg_trans *trans, const char *root_path)
                     rollback_committed(trans, committed_idx, committed_count,
                                        root_path);
                     free(committed_idx);
-                    active_keyring_free(&ak);
+                    keyring_free(kr);
                     trans->db->suppress_journal = false;
                     return TRANS_ERR_UNSIGNED;
                 }
@@ -281,8 +227,7 @@ trans_commit(struct apg_trans *trans, const char *root_path)
                 rollback_committed(trans, committed_idx, committed_count,
                                    root_path);
                 free(committed_idx);
-                if (have_kr)
-                    active_keyring_free(&ak);
+                keyring_free(kr);
                 trans->db->suppress_journal = false;
                 return TRANS_ERR_INSTALL_FAILED;
             }
@@ -298,13 +243,13 @@ trans_commit(struct apg_trans *trans, const char *root_path)
         {
             struct package *pkg = trans->plan_pkgs[i];
 
-            if (have_kr)
+            if (trans->require_signature)
             {
                 char sig_path[PATH_MAX];
                 if (!pkg->pkg_path ||
                     snprintf(sig_path, sizeof(sig_path), "%s.sig",
                              pkg->pkg_path) >= (int)sizeof(sig_path) ||
-                    !active_keyring_verify(&ak, pkg->pkg_path, sig_path))
+                    !keyring_verify(kr, pkg->pkg_path, sig_path))
                 {
                     journal_write(trans->db->env, JOURNAL_INSTALL,
                                   step->pkg_name, step->pkg_version,
@@ -312,7 +257,7 @@ trans_commit(struct apg_trans *trans, const char *root_path)
                     rollback_committed(trans, committed_idx, committed_count,
                                        root_path);
                     free(committed_idx);
-                    active_keyring_free(&ak);
+                    keyring_free(kr);
                     trans->db->suppress_journal = false;
                     return TRANS_ERR_UNSIGNED;
                 }
@@ -331,8 +276,7 @@ trans_commit(struct apg_trans *trans, const char *root_path)
                 rollback_committed(trans, committed_idx, committed_count,
                                    root_path);
                 free(committed_idx);
-                if (have_kr)
-                    active_keyring_free(&ak);
+                keyring_free(kr);
                 trans->db->suppress_journal = false;
                 return TRANS_ERR_INSTALL_FAILED;
             }
@@ -390,8 +334,7 @@ trans_commit(struct apg_trans *trans, const char *root_path)
     }
 
     free(committed_idx);
-    if (have_kr)
-        active_keyring_free(&ak);
+    keyring_free(kr);
     trans->db->suppress_journal = false;
     trans->committed = true;
     return TRANS_OK;

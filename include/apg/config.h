@@ -11,20 +11,16 @@
 
 #include <stdbool.h>
 
-#include "sign.h"
-
 /**
  * @brief Install-time security policy.
  *
  * When @p require_signature is true, @c trans_commit() refuses to install
  * packages whose detached signature at @c pkg_path.sig cannot be verified
- * against the keys in @p keyring_dir, using the @p backend keyring format.
+ * against the keys in @p keyring_dir.
  */
 typedef struct
 {
     bool require_signature; /**< Reject unsigned packages. */
     char *
         keyring_dir; /**< Trusted key directory; NULL → @c /etc/apg/trusted.d */
-    sign_backend_t backend; /**< Keyring backend to verify against; defaults
-                             to @ref SIGN_BACKEND_SODIUM (zero value). */
 } install_policy;

@@ -1,8 +1,7 @@
 Signing
 =======
 
-Package signature creation and verification. Two backends are supported and
-selected at build time: **gpgme** (preferred) and **libsodium** (fallback).
+Package signature creation and verification (libsodium, Ed25519).
 
 Signature functions
 -------------------

@@ -11,11 +11,11 @@ Frozen: the package format
 :c:struct:`package`, :c:struct:`package_metadata`, :c:struct:`str_list`,
 :c:struct:`dep_constraint`, and :c:struct:`dep_constraint_list`
 (``include/apg/package.h``, ``include/apg/version.h``) mirror the on-disk
-``.apg`` package format (``metadata.json``, the archive layout, and the
-``sums`` files). That format is implemented and fixed. These types are not
-in scope for ABI-stabilization work, ever — changing their layout is only
-ever done as a consequence of a deliberate package-format change, never as
-a side effect of an API/ABI cleanup.
+``.apg`` package format (``metadata.json`` and the archive layout). That
+format is implemented and fixed. These types are not in scope for
+ABI-stabilization work, ever — changing their layout is only ever done as a
+consequence of a deliberate package-format change, never as a side effect
+of an API/ABI cleanup.
 
 Opaque: read-only result types
 -------------------------------
@@ -38,10 +38,10 @@ Adding a field to any of these later is not an ABI break.
 Already opaque: handles
 ------------------------
 
-:c:struct:`db_handle`, :c:struct:`keyring`, :c:struct:`keyring_gpgme`,
-:c:struct:`dep_graph`, and :c:struct:`apg_trans` were designed opaque from
-the start (forward-declared in the public header, defined only in the
-matching ``*_priv.h``). No action needed here.
+:c:struct:`db_handle`, :c:struct:`keyring`, :c:struct:`dep_graph`, and
+:c:struct:`apg_trans` were designed opaque from the start (forward-declared
+in the public header, defined only in the matching ``*_priv.h``). No
+action needed here.
 
 Left flat, by design
 ---------------------
@@ -59,14 +59,3 @@ A new public struct defaults to opaque with accessors unless it is a
 small, caller-constructed value type with a field set that is not
 expected to grow (matching the reasoning above for ``dep_constraint`` and
 ``db_hooks``). When in doubt, opaque is the safer default.
-
-Optional backends
--------------------
-
-The ``gpgme`` (OpenPGP) signing backend is optional at build time (the
-``gpgme`` meson option). Its public declarations
-(:c:func:`sign_verify_gpgme`, :c:func:`sign_file_gpgme`,
-:c:func:`keyring_load_gpgme`, and friends) remain declared regardless of
-whether a given build includes gpgme; a build without it simply does not
-export those symbols. gpgme is planned for full removal in 2.0.0 (see
-``ROADMAP.md``), at which point these declarations go away entirely.

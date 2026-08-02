@@ -8,7 +8,7 @@ Older versions do not receive backports.
 ## Scope
 
 This policy covers **libapg** itself. Vulnerabilities in upstream dependencies
-(libarchive, lmdb, yyjson, gpgme, libsodium) should be reported to their
+(libarchive, lmdb, yyjson, libsodium) should be reported to their
 respective maintainers.
 
 libapg is part of the [NurOS](https://nuros.org) project. Issues that affect

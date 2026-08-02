@@ -27,7 +27,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y clang-format clang-tidy python3 \
             meson ninja-build pkg-config \
-            libarchive-dev liblmdb-dev libgpgme-dev libseccomp-dev \
+            libarchive-dev liblmdb-dev libseccomp-dev \
             libsodium-dev
 
       - name: Run checks
@@ -50,7 +50,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y \
             meson ninja-build pkg-config \
-            libarchive-dev liblmdb-dev libgpgme-dev libseccomp-dev \
+            libarchive-dev liblmdb-dev libseccomp-dev \
             libsodium-dev
 
       - name: Build
@@ -81,7 +81,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y \
             meson ninja-build pkg-config clang \
-            libarchive-dev liblmdb-dev libgpgme-dev libseccomp-dev \
+            libarchive-dev liblmdb-dev libseccomp-dev \
             libsodium-dev
 
       - name: Build with sanitizers
@@ -112,7 +112,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y \
             meson ninja-build pkg-config clang \
-            libarchive-dev liblmdb-dev libgpgme-dev libseccomp-dev \
+            libarchive-dev liblmdb-dev libseccomp-dev \
             libsodium-dev
 
       - name: Build fuzzers
@@ -166,7 +166,6 @@ jobs:
             libarchive-dev:arm64 \
             liblmdb-dev:arm64 \
             libsodium-dev:arm64 \
-            libgpgme-dev:arm64 \
             libseccomp-dev:arm64
 
       - name: Cross-compile
@@ -215,7 +214,6 @@ jobs:
             libarchive-dev:riscv64 \
             liblmdb-dev:riscv64 \
             libsodium-dev:riscv64 \
-            libgpgme-dev:riscv64 \
             libseccomp-dev:riscv64
 
       - name: Cross-compile
@@ -315,7 +313,6 @@ jobs:
         run: |
           meson setup build-mips64el \
             --cross-file cross/cross-mips64.txt \
-            -Dgpgme=disabled \
             --buildtype=release
           meson compile -C build-mips64el
 
@@ -356,7 +353,6 @@ jobs:
             libarchive-dev:armhf \
             liblmdb-dev:armhf \
             libsodium-dev:armhf \
-            libgpgme-dev:armhf \
             libseccomp-dev:armhf
 
       - name: Cross-compile

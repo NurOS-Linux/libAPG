@@ -22,12 +22,6 @@ option('db_mapsize',
   description: 'LMDB environment map size in bytes (default: 10 MiB)',
 )
 
-option('gpgme',
-  type: 'feature',
-  value: 'enabled',
-  description: 'Build the gpgme (OpenPGP) signing backend, alongside the always-built libsodium one',
-)
-
 option('fuzzing',
   type: 'feature',
   value: 'disabled',

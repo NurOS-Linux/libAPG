@@ -20,7 +20,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y \
             meson ninja-build pkg-config \
-            libarchive-dev liblmdb-dev libgpgme-dev libseccomp-dev \
+            libarchive-dev liblmdb-dev libseccomp-dev \
             libsodium-dev
 
       - name: Get version
@@ -82,7 +82,6 @@ jobs:
             libarchive-dev:arm64 \
             liblmdb-dev:arm64 \
             libsodium-dev:arm64 \
-            libgpgme-dev:arm64 \
             libseccomp-dev:arm64
 
       - name: Get version
@@ -149,7 +148,6 @@ jobs:
             libarchive-dev:riscv64 \
             liblmdb-dev:riscv64 \
             libsodium-dev:riscv64 \
-            libgpgme-dev:riscv64 \
             libseccomp-dev:riscv64
 
       - name: Get version
@@ -266,7 +264,6 @@ jobs:
         run: |
           meson setup build \
             --cross-file cross/cross-mips64.txt \
-            -Dgpgme=disabled \
             --buildtype=release \
             --prefix=/usr
           meson compile -C build

@@ -84,5 +84,4 @@ struct apg_trans
 
     bool require_signature;
     char *keyring_dir;
-    sign_backend_t sign_backend;
 };

@@ -6,7 +6,7 @@
 - [ ] Bindings for other languages (Python, C++)
 - [x] Correctness tests: installation unit tests, fuzzing (package JSON, dep constraints)
 - [x] pkg-config and CMake find module
-- [ ] Drop the gpgme (OpenPGP) signing backend entirely; libsodium (Ed25519) becomes the only one
+- [x] Drop the gpgme (OpenPGP) signing backend entirely; libsodium (Ed25519) becomes the only one
 
 ## Maybe in the future
 

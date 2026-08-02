@@ -57,11 +57,9 @@ trans_set_policy(struct apg_trans *trans, const install_policy *policy)
     if (!policy)
     {
         trans->require_signature = false;
-        trans->sign_backend = SIGN_BACKEND_SODIUM;
         return;
     }
     trans->require_signature = policy->require_signature;
-    trans->sign_backend = policy->backend;
     if (policy->keyring_dir)
         trans->keyring_dir = strdup(policy->keyring_dir);
 }

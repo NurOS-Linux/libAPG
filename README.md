@@ -19,17 +19,12 @@ Package management library for NurOS.
 | [libarchive](https://www.libarchive.org/) | Archive and compression library |
 | [lmdb](https://www.symas.com/lmdb) | Embedded key-value database |
 | [yyjson](https://github.com/ibireme/yyjson) | JSON library |
-| [gpgme](https://www.gnupg.org/related_software/gpgme/) **and** [libsodium](https://libsodium.org/) | Package signing |
+| [libsodium](https://libsodium.org/) | Package signing |
 | [libseccomp](https://github.com/seccomp/libseccomp) *(optional, Linux only)* | Syscall filtering for install script sandbox |
 
-## Signing backends
+## Signing
 
-libapg builds in both signing backends side by side; callers pick which one to use:
-
-- **libsodium** (`sign_verify`, `sign_file`, `keyring_load`, ...; the default): Ed25519 signing. Always ECC, keys are read from `/etc/apg/keys/`.
-- **gpgme** (`sign_verify_gpgme`, `sign_file_gpgme`, `keyring_load_gpgme`, ...): PGP signing via GnuPG. Only ECC keys are accepted by default (Ed25519, ECDSA). RSA can be enabled explicitly by passing `allow_rsa = true`.
-
-`install_policy.backend` (`SIGN_BACKEND_SODIUM` by default, or `SIGN_BACKEND_GPGME`) selects which one `trans_commit()` verifies package signatures against.
+Packages are signed and verified with **libsodium** (`sign_verify`, `sign_file`, `keyring_load`, ...): Ed25519 signing, keys are read from `/etc/apg/keys/`.
 
 ## Install-script sandbox
 
@@ -54,49 +49,49 @@ nix build
 #### Arch Linux
 
 ```bash
-sudo pacman -S meson ninja pkgconf libarchive lmdb yyjson gpgme libsodium
+sudo pacman -S meson ninja pkgconf libarchive lmdb yyjson libsodium
 ```
 
 #### Ubuntu / Debian
 
 ```bash
-sudo apt install meson ninja-build pkg-config libarchive-dev liblmdb-dev libyyjson-dev libgpgme-dev libsodium-dev
+sudo apt install meson ninja-build pkg-config libarchive-dev liblmdb-dev libyyjson-dev libsodium-dev
 ```
 
 #### Fedora / RHEL / CentOS
 
 ```bash
-sudo dnf install meson ninja-build pkgconf libarchive-devel lmdb-devel yyjson-devel gpgme-devel libsodium-devel
+sudo dnf install meson ninja-build pkgconf libarchive-devel lmdb-devel yyjson-devel libsodium-devel
 ```
 
 #### openSUSE
 
 ```bash
-sudo zypper install meson ninja pkgconf libarchive-devel lmdb-devel yyjson-devel gpgme-devel libsodium-devel
+sudo zypper install meson ninja pkgconf libarchive-devel lmdb-devel yyjson-devel libsodium-devel
 ```
 
 #### Alpine Linux
 
 ```bash
-sudo apk add meson ninja pkgconf libarchive-dev lmdb-dev yyjson-dev gpgme-dev libsodium-dev
+sudo apk add meson ninja pkgconf libarchive-dev lmdb-dev yyjson-dev libsodium-dev
 ```
 
 #### Gentoo
 
 ```bash
-sudo emerge dev-build/meson dev-build/ninja dev-util/pkgconf app-arch/libarchive dev-db/lmdb dev-libs/yyjson app-crypt/gpgme dev-libs/libsodium
+sudo emerge dev-build/meson dev-build/ninja dev-util/pkgconf app-arch/libarchive dev-db/lmdb dev-libs/yyjson dev-libs/libsodium
 ```
 
 #### Void Linux
 
 ```bash
-sudo xbps-install meson ninja pkgconf libarchive-devel lmdb-devel gpgme-devel libsodium-devel
+sudo xbps-install meson ninja pkgconf libarchive-devel lmdb-devel libsodium-devel
 ```
 
 #### FreeBSD
 
 ```bash
-sudo pkg install meson pkgconf ninja lmdb libarchive yyjson gpgme libsodium
+sudo pkg install meson pkgconf ninja lmdb libarchive yyjson libsodium
 ```
 
 `libseccomp` is not available on FreeBSD; the install-script sandbox falls back to `chroot()` only there (see [Install-script sandbox](#install-script-sandbox)). Default configuration paths follow FreeBSD's `hier(7)` and resolve under `/usr/local/etc/apg/` instead of `/etc/apg/`.
