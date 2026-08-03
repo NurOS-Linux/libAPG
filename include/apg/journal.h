@@ -8,6 +8,8 @@
  * @brief Persistent operation log stored in the LMDB database.
  */
 
+#include "export.h"
+
 #include <lmdb.h>
 #include <sys/types.h>
 #include <time.h>
@@ -54,9 +56,9 @@ struct journal_entry;
  * @param explicit_op True when directly requested by the user.
  * @return true on success, false if the write failed.
  */
-bool journal_write(MDB_env *env, journal_op_t op, const char *pkg_name,
-                   const char *pkg_version, journal_status_t status, uid_t uid,
-                   bool explicit_op);
+APG_API bool journal_write(MDB_env *env, journal_op_t op, const char *pkg_name,
+                           const char *pkg_version, journal_status_t status,
+                           uid_t uid, bool explicit_op);
 
 /**
  * @brief Read all journal entries in chronological order.
@@ -66,14 +68,14 @@ bool journal_write(MDB_env *env, journal_op_t op, const char *pkg_name,
  * @return Heap-allocated NULL-terminated array of heap-allocated entries, or
  *         NULL on failure. Free with journal_free_all().
  */
-struct journal_entry **journal_read_all(MDB_env *env, int *count);
+APG_API struct journal_entry **journal_read_all(MDB_env *env, int *count);
 
 /**
  * @brief Free a single journal entry and its owned fields.
  *
  * @param e Entry to free. May be NULL.
  */
-void journal_entry_free(struct journal_entry *e);
+APG_API void journal_entry_free(struct journal_entry *e);
 
 /**
  * @brief Free an array of journal entries returned by journal_read_all().
@@ -81,40 +83,40 @@ void journal_entry_free(struct journal_entry *e);
  * @param entries Array of entries to free.
  * @param count   Number of entries in the array.
  */
-void journal_free_all(struct journal_entry **entries, int count);
+APG_API void journal_free_all(struct journal_entry **entries, int count);
 
 /**
  * @brief Type of operation this entry describes.
  */
-journal_op_t journal_entry_op(const struct journal_entry *e);
+APG_API journal_op_t journal_entry_op(const struct journal_entry *e);
 
 /**
  * @brief Package name recorded on this entry. May be NULL.
  */
-const char *journal_entry_pkg_name(const struct journal_entry *e);
+APG_API const char *journal_entry_pkg_name(const struct journal_entry *e);
 
 /**
  * @brief Package version string recorded on this entry. May be NULL.
  */
-const char *journal_entry_pkg_version(const struct journal_entry *e);
+APG_API const char *journal_entry_pkg_version(const struct journal_entry *e);
 
 /**
  * @brief Unix timestamp of the operation.
  */
-time_t journal_entry_timestamp(const struct journal_entry *e);
+APG_API time_t journal_entry_timestamp(const struct journal_entry *e);
 
 /**
  * @brief Outcome of the operation.
  */
-journal_status_t journal_entry_status(const struct journal_entry *e);
+APG_API journal_status_t journal_entry_status(const struct journal_entry *e);
 
 /**
  * @brief UID of the user who initiated the operation.
  */
-uid_t journal_entry_uid(const struct journal_entry *e);
+APG_API uid_t journal_entry_uid(const struct journal_entry *e);
 
 /**
  * @brief True when directly requested by the user; false when pulled in as
  *        a dependency or during rollback.
  */
-bool journal_entry_explicit(const struct journal_entry *e);
+APG_API bool journal_entry_explicit(const struct journal_entry *e);

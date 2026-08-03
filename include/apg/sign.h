@@ -8,6 +8,8 @@
  * @brief Package signature creation and verification (libsodium, Ed25519).
  */
 
+#include "export.h"
+
 #include <stdbool.h>
 
 /**
@@ -18,7 +20,8 @@
  * @param allow_rsa Ignored; kept for interface stability.
  * @return true if the signature is valid and the signing key is trusted.
  */
-bool sign_verify(const char *pkg_path, const char *sig_path, bool allow_rsa);
+APG_API bool sign_verify(const char *pkg_path, const char *sig_path,
+                         bool allow_rsa);
 
 /**
  * @brief Create a detached signature for a package archive.
@@ -27,4 +30,4 @@ bool sign_verify(const char *pkg_path, const char *sig_path, bool allow_rsa);
  * @param sig_path Path where the detached signature will be written.
  * @return true on success, false if signing failed.
  */
-bool sign_file(const char *pkg_path, const char *sig_path);
+APG_API bool sign_file(const char *pkg_path, const char *sig_path);

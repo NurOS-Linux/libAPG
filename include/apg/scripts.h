@@ -8,6 +8,8 @@
  * @brief Pre/post-install script execution.
  */
 
+#include "export.h"
+
 #include <stdbool.h>
 
 /**
@@ -35,7 +37,8 @@
  *         false if the script exists but exited with a non-zero status,
  *         or if the chroot/sandbox setup failed.
  */
-bool run_script(const char *pkg_dir, const char *name, const char *root_path);
+APG_API bool run_script(const char *pkg_dir, const char *name,
+                        const char *root_path);
 
 /**
  * @brief Compute the persistent storage path for a package's scripts/
@@ -51,7 +54,7 @@ bool run_script(const char *pkg_dir, const char *name, const char *root_path);
  * @return Heap-allocated path, or NULL on allocation failure.
  *         Caller must free().
  */
-char *scripts_store_path(const char *root_path, const char *pkg_name);
+APG_API char *scripts_store_path(const char *root_path, const char *pkg_name);
 
 /**
  * @brief Persist a package's scripts/ directory beyond the lifetime of its
@@ -67,8 +70,8 @@ char *scripts_store_path(const char *root_path, const char *pkg_name);
  * @return true on success or if there was nothing to persist, false if the
  *         scripts/ directory exists but could not be copied.
  */
-bool scripts_persist(const char *pkg_dir, const char *root_path,
-                     const char *pkg_name);
+APG_API bool scripts_persist(const char *pkg_dir, const char *root_path,
+                             const char *pkg_name);
 
 /**
  * @brief Remove a package's persisted scripts/ directory.
@@ -79,4 +82,5 @@ bool scripts_persist(const char *pkg_dir, const char *root_path,
  * @param root_path Target filesystem root path (e.g. @c "/").
  * @param pkg_name  Name of the package being removed.
  */
-void scripts_persist_remove(const char *root_path, const char *pkg_name);
+APG_API void scripts_persist_remove(const char *root_path,
+                                    const char *pkg_name);

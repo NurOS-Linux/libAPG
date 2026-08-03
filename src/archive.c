@@ -6,8 +6,9 @@
 #include <archive_entry.h>
 #include <stdbool.h>
 #include <stdio.h>
-#include "../include/util.h"
+#include "../include/apg/archive.h"
 #include "../include/apg/package.h"
+#include "../include/util.h"
 
 #define PATH_MAX 4096
 
@@ -77,9 +78,9 @@ extract_to_dir(const char *archive_path, const char *path_dest)
 
 bool
 // NOLINTNEXTLINE(misc-use-internal-linkage)
-unarchive_package(const struct package *pkg, const char *path)
+unarchive_package(const struct package *pkg)
 {
-    return extract_to_dir(pkg->pkg_path, path);
+    return extract_to_dir(pkg->pkg_path, "/");
 }
 
 bool

@@ -8,6 +8,7 @@
  * @brief Dependency graph: resolution, cycle detection, and conflict analysis.
  */
 
+#include "export.h"
 #include "package.h"
 #include <stdbool.h>
 #include <stddef.h>
@@ -36,14 +37,14 @@ struct dep_graph;
  * @return Heap-allocated graph, or NULL on allocation failure.
  *         Free with dep_graph_free().
  */
-struct dep_graph *dep_graph_new(void);
+APG_API struct dep_graph *dep_graph_new(void);
 
 /**
  * @brief Free a dependency graph and all its owned resources.
  *
  * @param g Graph to free. May be NULL.
  */
-void dep_graph_free(struct dep_graph *g);
+APG_API void dep_graph_free(struct dep_graph *g);
 
 /**
  * @brief Add a package to the available pool.
@@ -54,8 +55,8 @@ void dep_graph_free(struct dep_graph *g);
  * @param pkg Package metadata to add. The graph borrows the pointer.
  * @return @ref DEP_OK, or @ref DEP_ERR_NOMEM on allocation failure.
  */
-dep_error_t dep_graph_add(struct dep_graph *g,
-                          const struct package_metadata *pkg);
+APG_API dep_error_t dep_graph_add(struct dep_graph *g,
+                                  const struct package_metadata *pkg);
 
 /**
  * @brief Resolve the transitive install order for a package.
@@ -71,8 +72,8 @@ dep_error_t dep_graph_add(struct dep_graph *g,
  * @param count    Output: number of entries in @p *order.
  * @return @ref DEP_OK on success, or an error code.
  */
-dep_error_t dep_graph_resolve(struct dep_graph *g, const char *pkg_name,
-                              char ***order, size_t *count);
+APG_API dep_error_t dep_graph_resolve(struct dep_graph *g, const char *pkg_name,
+                                      char ***order, size_t *count);
 
 /**
  * @brief Resolve the transitive install order for multiple packages in
@@ -89,9 +90,10 @@ dep_error_t dep_graph_resolve(struct dep_graph *g, const char *pkg_name,
  * @param order_count Output: number of entries in @p *order.
  * @return @ref DEP_OK on success, or an error code.
  */
-dep_error_t dep_graph_resolve_parallel(const struct dep_graph *g,
-                                       const char **pkg_names, size_t count,
-                                       char ***order, size_t *order_count);
+APG_API dep_error_t dep_graph_resolve_parallel(const struct dep_graph *g,
+                                               const char **pkg_names,
+                                               size_t count, char ***order,
+                                               size_t *order_count);
 
 /**
  * @brief Check whether the graph contains any circular dependency.
@@ -99,7 +101,7 @@ dep_error_t dep_graph_resolve_parallel(const struct dep_graph *g,
  * @param g Graph to inspect.
  * @return true if at least one cycle exists.
  */
-bool dep_graph_has_cycle(struct dep_graph *g);
+APG_API bool dep_graph_has_cycle(struct dep_graph *g);
 
 /**
  * @brief Find which installed packages would break if a new package is
@@ -117,7 +119,8 @@ bool dep_graph_has_cycle(struct dep_graph *g);
  * @return @ref DEP_OK if no conflicts, @ref DEP_ERR_CONFLICT if at least one
  *         conflict is found, or another error code on failure.
  */
-dep_error_t dep_graph_find_breaks(struct dep_graph *g, const char *pkg_name,
-                                  const char **installed,
-                                  size_t installed_count, char ***breaks,
-                                  size_t *break_count);
+APG_API dep_error_t dep_graph_find_breaks(struct dep_graph *g,
+                                          const char *pkg_name,
+                                          const char **installed,
+                                          size_t installed_count,
+                                          char ***breaks, size_t *break_count);

@@ -8,6 +8,8 @@
  * @brief Version string comparison and dependency constraint handling.
  */
 
+#include "export.h"
+
 #include <stdbool.h>
 
 /**
@@ -58,7 +60,7 @@ struct dep_constraint_list
  * @return Parsed constraint with heap-allocated fields. Caller owns them;
  *         free with dep_constraint_free().
  */
-struct dep_constraint dep_constraint_parse(const char *str);
+APG_API struct dep_constraint dep_constraint_parse(const char *str);
 
 /**
  * @brief Serialize a constraint to its canonical string form.
@@ -68,7 +70,7 @@ struct dep_constraint dep_constraint_parse(const char *str);
  * @param c Constraint to serialize.
  * @return Heap-allocated string; caller must free().
  */
-char *dep_constraint_to_str(const struct dep_constraint *c);
+APG_API char *dep_constraint_to_str(const struct dep_constraint *c);
 
 /**
  * @brief Release the heap-allocated fields of a dep_constraint.
@@ -76,14 +78,14 @@ char *dep_constraint_to_str(const struct dep_constraint *c);
  * @param c Constraint whose fields should be freed. The struct itself is
  *          not freed (it is typically stack-allocated).
  */
-void dep_constraint_free(struct dep_constraint *c);
+APG_API void dep_constraint_free(struct dep_constraint *c);
 
 /**
  * @brief Release the heap-allocated fields of a dep_constraint_list.
  *
  * @param list List whose contents should be freed.
  */
-void dep_constraint_list_free(struct dep_constraint_list *list);
+APG_API void dep_constraint_list_free(struct dep_constraint_list *list);
 
 /**
  * @brief Compare two version strings.
@@ -101,7 +103,7 @@ void dep_constraint_list_free(struct dep_constraint_list *list);
  * @param b Second version string.
  * @return Negative if @p a < @p b, zero if equal, positive if @p a > @p b.
  */
-int ver_compare(const char *a, const char *b);
+APG_API int ver_compare(const char *a, const char *b);
 
 /**
  * @brief Test whether a package version satisfies a constraint.
@@ -112,5 +114,5 @@ int ver_compare(const char *a, const char *b);
  *                           @p op is @ref VER_OP_ANY.
  * @return true if the installed version satisfies the constraint.
  */
-bool ver_satisfies(const char *pkg_version, ver_op_t op,
-                   const char *constraint_version);
+APG_API bool ver_satisfies(const char *pkg_version, ver_op_t op,
+                           const char *constraint_version);

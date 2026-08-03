@@ -13,6 +13,7 @@
  */
 
 #include "db.h"
+#include "export.h"
 #include "journal.h"
 
 /**
@@ -23,4 +24,4 @@
  * @return Heap-allocated array of heap-allocated entries, or NULL on failure.
  *         Free with journal_free_all().
  */
-struct journal_entry **audit_read_all(struct db_handle *db, int *count);
+APG_API struct journal_entry **audit_read_all(struct db_handle *db, int *count);

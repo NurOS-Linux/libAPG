@@ -9,6 +9,8 @@
  * @brief General-purpose string and filesystem utilities.
  */
 
+#include "apg/export.h"
+
 #include <stdbool.h>
 
 /**
@@ -19,7 +21,7 @@
  * @return Heap-allocated result; caller must free(). Returns NULL on allocation
  *         failure.
  */
-char *concat(const char *str1, const char *str2);
+APG_API char *concat(const char *str1, const char *str2);
 
 /**
  * @brief Create a directory, including any missing parent components.
@@ -28,7 +30,7 @@ char *concat(const char *str1, const char *str2);
  *
  * @param path Directory path to create.
  */
-void create_dir(const char *path);
+APG_API void create_dir(const char *path);
 
 /**
  * @brief Join two path components with a directory separator.
@@ -40,7 +42,7 @@ void create_dir(const char *path);
  * @return Heap-allocated joined path; caller must free(). Returns NULL on
  *         allocation failure.
  */
-char *concat_dirs(const char *path1, const char *path2);
+APG_API char *concat_dirs(const char *path1, const char *path2);
 
 /**
  * @brief Collect all regular file paths rooted at a directory.
@@ -50,7 +52,7 @@ char *concat_dirs(const char *path1, const char *path2);
  * @return Heap-allocated array of heap-allocated path strings, or NULL on
  *         failure. Caller must free each string and the array itself.
  */
-char **collect_files(const char *base, int *count);
+APG_API char **collect_files(const char *base, int *count);
 
 /**
  * @brief Copy a single file from src to dst.
@@ -59,11 +61,11 @@ char **collect_files(const char *base, int *count);
  * @param dst Destination file path.
  * @return true on success, false on failure.
  */
-bool copy_file(const char *src, const char *dst);
+APG_API bool copy_file(const char *src, const char *dst);
 
 /**
  * @brief Recursively remove a directory and everything under it.
  *
  * @param path Directory (or file) path to remove. May be NULL.
  */
-void remove_dir_recursive(const char *path);
+APG_API void remove_dir_recursive(const char *path);

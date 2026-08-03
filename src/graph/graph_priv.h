@@ -32,9 +32,7 @@ struct dep_graph
 };
 
 // Look up by exact package name, returns SIZE_MAX if absent
-__attribute__((visibility("hidden"))) size_t
-dep_graph_find(const struct dep_graph *g, const char *name);
+size_t dep_graph_find(const struct dep_graph *g, const char *name);
 
 // Look up by name or alias (provides/replaces), returns SIZE_MAX if absent
-__attribute__((visibility("hidden"))) size_t
-dep_graph_lookup(const struct dep_graph *g, const char *name);
+size_t dep_graph_lookup(const struct dep_graph *g, const char *name);

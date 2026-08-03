@@ -11,6 +11,7 @@
  */
 
 #include <stdbool.h>
+#include "export.h"
 #include "version.h"
 
 /**
@@ -72,35 +73,35 @@ struct package
  *
  * @param list List to clear. May be NULL.
  */
-void str_list_free(struct str_list *list);
+APG_API void str_list_free(struct str_list *list);
 
 /**
  * @brief Release a package_metadata and all its fields.
  *
  * @param meta Metadata to free. May be NULL.
  */
-void package_metadata_free(struct package_metadata *meta);
+APG_API void package_metadata_free(struct package_metadata *meta);
 
 /**
  * @brief Release a package and all its owned resources.
  *
  * @param pkg Package to free. May be NULL.
  */
-void package_free(struct package *pkg);
+APG_API void package_free(struct package *pkg);
 
 /**
  * @brief Allocate and zero-initialise a new package.
  *
  * @return Heap-allocated package, or NULL on allocation failure.
  */
-struct package *package_new(void);
+APG_API struct package *package_new(void);
 
 /**
  * @brief Allocate and zero-initialise a new package_metadata.
  *
  * @return Heap-allocated metadata, or NULL on allocation failure.
  */
-struct package_metadata *package_metadata_new(void);
+APG_API struct package_metadata *package_metadata_new(void);
 
 /**
  * @brief Install a package into the live filesystem root.
@@ -111,7 +112,7 @@ struct package_metadata *package_metadata_new(void);
  * @param pkg Package to install.
  * @return true on success, false on any error.
  */
-bool install_package(struct package *pkg);
+APG_API bool install_package(struct package *pkg);
 
 /**
  * @brief Install a package into an alternative filesystem root.
@@ -120,7 +121,8 @@ bool install_package(struct package *pkg);
  * @param root_path Filesystem root for installation (e.g. @c "/mnt").
  * @return true on success, false on any error.
  */
-bool install_package_in_root(struct package *pkg, const char *root_path);
+APG_API bool install_package_in_root(struct package *pkg,
+                                     const char *root_path);
 
 /**
  * @brief Extract a package archive and collect its file list without
@@ -134,7 +136,7 @@ bool install_package_in_root(struct package *pkg, const char *root_path);
  * @param root_path Filesystem root used to locate the temporary work area.
  * @return true on success, false if the archive could not be extracted.
  */
-bool package_collect_files(struct package *pkg, const char *root_path);
+APG_API bool package_collect_files(struct package *pkg, const char *root_path);
 
 /**
  * @brief Parse a package from disk.
@@ -144,6 +146,6 @@ bool package_collect_files(struct package *pkg, const char *root_path);
  * @return Heap-allocated package on success, NULL on parse failure.
  *         Caller must call package_free() when done.
  */
-struct package *parse_package(const char *path, const char *root_path);
+APG_API struct package *parse_package(const char *path, const char *root_path);
 
 #endif

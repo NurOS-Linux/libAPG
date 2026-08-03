@@ -22,9 +22,10 @@
 
 #include <stddef.h>
 #include <stdbool.h>
-#include "package.h"
-#include "db.h"
 #include "config.h"
+#include "db.h"
+#include "export.h"
+#include "package.h"
 
 /**
  * @brief Operation type for a single transaction step.
@@ -104,73 +105,74 @@ struct apg_trans;
 /**
  * @brief Operation this step performs.
  */
-trans_op_t trans_step_op(const struct trans_step *step);
+APG_API trans_op_t trans_step_op(const struct trans_step *step);
 
 /**
  * @brief Name of the package this step applies to.
  */
-const char *trans_step_pkg_name(const struct trans_step *step);
+APG_API const char *trans_step_pkg_name(const struct trans_step *step);
 
 /**
  * @brief Version string of the package this step applies to.
  */
-const char *trans_step_pkg_version(const struct trans_step *step);
+APG_API const char *trans_step_pkg_version(const struct trans_step *step);
 
 /**
  * @brief True when this step was directly requested by the caller (as
  *        opposed to pulled in as a dependency).
  */
-bool trans_step_explicit(const struct trans_step *step);
+APG_API bool trans_step_explicit(const struct trans_step *step);
 
 /**
  * @brief Name of the package being installed or removed.
  */
-const char *trans_conflict_pkg_name(const struct trans_conflict *conflict);
+APG_API const char *
+trans_conflict_pkg_name(const struct trans_conflict *conflict);
 
 /**
  * @brief Name of the existing package it conflicts with.
  */
-const char *
+APG_API const char *
 trans_conflict_conflicts_with(const struct trans_conflict *conflict);
 
 /**
  * @brief Conflicting file path.
  */
-const char *
+APG_API const char *
 trans_file_conflict_path(const struct trans_file_conflict *conflict);
 
 /**
  * @brief Name of the package being installed that claims the file.
  */
-const char *
+APG_API const char *
 trans_file_conflict_requested_by(const struct trans_file_conflict *conflict);
 
 /**
  * @brief Name of the currently installed package that owns the file.
  */
-const char *
+APG_API const char *
 trans_file_conflict_owned_by(const struct trans_file_conflict *conflict);
 
 /**
  * @brief Name of the held package.
  */
-const char *trans_held_pkg_name(const struct trans_held_pkg *held);
+APG_API const char *trans_held_pkg_name(const struct trans_held_pkg *held);
 
 /**
  * @brief Operation that was blocked (REMOVE or UPGRADE).
  */
-trans_op_t trans_held_pkg_op(const struct trans_held_pkg *held);
+APG_API trans_op_t trans_held_pkg_op(const struct trans_held_pkg *held);
 
 /**
  * @brief Name of the package that cannot be removed.
  */
-const char *
+APG_API const char *
 trans_blocked_remove_pkg_name(const struct trans_blocked_remove *blocked);
 
 /**
  * @brief Number of dependent packages blocking the removal.
  */
-int trans_blocked_remove_dependent_count(
+APG_API int trans_blocked_remove_dependent_count(
     const struct trans_blocked_remove *blocked);
 
 /**
@@ -179,7 +181,7 @@ int trans_blocked_remove_dependent_count(
  * @param blocked Entry to query.
  * @param index   Index in [0, trans_blocked_remove_dependent_count()).
  */
-const char *
+APG_API const char *
 trans_blocked_remove_dependent_at(const struct trans_blocked_remove *blocked,
                                   int index);
 
@@ -194,7 +196,8 @@ trans_blocked_remove_dependent_at(const struct trans_blocked_remove *blocked,
  * @param trans  Transaction to configure.
  * @param policy Policy to apply, or NULL to disable.
  */
-void trans_set_policy(struct apg_trans *trans, const install_policy *policy);
+APG_API void trans_set_policy(struct apg_trans *trans,
+                              const install_policy *policy);
 
 /**
  * @brief Create a new transaction backed by the given database.
@@ -204,14 +207,14 @@ void trans_set_policy(struct apg_trans *trans, const install_policy *policy);
  * @return Heap-allocated transaction, or NULL on allocation failure.
  *         Free with trans_free().
  */
-struct apg_trans *trans_new(struct db_handle *db);
+APG_API struct apg_trans *trans_new(struct db_handle *db);
 
 /**
  * @brief Free a transaction and all its owned resources.
  *
  * @param trans Transaction to free. May be NULL.
  */
-void trans_free(struct apg_trans *trans);
+APG_API void trans_free(struct apg_trans *trans);
 
 /**
  * @brief Queue a package for installation.
@@ -223,7 +226,8 @@ void trans_free(struct apg_trans *trans);
  * @param pkg   Package to install.
  * @return @ref TRANS_OK, or an error code.
  */
-trans_error_t trans_add_install(struct apg_trans *trans, struct package *pkg);
+APG_API trans_error_t trans_add_install(struct apg_trans *trans,
+                                        struct package *pkg);
 
 /**
  * @brief Queue a package for removal.
@@ -232,7 +236,8 @@ trans_error_t trans_add_install(struct apg_trans *trans, struct package *pkg);
  * @param pkg_name Name of the installed package to remove.
  * @return @ref TRANS_OK, or an error code.
  */
-trans_error_t trans_add_remove(struct apg_trans *trans, const char *pkg_name);
+APG_API trans_error_t trans_add_remove(struct apg_trans *trans,
+                                       const char *pkg_name);
 
 /**
  * @brief Queue a package for upgrade.
@@ -246,7 +251,8 @@ trans_error_t trans_add_remove(struct apg_trans *trans, const char *pkg_name);
  * @param pkg   New version of the package to install.
  * @return @ref TRANS_OK, or an error code.
  */
-trans_error_t trans_add_upgrade(struct apg_trans *trans, struct package *pkg);
+APG_API trans_error_t trans_add_upgrade(struct apg_trans *trans,
+                                        struct package *pkg);
 
 /**
  * @brief Resolve dependencies, detect conflicts, and build the execution plan.
@@ -258,7 +264,7 @@ trans_error_t trans_add_upgrade(struct apg_trans *trans, struct package *pkg);
  * @param trans Transaction to prepare.
  * @return @ref TRANS_OK on success, or an error code.
  */
-trans_error_t trans_prepare(struct apg_trans *trans);
+APG_API trans_error_t trans_prepare(struct apg_trans *trans);
 
 /**
  * @brief Number of steps in the ordered execution plan after a successful
@@ -267,7 +273,7 @@ trans_error_t trans_prepare(struct apg_trans *trans);
  * @param trans Transaction that has been successfully prepared.
  * @return Number of steps in the plan.
  */
-size_t trans_plan_count(const struct apg_trans *trans);
+APG_API size_t trans_plan_count(const struct apg_trans *trans);
 
 /**
  * @brief Retrieve one step of the ordered execution plan.
@@ -278,8 +284,8 @@ size_t trans_plan_count(const struct apg_trans *trans);
  * @param index Index in [0, trans_plan_count()).
  * @return Pointer to the step, or NULL if @p index is out of range.
  */
-const struct trans_step *trans_plan_at(const struct apg_trans *trans,
-                                       size_t index);
+APG_API const struct trans_step *trans_plan_at(const struct apg_trans *trans,
+                                               size_t index);
 
 /**
  * @brief Number of conflicts detected by trans_prepare().
@@ -288,7 +294,7 @@ const struct trans_step *trans_plan_at(const struct apg_trans *trans,
  *              @ref TRANS_ERR_CONFLICT.
  * @return Number of conflicts.
  */
-size_t trans_conflict_count(const struct apg_trans *trans);
+APG_API size_t trans_conflict_count(const struct apg_trans *trans);
 
 /**
  * @brief Retrieve one conflict detected by trans_prepare().
@@ -300,8 +306,8 @@ size_t trans_conflict_count(const struct apg_trans *trans);
  * @param index Index in [0, trans_conflict_count()).
  * @return Pointer to the conflict, or NULL if @p index is out of range.
  */
-const struct trans_conflict *trans_conflict_at(const struct apg_trans *trans,
-                                               size_t index);
+APG_API const struct trans_conflict *
+trans_conflict_at(const struct apg_trans *trans, size_t index);
 
 /**
  * @brief Number of removals blocked by installed dependents.
@@ -312,7 +318,7 @@ const struct trans_conflict *trans_conflict_at(const struct apg_trans *trans,
  * @param trans Transaction after trans_prepare().
  * @return Number of blocked removes.
  */
-size_t trans_blocked_remove_count(const struct apg_trans *trans);
+APG_API size_t trans_blocked_remove_count(const struct apg_trans *trans);
 
 /**
  * @brief Retrieve one removal blocked by installed dependents.
@@ -323,7 +329,7 @@ size_t trans_blocked_remove_count(const struct apg_trans *trans);
  * @param index Index in [0, trans_blocked_remove_count()).
  * @return Pointer to the entry, or NULL if @p index is out of range.
  */
-const struct trans_blocked_remove *
+APG_API const struct trans_blocked_remove *
 trans_blocked_remove_at(const struct apg_trans *trans, size_t index);
 
 /**
@@ -335,7 +341,7 @@ trans_blocked_remove_at(const struct apg_trans *trans, size_t index);
  * @param trans Transaction after trans_prepare().
  * @return Number of file conflicts.
  */
-size_t trans_file_conflict_count(const struct apg_trans *trans);
+APG_API size_t trans_file_conflict_count(const struct apg_trans *trans);
 
 /**
  * @brief Retrieve one file conflict detected by trans_prepare().
@@ -346,7 +352,7 @@ size_t trans_file_conflict_count(const struct apg_trans *trans);
  * @param index Index in [0, trans_file_conflict_count()).
  * @return Pointer to the entry, or NULL if @p index is out of range.
  */
-const struct trans_file_conflict *
+APG_API const struct trans_file_conflict *
 trans_file_conflict_at(const struct apg_trans *trans, size_t index);
 
 /**
@@ -357,7 +363,7 @@ trans_file_conflict_at(const struct apg_trans *trans, size_t index);
  * @param trans Transaction after trans_prepare().
  * @return Number of blocked operations.
  */
-size_t trans_held_pkg_count(const struct apg_trans *trans);
+APG_API size_t trans_held_pkg_count(const struct apg_trans *trans);
 
 /**
  * @brief Retrieve one operation blocked by a held package.
@@ -368,8 +374,8 @@ size_t trans_held_pkg_count(const struct apg_trans *trans);
  * @param index Index in [0, trans_held_pkg_count()).
  * @return Pointer to the entry, or NULL if @p index is out of range.
  */
-const struct trans_held_pkg *trans_held_pkg_at(const struct apg_trans *trans,
-                                               size_t index);
+APG_API const struct trans_held_pkg *
+trans_held_pkg_at(const struct apg_trans *trans, size_t index);
 
 /**
  * @brief Execute the prepared plan.
@@ -381,4 +387,5 @@ const struct trans_held_pkg *trans_held_pkg_at(const struct apg_trans *trans,
  * @param root_path Filesystem root for installation (e.g. @c "/").
  * @return @ref TRANS_OK on success, or an error code.
  */
-trans_error_t trans_commit(struct apg_trans *trans, const char *root_path);
+APG_API trans_error_t trans_commit(struct apg_trans *trans,
+                                   const char *root_path);

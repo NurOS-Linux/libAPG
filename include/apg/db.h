@@ -10,6 +10,7 @@
  */
 
 #include <stdbool.h>
+#include "export.h"
 #include "package.h"
 
 /**
@@ -58,7 +59,7 @@ struct db_handle;
  *         already locked by another process.
  *         Close with db_close() when done.
  */
-struct db_handle *db_open(const char *path);
+APG_API struct db_handle *db_open(const char *path);
 
 /**
  * @brief Open a package database in read-only mode.
@@ -69,14 +70,14 @@ struct db_handle *db_open(const char *path);
  * @return Heap-allocated handle, or NULL on failure.
  *         Close with db_close() when done.
  */
-struct db_handle *db_open_readonly(const char *path);
+APG_API struct db_handle *db_open_readonly(const char *path);
 
 /**
  * @brief Close a database handle and release all associated resources.
  *
  * @param db Handle to close. May be NULL.
  */
-void db_close(struct db_handle *db);
+APG_API void db_close(struct db_handle *db);
 
 /**
  * @brief Register pre/post callbacks invoked around every write operation.
@@ -86,7 +87,7 @@ void db_close(struct db_handle *db);
  * @param db    Database handle.
  * @param hooks Hook structure to copy. May be NULL to clear hooks.
  */
-void db_set_hooks(struct db_handle *db, const struct db_hooks *hooks);
+APG_API void db_set_hooks(struct db_handle *db, const struct db_hooks *hooks);
 
 /**
  * @brief Add or update a package record in the database.
@@ -95,7 +96,7 @@ void db_set_hooks(struct db_handle *db, const struct db_hooks *hooks);
  * @param pkg Package to record. The database stores a serialized copy.
  * @return true on success, false on write failure or read-only handle.
  */
-bool db_add(struct db_handle *db, struct package *pkg);
+APG_API bool db_add(struct db_handle *db, struct package *pkg);
 
 /**
  * @brief Remove a package record from the database.
@@ -105,7 +106,7 @@ bool db_add(struct db_handle *db, struct package *pkg);
  * @return true on success, false if the package was not found or the handle
  *         is read-only.
  */
-bool db_remove(struct db_handle *db, const char *pkg_name);
+APG_API bool db_remove(struct db_handle *db, const char *pkg_name);
 
 /**
  * @brief Set or clear the hold flag on an installed package.
@@ -119,7 +120,7 @@ bool db_remove(struct db_handle *db, const char *pkg_name);
  * @return true on success, false if the package was not found or the handle
  *         is read-only.
  */
-bool db_set_hold(struct db_handle *db, const char *pkg_name, bool held);
+APG_API bool db_set_hold(struct db_handle *db, const char *pkg_name, bool held);
 
 /**
  * @brief Look up a package record by name.
@@ -129,7 +130,7 @@ bool db_set_hold(struct db_handle *db, const char *pkg_name, bool held);
  * @return Heap-allocated package on success, NULL if not found.
  *         Caller must call package_free() when done.
  */
-struct package *db_get(struct db_handle *db, const char *name);
+APG_API struct package *db_get(struct db_handle *db, const char *name);
 
 /**
  * @brief List all packages in the database.
@@ -139,7 +140,7 @@ struct package *db_get(struct db_handle *db, const char *name);
  * @return Heap-allocated NULL-terminated array of heap-allocated packages, or
  *         NULL on failure. Caller must free each element and the array itself.
  */
-struct package **db_list(struct db_handle *db, int *count);
+APG_API struct package **db_list(struct db_handle *db, int *count);
 
 /**
  * @brief Find the package that owns a given filesystem path.
@@ -149,7 +150,7 @@ struct package **db_list(struct db_handle *db, int *count);
  * @return Heap-allocated package name string on success, NULL if no package
  *         owns @p path. Caller must free() the returned string.
  */
-char *db_owner(struct db_handle *db, const char *path);
+APG_API char *db_owner(struct db_handle *db, const char *path);
 
 /**
  * @brief Aggregate statistics about the installed package database.
@@ -170,7 +171,7 @@ struct db_stats
  * @param out Output structure to populate.
  * @return true on success, false if the database could not be queried.
  */
-bool db_stats(struct db_handle *db, struct db_stats *out);
+APG_API bool db_stats(struct db_handle *db, struct db_stats *out);
 
 /**
  * @brief Find installed packages that were auto-installed and are no longer
@@ -185,7 +186,7 @@ bool db_stats(struct db_handle *db, struct db_stats *out);
  * @return Heap-allocated array of heap-allocated package name strings, or NULL
  *         on failure. Caller must free() each element and the array itself.
  */
-char **db_get_orphans(struct db_handle *db, int *count);
+APG_API char **db_get_orphans(struct db_handle *db, int *count);
 
 /**
  * @brief Search installed packages by name or description substring.
@@ -198,7 +199,8 @@ char **db_get_orphans(struct db_handle *db, int *count);
  * @return Heap-allocated array of heap-allocated packages, or NULL on failure.
  *         Caller must call package_free() on each element and free() the array.
  */
-struct package **db_search(struct db_handle *db, const char *query, int *count);
+APG_API struct package **db_search(struct db_handle *db, const char *query,
+                                   int *count);
 
 /**
  * @brief Find all installed packages that depend on a given package.
@@ -214,8 +216,8 @@ struct package **db_search(struct db_handle *db, const char *query, int *count);
  *         on failure. Caller must free() each element and the array itself.
  *         @p *count is set to 0 when no dependents are found.
  */
-char **db_get_dependents(struct db_handle *db, const char *pkg_name,
-                         int *count);
+APG_API char **db_get_dependents(struct db_handle *db, const char *pkg_name,
+                                 int *count);
 
 /**
  * @brief A single package integrity issue found by db_verify().
@@ -242,8 +244,8 @@ struct db_verify_issue;
  * @return Heap-allocated array of issues, or NULL on allocation failure.
  *         Free with db_verify_free().
  */
-struct db_verify_issue *db_verify(struct db_handle *db, const char *root_path,
-                                  int *count);
+APG_API struct db_verify_issue *db_verify(struct db_handle *db,
+                                          const char *root_path, int *count);
 
 /**
  * @brief Free the array returned by db_verify().
@@ -251,7 +253,7 @@ struct db_verify_issue *db_verify(struct db_handle *db, const char *root_path,
  * @param issues Array to free. May be NULL.
  * @param count  Number of elements in @p issues.
  */
-void db_verify_free(struct db_verify_issue *issues, int count);
+APG_API void db_verify_free(struct db_verify_issue *issues, int count);
 
 /**
  * @brief Retrieve one entry of the array returned by db_verify().
@@ -261,18 +263,19 @@ void db_verify_free(struct db_verify_issue *issues, int count);
  * @param index  Index in [0, count).
  * @return Pointer to the entry, or NULL if @p index is out of range.
  */
-const struct db_verify_issue *
+APG_API const struct db_verify_issue *
 db_verify_issue_at(const struct db_verify_issue *issues, int count, int index);
 
 /**
  * @brief Name of the package affected by this issue.
  */
-const char *db_verify_issue_pkg_name(const struct db_verify_issue *issue);
+APG_API const char *
+db_verify_issue_pkg_name(const struct db_verify_issue *issue);
 
 /**
  * @brief Number of missing files recorded for this issue.
  */
-int db_verify_issue_missing_count(const struct db_verify_issue *issue);
+APG_API int db_verify_issue_missing_count(const struct db_verify_issue *issue);
 
 /**
  * @brief Path of the missing file at @p index.
@@ -280,5 +283,5 @@ int db_verify_issue_missing_count(const struct db_verify_issue *issue);
  * @param issue Issue to query.
  * @param index Index in [0, db_verify_issue_missing_count()).
  */
-const char *db_verify_issue_missing_file_at(const struct db_verify_issue *issue,
-                                            int index);
+APG_API const char *
+db_verify_issue_missing_file_at(const struct db_verify_issue *issue, int index);

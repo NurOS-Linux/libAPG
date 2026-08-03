@@ -59,3 +59,20 @@ A new public struct defaults to opaque with accessors unless it is a
 small, caller-constructed value type with a field set that is not
 expected to grow (matching the reasoning above for ``dep_constraint`` and
 ``db_hooks``). When in doubt, opaque is the safer default.
+
+Symbol visibility
+------------------
+
+``libapg.so`` is built with ``gnu_symbol_visibility: 'hidden'``
+(``meson.build``), so every symbol is hidden from the dynamic symbol
+table by default. Public functions are exported explicitly with the
+``APG_API`` macro (``include/apg/export.h``), applied to every
+declaration in ``include/apg/*.h`` and ``include/util.h``. A new
+internal helper shared across translation units therefore stays hidden
+automatically unless it is deliberately declared in a public header
+with ``APG_API`` — there is no separate step to remember, unlike
+marking individual internal symbols hidden by hand.
+
+New public functions must add ``APG_API`` to their declaration in the
+relevant public header, or they will silently fail to link for external
+consumers despite being documented.

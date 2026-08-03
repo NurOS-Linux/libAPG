@@ -8,6 +8,8 @@
  * @brief Recursive directory copy utility.
  */
 
+#include "export.h"
+
 #include <stdbool.h>
 
 /**
@@ -20,4 +22,4 @@
  * @param dst Destination directory path.
  * @return true on success, false if any file or directory could not be copied.
  */
-bool copy_dir(const char *src, const char *dst);
+APG_API bool copy_dir(const char *src, const char *dst);

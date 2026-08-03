@@ -102,6 +102,7 @@ endif
 libapg = library('apg', libapg_sources,
   version: meson.project_version(),
   soversion: meson.project_version(),
+  gnu_symbol_visibility: 'hidden',
   include_directories: libapg_inc,
   dependencies: [
     libarchive_dep,

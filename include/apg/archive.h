@@ -9,6 +9,7 @@
  * @brief Package archive extraction.
  */
 
+#include "export.h"
 #include "package.h"
 
 #include <stdbool.h>
@@ -22,7 +23,7 @@
  * @param pkg Package whose archive should be extracted.
  * @return true on success, false on any extraction error.
  */
-bool unarchive_package(const struct package *pkg);
+APG_API bool unarchive_package(const struct package *pkg);
 
 /**
  * @brief Extract a package archive into an alternative filesystem root.
@@ -31,4 +32,5 @@ bool unarchive_package(const struct package *pkg);
  * @param root Filesystem root to extract into (e.g. @c "/mnt").
  * @return true on success, false on any extraction error.
  */
-bool unarchive_package_in_root(const struct package *pkg, const char *root);
+APG_API bool unarchive_package_in_root(const struct package *pkg,
+                                       const char *root);

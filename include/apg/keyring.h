@@ -13,6 +13,8 @@
  * already in a trusted keyring, preventing arbitrary key injection.
  */
 
+#include "export.h"
+
 #include <stdbool.h>
 
 /**
@@ -29,14 +31,14 @@ struct keyring;
  * @return Heap-allocated keyring handle, or NULL on failure.
  *         Free with keyring_free().
  */
-struct keyring *keyring_load(const char *keyring_dir);
+APG_API struct keyring *keyring_load(const char *keyring_dir);
 
 /**
  * @brief Free a keyring handle and release all associated resources.
  *
  * @param kr Keyring to free. May be NULL.
  */
-void keyring_free(struct keyring *kr);
+APG_API void keyring_free(struct keyring *kr);
 
 /**
  * @brief Verify that a package archive's detached signature comes from a
@@ -47,8 +49,8 @@ void keyring_free(struct keyring *kr);
  * @param sig_path Path to the detached signature file.
  * @return true if the signature is valid and the signing key is in @p kr.
  */
-bool keyring_verify(const struct keyring *kr, const char *pkg_path,
-                    const char *sig_path);
+APG_API bool keyring_verify(const struct keyring *kr, const char *pkg_path,
+                            const char *sig_path);
 
 /**
  * @brief Add a new public key to the keyring, if endorsed by a trusted key.
@@ -63,5 +65,6 @@ bool keyring_verify(const struct keyring *kr, const char *pkg_path,
  * @param trusted        Keyring of keys permitted to endorse new keys.
  * @return true if the key was verified and added, false otherwise.
  */
-bool keyring_add_key(const char *keyring_dir, const char *new_key_path,
-                     const char *key_sig_path, const struct keyring *trusted);
+APG_API bool keyring_add_key(const char *keyring_dir, const char *new_key_path,
+                             const char *key_sig_path,
+                             const struct keyring *trusted);
