@@ -50,7 +50,12 @@ Left flat, by design
 callback-registration struct copied by :c:func:`db_set_hooks`; it is not
 expected to grow. :c:struct:`db_stats` is a two-field counter struct
 populated through an out-parameter; hiding it behind accessors would add
-ceremony without reducing any real risk.
+ceremony without reducing any real risk. ``install_policy``
+(``include/apg/config.h``) is a small, caller-constructed struct passed to
+:c:func:`trans_set_policy`; the same reasoning applies, but unlike
+``db_hooks``/``db_stats`` its layout has already changed once (the gpgme
+backend-selection field was removed) — a real, deliberate ABI break,
+correctly caught by the ``abi-check`` CI job described below.
 
 Policy for new public types
 -----------------------------
@@ -76,3 +81,29 @@ marking individual internal symbols hidden by hand.
 New public functions must add ``APG_API`` to their declaration in the
 relevant public header, or they will silently fail to link for external
 consumers despite being documented.
+
+Automated ABI regression check
+--------------------------------
+
+The ``abi-check`` CI job (``.github/workflows/ci.yml``,
+``.forgejo/workflows/ci.yml``) builds the current commit and the previous
+release tag (``git describe --tags --abbrev=0``) side by side, dumps each
+with ``abidw``, and compares them with::
+
+    abidiff --suppressions abi-suppressions.txt --exported-interfaces-only \
+        baseline.xml current.xml
+
+``abidiff``'s exit status is a bitmask; the job fails only when bit 8
+(incompatible change) is set, so purely additive changes (new symbols) pass
+without any action needed. ``abi-suppressions.txt`` excludes the "Already
+opaque: handles" and "Opaque: read-only result types" structs listed above
+from the comparison, since ``abidw`` reads full DWARF debug info and would
+otherwise flag private-field changes inside these deliberately-opaque
+structs as false-positive breaks — something direct callers can never
+observe, since they only ever see a forward declaration.
+
+When the job fails on a genuine, intentional ABI break, document it under
+a ``Breaking:`` bullet in ``CHANGELOG.md`` and bump the version in
+``meson.build`` before release (``soversion`` tracks the full project
+version, so the SONAME changes with it — see the soversion fix in
+``CHANGELOG.md``).

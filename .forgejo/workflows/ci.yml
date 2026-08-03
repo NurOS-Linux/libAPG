@@ -133,6 +133,73 @@ jobs:
           export LD_PRELOAD="$(clang -print-runtime-dir)/libclang_rt.asan-x86_64.so"
           ./build-fuzz/fuzz/fuzz-dep-constraint -max_total_time=60 fuzz/corpus/dep-constraint
 
+  abi-check:
+    name: ABI regression check
+    runs-on: ubuntu-latest
+    container:
+      image: ubuntu:22.04
+    steps:
+      - name: Install basic tools
+        run: |
+          apt-get update && apt-get install -y git sudo curl ca-certificates
+
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 0
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            meson ninja-build pkg-config \
+            libarchive-dev liblmdb-dev libseccomp-dev \
+            libsodium-dev abigail-tools
+
+      - name: Determine previous release tag
+        id: prev
+        run: |
+          TAG=$(git describe --tags --abbrev=0 2>/dev/null || true)
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "Comparing against: ${TAG:-<none, no previous tag found>}"
+
+      - name: Build current
+        if: steps.prev.outputs.tag != ''
+        run: |
+          meson setup build-abi-current --buildtype=debug
+          meson compile -C build-abi-current
+
+      - name: Build previous release (${{ steps.prev.outputs.tag }})
+        if: steps.prev.outputs.tag != ''
+        run: |
+          git worktree add /tmp/abi-baseline "${{ steps.prev.outputs.tag }}"
+          cd /tmp/abi-baseline
+          meson setup build --buildtype=debug
+          meson compile -C build
+
+      - name: Compare ABI against ${{ steps.prev.outputs.tag }}
+        if: steps.prev.outputs.tag != ''
+        run: |
+          abidw "$(readlink -f build-abi-current/libapg.so)" > current.xml
+          abidw "$(readlink -f /tmp/abi-baseline/build/libapg.so)" > baseline.xml
+
+          set +e
+          abidiff --suppressions abi-suppressions.txt --exported-interfaces-only baseline.xml current.xml
+          STATUS=$?
+          set -e
+          echo "abidiff exit status: $STATUS"
+
+          if [ $((STATUS & 1)) -ne 0 ] || [ $((STATUS & 2)) -ne 0 ]; then
+            echo "abidiff failed to run correctly (exit $STATUS) -- tooling problem, not an ABI verdict"
+            exit 1
+          fi
+
+          if [ $((STATUS & 8)) -ne 0 ]; then
+            echo
+            echo "Incompatible ABI change detected against ${{ steps.prev.outputs.tag }}."
+            echo "If intentional, document it under a 'Breaking:' bullet in CHANGELOG.md and bump the version in meson.build before release (soversion tracks the full project version, so the SONAME must change too)."
+            exit 1
+          fi
+
   cross-aarch64:
     name: Cross-compile (aarch64)
     runs-on: ubuntu-latest

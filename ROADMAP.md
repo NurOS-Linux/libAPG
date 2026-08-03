@@ -2,7 +2,7 @@
 
 ## v2.0 — Stable public API
 
-- [ ] ABI stabilization and documentation
+- [x] ABI stabilization and documentation
 - [ ] Bindings for other languages (Python, C++)
 - [x] Correctness tests: installation unit tests, fuzzing (package JSON, dep constraints)
 - [x] pkg-config and CMake find module

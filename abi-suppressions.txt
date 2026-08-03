@@ -1,0 +1,11 @@
+# libabigail suppression spec for the abi-check CI job (see
+# docs/abi-policy.rst, "Symbol visibility" / "Already opaque: handles").
+#
+# These types are forward-declared only in public headers, with the real
+# struct defined in a matching *_priv.h. Callers can never see or embed
+# their layout, so changes to their private fields are not ABI breaks and
+# must not fail the check.
+
+[suppress_type]
+  name_regexp = ^(apg_trans|keyring|dep_graph|db_handle|trans_step|trans_conflict|trans_file_conflict|trans_held_pkg|trans_blocked_remove|db_verify_issue|journal_entry)$
+  type_kind = struct
