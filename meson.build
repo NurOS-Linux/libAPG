@@ -100,6 +100,8 @@ if seccomp_dep.found()
 endif
 
 libapg = library('apg', libapg_sources,
+  version: meson.project_version(),
+  soversion: meson.project_version(),
   include_directories: libapg_inc,
   dependencies: [
     libarchive_dep,
