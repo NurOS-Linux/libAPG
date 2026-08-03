@@ -157,10 +157,11 @@ jobs:
 
       - name: Determine previous release tag
         id: prev
+        env:
+          ABI_BASELINE_TAG: ''
         run: |
-          TAG=$(git describe --tags --abbrev=0 2>/dev/null || true)
-          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
-          echo "Comparing against: ${TAG:-<none, no previous tag found>}"
+          echo "tag=$ABI_BASELINE_TAG" >> "$GITHUB_OUTPUT"
+          echo "Comparing against: ${ABI_BASELINE_TAG:-<none, no baseline tag pinned yet>}"
 
       - name: Build current
         if: steps.prev.outputs.tag != ''

@@ -86,9 +86,10 @@ Automated ABI regression check
 --------------------------------
 
 The ``abi-check`` CI job (``.github/workflows/ci.yml``,
-``.forgejo/workflows/ci.yml``) builds the current commit and the previous
-release tag (``git describe --tags --abbrev=0``) side by side, dumps each
-with ``abidw``, and compares them with::
+``.forgejo/workflows/ci.yml``) builds the current commit and a pinned
+baseline tag (``ABI_BASELINE_TAG``, set in the "Determine previous release
+tag" step) side by side, dumps each with ``abidw``, and compares them
+with::
 
     abidiff --suppressions abi-suppressions.txt --exported-interfaces-only \
         baseline.xml current.xml
@@ -101,6 +102,14 @@ from the comparison, since ``abidw`` reads full DWARF debug info and would
 otherwise flag private-field changes inside these deliberately-opaque
 structs as false-positive breaks — something direct callers can never
 observe, since they only ever see a forward declaration.
+
+``ABI_BASELINE_TAG`` starts empty — the job skips the comparison entirely
+until it is set, since there is no tag yet whose build requirements are
+still satisfiable (pre-2.0 tags depend on gpgme, which is gone). Update it
+to the tag of each new release once tagged; a dynamic "nearest tag" lookup
+(``git describe --tags --abbrev=0``) was deliberately rejected because it
+silently walks back into old releases with unrelated, no-longer-installed
+build dependencies.
 
 When the job fails on a genuine, intentional ABI break, document it under
 a ``Breaking:`` bullet in ``CHANGELOG.md`` and bump the version in
