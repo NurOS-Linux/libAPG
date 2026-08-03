@@ -69,6 +69,13 @@ core.*
 # Meson build directories
 builddir/
 build/
+build-*/
+
+# libFuzzer crash/leak/timeout artifacts
+crash-*
+leak-*
+oom-*
+timeout-*
 
 # Meson wrap files cache
 subprojects/packagecache/
