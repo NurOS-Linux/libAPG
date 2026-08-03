@@ -15,108 +15,120 @@
 #include <time.h>
 #include <stdbool.h>
 
-/**
- * @brief Type of operation recorded in the journal.
- */
-typedef enum
+#ifdef __cplusplus
+extern "C"
 {
-    JOURNAL_INSTALL,  /**< A package was installed. */
-    JOURNAL_REMOVE,   /**< A package was removed. */
-    JOURNAL_ROLLBACK, /**< A package was removed as part of a transaction
-                         rollback. */
-} journal_op_t;
+#endif
 
-/**
- * @brief Outcome of a journalled operation.
- */
-typedef enum
-{
-    JOURNAL_STATUS_OK,     /**< The operation completed successfully. */
-    JOURNAL_STATUS_FAILED, /**< The operation failed. */
-} journal_status_t;
+    /**
+     * @brief Type of operation recorded in the journal.
+     */
+    typedef enum
+    {
+        JOURNAL_INSTALL,  /**< A package was installed. */
+        JOURNAL_REMOVE,   /**< A package was removed. */
+        JOURNAL_ROLLBACK, /**< A package was removed as part of a transaction
+                             rollback. */
+    } journal_op_t;
 
-/**
- * @brief A single journal entry describing one install or remove event.
- *
- * Opaque; read fields with journal_entry_op(), journal_entry_pkg_name(), etc.
- * Owned by the entry itself. Free with journal_entry_free() or
- * journal_free_all().
- */
-struct journal_entry;
+    /**
+     * @brief Outcome of a journalled operation.
+     */
+    typedef enum
+    {
+        JOURNAL_STATUS_OK,     /**< The operation completed successfully. */
+        JOURNAL_STATUS_FAILED, /**< The operation failed. */
+    } journal_status_t;
 
-/**
- * @brief Append an entry to the journal.
- *
- * @param env         Open LMDB environment.
- * @param op          Type of operation.
- * @param pkg_name    Package name to record.
- * @param pkg_version Package version to record.
- * @param status      Outcome of the operation.
- * @param uid         UID of the user who initiated the operation.
- * @param explicit_op True when directly requested by the user.
- * @return true on success, false if the write failed.
- */
-APG_API bool journal_write(MDB_env *env, journal_op_t op, const char *pkg_name,
-                           const char *pkg_version, journal_status_t status,
-                           uid_t uid, bool explicit_op);
+    /**
+     * @brief A single journal entry describing one install or remove event.
+     *
+     * Opaque; read fields with journal_entry_op(), journal_entry_pkg_name(),
+     * etc. Owned by the entry itself. Free with journal_entry_free() or
+     * journal_free_all().
+     */
+    struct journal_entry;
 
-/**
- * @brief Read all journal entries in chronological order.
- *
- * @param env   Open LMDB environment.
- * @param count Output parameter set to the number of entries.
- * @return Heap-allocated NULL-terminated array of heap-allocated entries, or
- *         NULL on failure. Free with journal_free_all().
- */
-APG_API struct journal_entry **journal_read_all(MDB_env *env, int *count);
+    /**
+     * @brief Append an entry to the journal.
+     *
+     * @param env         Open LMDB environment.
+     * @param op          Type of operation.
+     * @param pkg_name    Package name to record.
+     * @param pkg_version Package version to record.
+     * @param status      Outcome of the operation.
+     * @param uid         UID of the user who initiated the operation.
+     * @param explicit_op True when directly requested by the user.
+     * @return true on success, false if the write failed.
+     */
+    APG_API bool journal_write(MDB_env *env, journal_op_t op,
+                               const char *pkg_name, const char *pkg_version,
+                               journal_status_t status, uid_t uid,
+                               bool explicit_op);
 
-/**
- * @brief Free a single journal entry and its owned fields.
- *
- * @param e Entry to free. May be NULL.
- */
-APG_API void journal_entry_free(struct journal_entry *e);
+    /**
+     * @brief Read all journal entries in chronological order.
+     *
+     * @param env   Open LMDB environment.
+     * @param count Output parameter set to the number of entries.
+     * @return Heap-allocated NULL-terminated array of heap-allocated entries,
+     * or NULL on failure. Free with journal_free_all().
+     */
+    APG_API struct journal_entry **journal_read_all(MDB_env *env, int *count);
 
-/**
- * @brief Free an array of journal entries returned by journal_read_all().
- *
- * @param entries Array of entries to free.
- * @param count   Number of entries in the array.
- */
-APG_API void journal_free_all(struct journal_entry **entries, int count);
+    /**
+     * @brief Free a single journal entry and its owned fields.
+     *
+     * @param e Entry to free. May be NULL.
+     */
+    APG_API void journal_entry_free(struct journal_entry *e);
 
-/**
- * @brief Type of operation this entry describes.
- */
-APG_API journal_op_t journal_entry_op(const struct journal_entry *e);
+    /**
+     * @brief Free an array of journal entries returned by journal_read_all().
+     *
+     * @param entries Array of entries to free.
+     * @param count   Number of entries in the array.
+     */
+    APG_API void journal_free_all(struct journal_entry **entries, int count);
 
-/**
- * @brief Package name recorded on this entry. May be NULL.
- */
-APG_API const char *journal_entry_pkg_name(const struct journal_entry *e);
+    /**
+     * @brief Type of operation this entry describes.
+     */
+    APG_API journal_op_t journal_entry_op(const struct journal_entry *e);
 
-/**
- * @brief Package version string recorded on this entry. May be NULL.
- */
-APG_API const char *journal_entry_pkg_version(const struct journal_entry *e);
+    /**
+     * @brief Package name recorded on this entry. May be NULL.
+     */
+    APG_API const char *journal_entry_pkg_name(const struct journal_entry *e);
 
-/**
- * @brief Unix timestamp of the operation.
- */
-APG_API time_t journal_entry_timestamp(const struct journal_entry *e);
+    /**
+     * @brief Package version string recorded on this entry. May be NULL.
+     */
+    APG_API const char *
+    journal_entry_pkg_version(const struct journal_entry *e);
 
-/**
- * @brief Outcome of the operation.
- */
-APG_API journal_status_t journal_entry_status(const struct journal_entry *e);
+    /**
+     * @brief Unix timestamp of the operation.
+     */
+    APG_API time_t journal_entry_timestamp(const struct journal_entry *e);
 
-/**
- * @brief UID of the user who initiated the operation.
- */
-APG_API uid_t journal_entry_uid(const struct journal_entry *e);
+    /**
+     * @brief Outcome of the operation.
+     */
+    APG_API journal_status_t
+    journal_entry_status(const struct journal_entry *e);
 
-/**
- * @brief True when directly requested by the user; false when pulled in as
- *        a dependency or during rollback.
- */
-APG_API bool journal_entry_explicit(const struct journal_entry *e);
+    /**
+     * @brief UID of the user who initiated the operation.
+     */
+    APG_API uid_t journal_entry_uid(const struct journal_entry *e);
+
+    /**
+     * @brief True when directly requested by the user; false when pulled in as
+     *        a dependency or during rollback.
+     */
+    APG_API bool journal_entry_explicit(const struct journal_entry *e);
+
+#ifdef __cplusplus
+}
+#endif

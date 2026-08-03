@@ -16,12 +16,22 @@
 #include "export.h"
 #include "journal.h"
 
-/**
- * @brief Read all audit log entries in chronological order.
- *
- * @param db    Open database handle.
- * @param count Output parameter set to the number of entries.
- * @return Heap-allocated array of heap-allocated entries, or NULL on failure.
- *         Free with journal_free_all().
- */
-APG_API struct journal_entry **audit_read_all(struct db_handle *db, int *count);
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
+    /**
+     * @brief Read all audit log entries in chronological order.
+     *
+     * @param db    Open database handle.
+     * @param count Output parameter set to the number of entries.
+     * @return Heap-allocated array of heap-allocated entries, or NULL on
+     * failure. Free with journal_free_all().
+     */
+    APG_API struct journal_entry **audit_read_all(struct db_handle *db,
+                                                  int *count);
+
+#ifdef __cplusplus
+}
+#endif

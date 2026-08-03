@@ -27,3 +27,9 @@ option('fuzzing',
   value: 'disabled',
   description: 'Build libFuzzer harnesses under fuzz/ (requires clang; not part of a normal build)',
 )
+
+option('cxx_bindings',
+  type: 'feature',
+  value: 'disabled',
+  description: 'Install the header-only apg++ C++ bindings under bindings/cpp/ (requires a C++17 compiler)',
+)

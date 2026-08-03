@@ -128,6 +128,7 @@ install_headers(
   'include/apg/config.h',
   'include/apg/copy.h',
   'include/apg/db.h',
+  'include/apg/export.h',
   'include/apg/graph.h',
   'include/apg/install.h',
   'include/apg/journal.h',
@@ -165,3 +166,4 @@ endif
 
 subdir('test')
 subdir('fuzz')
+subdir('bindings/cpp')
