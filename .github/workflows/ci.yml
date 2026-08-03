@@ -100,10 +100,14 @@ jobs:
           meson compile -C build-fuzz fuzz/fuzz-package-json fuzz/fuzz-dep-constraint
 
       - name: Run fuzz-package-json
-        run: ./build-fuzz/fuzz/fuzz-package-json -max_total_time=60 fuzz/corpus/package-json
+        run: |
+          export LD_PRELOAD="$(clang -print-runtime-dir)/libclang_rt.asan-x86_64.so"
+          ./build-fuzz/fuzz/fuzz-package-json -max_total_time=60 fuzz/corpus/package-json
 
       - name: Run fuzz-dep-constraint
-        run: ./build-fuzz/fuzz/fuzz-dep-constraint -max_total_time=60 fuzz/corpus/dep-constraint
+        run: |
+          export LD_PRELOAD="$(clang -print-runtime-dir)/libclang_rt.asan-x86_64.so"
+          ./build-fuzz/fuzz/fuzz-dep-constraint -max_total_time=60 fuzz/corpus/dep-constraint
 
   cross-aarch64:
     name: Cross-compile (aarch64)
