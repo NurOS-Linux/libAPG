@@ -210,6 +210,24 @@ extern "C"
                                   const install_policy *policy);
 
     /**
+     * @brief Force resolution of a dependency or virtual (provides) name to
+     *        a specific package.
+     *
+     * Without a preference, trans_prepare() resolves a name with multiple
+     * providers to an installed one if any exists, otherwise to whichever
+     * provider was added to the transaction first — callers that need the
+     * user to pick (e.g. an interactive prompt like pacman's) should call
+     * this before trans_prepare(). Calling it again for the same @p name
+     * replaces the previous choice.
+     *
+     * @param trans    Transaction to configure.
+     * @param name     Dependency or virtual name to resolve.
+     * @param pkg_name Package to resolve @p name to.
+     */
+    APG_API void trans_prefer_provider(struct apg_trans *trans,
+                                       const char *name, const char *pkg_name);
+
+    /**
      * @brief Create a new transaction backed by the given database.
      *
      * @param db Open database handle. The transaction borrows it; the caller

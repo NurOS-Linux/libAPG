@@ -213,6 +213,73 @@ test_resolve_via_alias(void)
 }
 
 void
+test_multiple_providers_prefers_installed(void)
+{
+    struct package_metadata *installed_provider =
+        make_pkg("nginx", NODEPS, NOCONFLICTS, (const char *[]){"webserver"}, 1,
+                 NOREPLACES);
+    struct package_metadata *candidate_provider =
+        make_pkg("apache", NODEPS, NOCONFLICTS, (const char *[]){"webserver"},
+                 1, NOREPLACES);
+    struct package_metadata *app =
+        make_pkg("app", (const char *[]){"webserver"}, 1, NOCONFLICTS,
+                 NOPROVIDES, NOREPLACES);
+
+    struct dep_graph *g = dep_graph_new();
+    assert(dep_graph_add(g, candidate_provider) == DEP_OK);
+    assert(dep_graph_add(g, app) == DEP_OK);
+    assert(dep_graph_add_installed(g, installed_provider) == DEP_OK);
+
+    char **order = NULL;
+    size_t count = 0;
+    assert(dep_graph_resolve(g, "app", &order, &count) == DEP_OK);
+    assert(count == 2);
+    assert(strcmp(order[0], "nginx") == 0);
+    assert(strcmp(order[1], "app") == 0);
+    free(order);
+
+    dep_graph_free(g);
+    package_metadata_free(installed_provider);
+    package_metadata_free(candidate_provider);
+    package_metadata_free(app);
+    printf("test_multiple_providers_prefers_installed: PASS\n");
+}
+
+void
+test_multiple_providers_falls_back_to_first_when_none_installed(void)
+{
+    struct package_metadata *first_provider =
+        make_pkg("apache", NODEPS, NOCONFLICTS, (const char *[]){"webserver"},
+                 1, NOREPLACES);
+    struct package_metadata *second_provider =
+        make_pkg("caddy", NODEPS, NOCONFLICTS, (const char *[]){"webserver"}, 1,
+                 NOREPLACES);
+    struct package_metadata *app =
+        make_pkg("app", (const char *[]){"webserver"}, 1, NOCONFLICTS,
+                 NOPROVIDES, NOREPLACES);
+
+    struct dep_graph *g = dep_graph_new();
+    assert(dep_graph_add(g, first_provider) == DEP_OK);
+    assert(dep_graph_add(g, second_provider) == DEP_OK);
+    assert(dep_graph_add(g, app) == DEP_OK);
+
+    char **order = NULL;
+    size_t count = 0;
+    assert(dep_graph_resolve(g, "app", &order, &count) == DEP_OK);
+    assert(count == 2);
+    assert(strcmp(order[0], "apache") == 0);
+    assert(strcmp(order[1], "app") == 0);
+    free(order);
+
+    dep_graph_free(g);
+    package_metadata_free(first_provider);
+    package_metadata_free(second_provider);
+    package_metadata_free(app);
+    printf("test_multiple_providers_falls_back_to_first_when_none_installed: "
+           "PASS\n");
+}
+
+void
 test_replaces_resolution(void)
 {
     // pkg-new replaces "old-pkg" (not in graph); app depends on "old-pkg"

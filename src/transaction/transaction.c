@@ -114,7 +114,58 @@ trans_free(struct apg_trans *trans)
         free(trans->held_pkgs[i].pkg_name);
     free(trans->held_pkgs);
 
+    for (size_t i = 0; i < trans->provider_pref_count; i++)
+    {
+        free(trans->provider_prefs[i].alias);
+        free(trans->provider_prefs[i].pkg_name);
+    }
+    free(trans->provider_prefs);
+
     free(trans);
+}
+
+void
+trans_prefer_provider(struct apg_trans *trans, const char *name,
+                      const char *pkg_name)
+{
+    if (!trans || !name || !pkg_name)
+        return;
+
+    for (size_t i = 0; i < trans->provider_pref_count; i++)
+    {
+        if (strcmp(trans->provider_prefs[i].alias, name) != 0)
+            continue;
+        char *dup = strdup(pkg_name);
+        if (!dup)
+            return;
+        free(trans->provider_prefs[i].pkg_name);
+        trans->provider_prefs[i].pkg_name = dup;
+        return;
+    }
+
+    if (trans->provider_pref_count == trans->provider_pref_cap)
+    {
+        size_t new_cap =
+            trans->provider_pref_cap == 0 ? 4 : trans->provider_pref_cap * 2;
+        struct provider_pref *tmp =
+            realloc(trans->provider_prefs, new_cap * sizeof(*tmp));
+        if (!tmp)
+            return;
+        trans->provider_prefs = tmp;
+        trans->provider_pref_cap = new_cap;
+    }
+
+    char *alias_dup = strdup(name);
+    char *pkg_dup = strdup(pkg_name);
+    if (!alias_dup || !pkg_dup)
+    {
+        free(alias_dup);
+        free(pkg_dup);
+        return;
+    }
+    trans->provider_prefs[trans->provider_pref_count].alias = alias_dup;
+    trans->provider_prefs[trans->provider_pref_count].pkg_name = pkg_dup;
+    trans->provider_pref_count++;
 }
 
 trans_error_t

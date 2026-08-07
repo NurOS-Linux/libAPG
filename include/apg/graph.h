@@ -64,6 +64,19 @@ extern "C"
                                       const struct package_metadata *pkg);
 
     /**
+     * @brief Same as dep_graph_add(), but marks the package as installed.
+     *
+     * If two packages provide the same virtual name, lookups prefer the
+     * installed one; with no installed provider, the first one added wins.
+     *
+     * @param g   Graph to modify.
+     * @param pkg Package metadata to add. The graph borrows the pointer.
+     * @return @ref DEP_OK, or @ref DEP_ERR_NOMEM on allocation failure.
+     */
+    APG_API dep_error_t dep_graph_add_installed(
+        struct dep_graph *g, const struct package_metadata *pkg);
+
+    /**
      * @brief Resolve the transitive install order for a package.
      *
      * Uses a depth-first topological sort. @p *order is set to a malloc'd array

@@ -6,6 +6,7 @@
 #include <pthread.h>
 
 #include "trans_priv.h"
+#include "../graph/graph_priv.h"
 #include "../../include/apg/graph.h"
 #include "../../include/apg/db.h"
 #include "../../include/apg/package.h"
@@ -217,7 +218,11 @@ trans_prepare(struct apg_trans *trans)
 
     for (int i = 0; i < installed_count; i++)
         if (installed[i]->meta)
-            dep_graph_add(g, installed[i]->meta);
+            dep_graph_add_installed(g, installed[i]->meta);
+
+    for (size_t i = 0; i < trans->provider_pref_count; i++)
+        dep_graph_prefer(g, trans->provider_prefs[i].alias,
+                         trans->provider_prefs[i].pkg_name);
 
     trans_error_t ret = TRANS_OK;
 

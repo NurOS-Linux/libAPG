@@ -117,6 +117,11 @@ public:
 
     void clear_policy() { ::trans_set_policy(trans_.get(), nullptr); }
 
+    void prefer_provider(const std::string &name, const std::string &pkg_name)
+    {
+        ::trans_prefer_provider(trans_.get(), name.c_str(), pkg_name.c_str());
+    }
+
     TransError add_install(Package &pkg)
     {
         return ::trans_add_install(trans_.get(), pkg.get());

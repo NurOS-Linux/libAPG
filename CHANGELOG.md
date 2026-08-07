@@ -4,9 +4,15 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- `dep_graph_add_installed()` (`include/apg/graph.h`): identical to `dep_graph_add()`, but marks the node as installed so alias/`provides` resolution can prefer it (see Fixed below). `trans_prepare()` (`src/transaction/prepare.c`) now uses it for the caller's already-installed packages instead of `dep_graph_add()`
+- `trans_prefer_provider(trans, name, pkg_name)` (`include/apg/transaction.h`): forces resolution of a dependency or virtual (`provides`) name to a specific package for a given transaction, for callers that want to prompt the user when a name has multiple providers (pacman-style), rather than rely on `trans_prepare()`'s automatic choice. Must be called before `trans_prepare()`. Backed internally by `dep_graph_prefer()` (`src/graph/graph_priv.h`, not public — the transaction's graph is never exposed to callers)
+
 ### Fixed
 
 - `pkg->pkg_path` was silently lost on any database round-trip (`db_get()`, `db_list()`, `db_search()`, and internally inside `db_verify()`): `package_to_json()`/`package_from_json()` (`src/json.c`), used only by the DB storage layer (`src/db/write.c`/`src/db/read.c`), never serialized or restored it, unlike `installed_by_hand`/`held` which were already handled the same way. Purely an internal DB-record format issue — the `.apg` archive format and `metadata.json` schema are untouched. Old DB records without a `pkg_path` key still deserialize correctly (field stays `NULL`, matching prior behavior)
+- Multiple packages providing the same virtual (`provides`) name silently degraded to "whichever provider was added to the graph first, always" (`dep_graph_lookup()`, `src/graph/graph.c`): `add_alias()` appended every provider to the same alias list correctly, but lookup returned the first match unconditionally, regardless of which provider actually made sense. `dep_graph_lookup()` now prefers a provider marked installed (see `dep_graph_add_installed()` above) over one that isn't, falling back to the first-added provider only when none is installed — still deterministic, but the right default instead of an accidental one
 
 ## [2.0.0] - 2026-08-03
 

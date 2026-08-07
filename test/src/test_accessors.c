@@ -173,3 +173,80 @@ test_journal_entry_accessors(void)
     close_tmp_db(db, db_path);
     printf("test_journal_entry_accessors: PASS\n");
 }
+
+static struct package *
+provider_pkg(const char *name, const char *version, const char *provides)
+{
+    struct package *pkg = simple_pkg(name);
+    free(pkg->meta->version);
+    pkg->meta->version = strdup(version);
+    pkg->meta->provides.count = 1;
+    pkg->meta->provides.items = malloc(sizeof(char *));
+    pkg->meta->provides.items[0] = strdup(provides);
+    return pkg;
+}
+
+void
+test_trans_prefer_provider_overrides_installed_default(void)
+{
+    char db_path[PATH_MAX];
+    struct db_handle *db = open_tmp_db(db_path);
+    assert(db);
+
+    struct package *nginx_installed = provider_pkg("nginx", "1.0", "webserver");
+    assert(db_add(db, nginx_installed));
+
+    struct package *caddy = provider_pkg("caddy", "2.0", "webserver");
+    struct package *app = simple_pkg("app");
+    app->meta->dependencies.count = 1;
+    app->meta->dependencies.items = malloc(sizeof(struct dep_constraint));
+    app->meta->dependencies.items[0] = dep_constraint_parse("webserver >= 2.0");
+
+    struct apg_trans *trans = trans_new(db);
+    assert(trans_add_install(trans, caddy) == TRANS_OK);
+    assert(trans_add_install(trans, app) == TRANS_OK);
+
+    trans_prefer_provider(trans, "webserver", "caddy");
+    assert(trans_prepare(trans) == TRANS_OK);
+
+    assert(trans_plan_count(trans) == 2);
+    assert(strcmp(trans_step_pkg_name(trans_plan_at(trans, 0)), "caddy") == 0);
+    assert(strcmp(trans_step_pkg_name(trans_plan_at(trans, 1)), "app") == 0);
+
+    trans_free(trans);
+    package_free(caddy);
+    package_free(app);
+    package_free(nginx_installed);
+    close_tmp_db(db, db_path);
+    printf("test_trans_prefer_provider_overrides_installed_default: PASS\n");
+}
+
+void
+test_trans_default_prefers_installed_provider(void)
+{
+    char db_path[PATH_MAX];
+    struct db_handle *db = open_tmp_db(db_path);
+    assert(db);
+
+    struct package *nginx_installed = provider_pkg("nginx", "1.0", "webserver");
+    assert(db_add(db, nginx_installed));
+
+    struct package *caddy = provider_pkg("caddy", "2.0", "webserver");
+    struct package *app = simple_pkg("app");
+    app->meta->dependencies.count = 1;
+    app->meta->dependencies.items = malloc(sizeof(struct dep_constraint));
+    app->meta->dependencies.items[0] = dep_constraint_parse("webserver >= 2.0");
+
+    struct apg_trans *trans = trans_new(db);
+    assert(trans_add_install(trans, caddy) == TRANS_OK);
+    assert(trans_add_install(trans, app) == TRANS_OK);
+
+    assert(trans_prepare(trans) != TRANS_OK);
+
+    trans_free(trans);
+    package_free(caddy);
+    package_free(app);
+    package_free(nginx_installed);
+    close_tmp_db(db, db_path);
+    printf("test_trans_default_prefers_installed_provider: PASS\n");
+}

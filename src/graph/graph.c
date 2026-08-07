@@ -46,6 +46,12 @@ dep_graph_free(struct dep_graph *g)
     for (size_t i = 0; i < g->alias_count; i++)
         free(g->aliases[i].alias);
     free(g->aliases);
+    for (size_t i = 0; i < g->pref_count; i++)
+    {
+        free(g->prefs[i].alias);
+        free(g->prefs[i].pkg_name);
+    }
+    free(g->prefs);
     free(g);
 }
 
@@ -64,10 +70,29 @@ dep_graph_lookup(const struct dep_graph *g, const char *name)
     size_t idx = dep_graph_find(g, name);
     if (idx != SIZE_MAX)
         return idx;
+
+    for (size_t i = 0; i < g->pref_count; i++)
+    {
+        if (strcmp(g->prefs[i].alias, name) != 0)
+            continue;
+        size_t pref_idx = dep_graph_find(g, g->prefs[i].pkg_name);
+        if (pref_idx != SIZE_MAX)
+            return pref_idx;
+        break;
+    }
+
+    size_t first_match = SIZE_MAX;
     for (size_t i = 0; i < g->alias_count; i++)
-        if (strcmp(g->aliases[i].alias, name) == 0)
-            return g->aliases[i].node_idx;
-    return SIZE_MAX;
+    {
+        if (strcmp(g->aliases[i].alias, name) != 0)
+            continue;
+        size_t node_idx = g->aliases[i].node_idx;
+        if (first_match == SIZE_MAX)
+            first_match = node_idx;
+        if (g->nodes[node_idx]->installed)
+            return node_idx;
+    }
+    return first_match;
 }
 
 static dep_error_t
@@ -93,7 +118,51 @@ add_alias(struct dep_graph *g, const char *alias, size_t node_idx)
 }
 
 dep_error_t
-dep_graph_add(struct dep_graph *g, const struct package_metadata *pkg)
+dep_graph_prefer(struct dep_graph *g, const char *alias, const char *pkg_name)
+{
+    if (!g || !alias || !pkg_name)
+        return DEP_ERR_NOMEM;
+
+    for (size_t i = 0; i < g->pref_count; i++)
+    {
+        if (strcmp(g->prefs[i].alias, alias) != 0)
+            continue;
+        char *dup = strdup(pkg_name);
+        if (!dup)
+            return DEP_ERR_NOMEM;
+        free(g->prefs[i].pkg_name);
+        g->prefs[i].pkg_name = dup;
+        return DEP_OK;
+    }
+
+    if (g->pref_count == g->pref_cap)
+    {
+        size_t new_cap = g->pref_cap == 0 ? GRAPH_INITIAL_CAP : g->pref_cap * 2;
+        struct dep_provider_pref *tmp =
+            realloc(g->prefs, new_cap * sizeof(*tmp));
+        if (!tmp)
+            return DEP_ERR_NOMEM;
+        g->prefs = tmp;
+        g->pref_cap = new_cap;
+    }
+
+    char *alias_dup = strdup(alias);
+    char *pkg_dup = strdup(pkg_name);
+    if (!alias_dup || !pkg_dup)
+    {
+        free(alias_dup);
+        free(pkg_dup);
+        return DEP_ERR_NOMEM;
+    }
+    g->prefs[g->pref_count].alias = alias_dup;
+    g->prefs[g->pref_count].pkg_name = pkg_dup;
+    g->pref_count++;
+    return DEP_OK;
+}
+
+static dep_error_t
+add_node(struct dep_graph *g, const struct package_metadata *pkg,
+         bool installed)
 {
     if (!g || !pkg || !pkg->name)
         return DEP_ERR_NOMEM;
@@ -120,6 +189,7 @@ dep_graph_add(struct dep_graph *g, const struct package_metadata *pkg)
         return DEP_ERR_NOMEM;
     }
     node->pkg = pkg;
+    node->installed = installed;
 
     size_t idx = g->count;
     g->nodes[idx] = node;
@@ -143,4 +213,16 @@ dep_graph_add(struct dep_graph *g, const struct package_metadata *pkg)
     }
 
     return DEP_OK;
+}
+
+dep_error_t
+dep_graph_add(struct dep_graph *g, const struct package_metadata *pkg)
+{
+    return add_node(g, pkg, false);
+}
+
+dep_error_t
+dep_graph_add_installed(struct dep_graph *g, const struct package_metadata *pkg)
+{
+    return add_node(g, pkg, true);
 }

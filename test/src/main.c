@@ -16,6 +16,8 @@ main(void)
     test_missing_transitive_dep();
     test_provides_resolution();
     test_resolve_via_alias();
+    test_multiple_providers_prefers_installed();
+    test_multiple_providers_falls_back_to_first_when_none_installed();
     test_replaces_resolution();
     test_version_constraint_satisfied();
     test_version_constraint_unsatisfied();
@@ -55,7 +57,9 @@ main(void)
     test_trans_conflict_accessors();
     test_db_verify_issue_accessors();
     test_journal_entry_accessors();
+    test_trans_prefer_provider_overrides_installed_default();
+    test_trans_default_prefers_installed_provider();
 
-    printf("All 43 tests passed.\n");
+    printf("All 47 tests passed.\n");
     return 0;
 }

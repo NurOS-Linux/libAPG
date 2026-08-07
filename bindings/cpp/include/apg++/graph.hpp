@@ -32,6 +32,12 @@ public:
             g_.get(), const_cast<struct package_metadata *>(meta.get()));
     }
 
+    DepError add_installed(const PackageMetadataView &meta)
+    {
+        return ::dep_graph_add_installed(
+            g_.get(), const_cast<struct package_metadata *>(meta.get()));
+    }
+
     bool has_cycle() { return ::dep_graph_has_cycle(g_.get()); }
 
     DepError resolve(const std::string &pkg_name,

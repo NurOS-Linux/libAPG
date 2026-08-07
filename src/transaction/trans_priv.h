@@ -39,6 +39,12 @@ struct trans_blocked_remove
     int dependent_count;
 };
 
+struct provider_pref
+{
+    char *alias;
+    char *pkg_name;
+};
+
 struct apg_trans
 {
     struct db_handle *db;
@@ -78,6 +84,10 @@ struct apg_trans
     struct trans_held_pkg *held_pkgs;
     size_t held_count;
     size_t held_cap;
+
+    struct provider_pref *provider_prefs;
+    size_t provider_pref_count;
+    size_t provider_pref_cap;
 
     bool prepared;
     bool committed;
