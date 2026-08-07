@@ -47,8 +47,9 @@ dot_append(struct dot_buf *buf, const char *s)
 static bool
 dot_appendf(struct dot_buf *buf, const char *fmt, ...)
 {
-    va_list args, args_copy;
+    va_list args;
     va_start(args, fmt);
+    va_list args_copy;
     va_copy(args_copy, args);
     int needed = vsnprintf(NULL, 0, fmt, args_copy);
     va_end(args_copy);
