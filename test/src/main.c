@@ -18,6 +18,7 @@ main(void)
     test_resolve_via_alias();
     test_multiple_providers_prefers_installed();
     test_multiple_providers_falls_back_to_first_when_none_installed();
+    test_export_dot();
     test_replaces_resolution();
     test_version_constraint_satisfied();
     test_version_constraint_unsatisfied();
@@ -61,6 +62,6 @@ main(void)
     test_trans_default_prefers_installed_provider();
     test_trans_upgrade_in_place_keeps_installed_preference();
 
-    printf("All 48 tests passed.\n");
+    printf("All 49 tests passed.\n");
     return 0;
 }

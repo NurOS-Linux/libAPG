@@ -506,3 +506,39 @@ test_parallel_resolve(void)
 
     printf("test_parallel_resolve: PASS\n");
 }
+
+void
+test_export_dot(void)
+{
+    struct package_metadata *nginx =
+        make_pkg("nginx", NODEPS, NOCONFLICTS, (const char *[]){"webserver"}, 1,
+                 NOREPLACES);
+    struct package_metadata *apache =
+        make_pkg("apache", NODEPS, NOCONFLICTS, (const char *[]){"webserver"},
+                 1, NOREPLACES);
+    struct package_metadata *app =
+        make_pkg("app", (const char *[]){"webserver"}, 1, NOCONFLICTS,
+                 NOPROVIDES, NOREPLACES);
+
+    struct dep_graph *g = dep_graph_new();
+    assert(dep_graph_add(g, apache) == DEP_OK);
+    assert(dep_graph_add(g, app) == DEP_OK);
+    assert(dep_graph_add_installed(g, nginx) == DEP_OK);
+
+    char *dot = dep_graph_export_dot(g);
+    assert(dot);
+    assert(strstr(dot, "digraph libapg_deps"));
+    assert(strstr(dot, "\"nginx\" [style=filled, fillcolor=\"lightgreen\"]"));
+    assert(strstr(dot, "\"apache\" [style=filled, fillcolor=\"white\"]"));
+    assert(strstr(dot, "\"app\" -> \"nginx\""));
+    assert(strstr(dot, "\"webserver\" [shape=diamond, style=dashed]"));
+    assert(strstr(dot, "\"webserver\" -> \"nginx\" [style=bold]"));
+    assert(strstr(dot, "\"webserver\" -> \"apache\" [style=dashed]"));
+
+    free(dot);
+    dep_graph_free(g);
+    package_metadata_free(nginx);
+    package_metadata_free(apache);
+    package_metadata_free(app);
+    printf("test_export_dot: PASS\n");
+}

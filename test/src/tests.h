@@ -14,6 +14,7 @@ void test_provides_resolution(void);
 void test_resolve_via_alias(void);
 void test_multiple_providers_prefers_installed(void);
 void test_multiple_providers_falls_back_to_first_when_none_installed(void);
+void test_export_dot(void);
 void test_replaces_resolution(void);
 void test_version_constraint_satisfied(void);
 void test_version_constraint_unsatisfied(void);

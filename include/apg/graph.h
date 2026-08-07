@@ -149,6 +149,22 @@ extern "C"
         struct dep_graph *g, const char *pkg_name, const char **installed,
         size_t installed_count, char ***breaks, size_t *break_count);
 
+    /**
+     * @brief Export the graph to Graphviz DOT format.
+     *
+     * Every package is a node (installed ones filled green), every
+     * dependency is an edge to whatever dep_graph_lookup() currently
+     * resolves it to (labeled with the version constraint, if any; drawn
+     * red and dashed if unresolved), and every virtual/provides name is a
+     * diamond node with an edge to each of its providers — bold for the
+     * one dep_graph_lookup() would pick, dashed for the rest.
+     *
+     * @param g Graph to export.
+     * @return Heap-allocated DOT source; caller must free(). NULL on
+     *         allocation failure.
+     */
+    APG_API char *dep_graph_export_dot(const struct dep_graph *g);
+
 #ifdef __cplusplus
 }
 #endif

@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include "detail.hpp"
 #include "error.hpp"
 #include "package.hpp"
 
@@ -86,6 +87,11 @@ public:
         breaks = borrowed_to_vector(raw_breaks, break_count);
         std::free(raw_breaks);
         return err;
+    }
+
+    std::string export_dot() const
+    {
+        return detail::take_c_string(::dep_graph_export_dot(g_.get()));
     }
 
 private:
