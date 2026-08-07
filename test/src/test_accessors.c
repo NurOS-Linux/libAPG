@@ -250,3 +250,36 @@ test_trans_default_prefers_installed_provider(void)
     close_tmp_db(db, db_path);
     printf("test_trans_default_prefers_installed_provider: PASS\n");
 }
+
+void
+test_trans_upgrade_in_place_keeps_installed_preference(void)
+{
+    char db_path[PATH_MAX];
+    struct db_handle *db = open_tmp_db(db_path);
+    assert(db);
+
+    struct package *nginx_installed = provider_pkg("nginx", "1.0", "webserver");
+    assert(db_add(db, nginx_installed));
+
+    struct package *apache = provider_pkg("apache", "1.0", "webserver");
+    struct package *nginx_upgrade = provider_pkg("nginx", "2.0", "webserver");
+    struct package *app = simple_pkg("app");
+    app->meta->dependencies.count = 1;
+    app->meta->dependencies.items = malloc(sizeof(struct dep_constraint));
+    app->meta->dependencies.items[0] = dep_constraint_parse("webserver >= 1.5");
+
+    struct apg_trans *trans = trans_new(db);
+    assert(trans_add_install(trans, apache) == TRANS_OK);
+    assert(trans_add_upgrade(trans, nginx_upgrade) == TRANS_OK);
+    assert(trans_add_install(trans, app) == TRANS_OK);
+
+    assert(trans_prepare(trans) == TRANS_OK);
+
+    trans_free(trans);
+    package_free(apache);
+    package_free(nginx_upgrade);
+    package_free(app);
+    package_free(nginx_installed);
+    close_tmp_db(db, db_path);
+    printf("test_trans_upgrade_in_place_keeps_installed_preference: PASS\n");
+}

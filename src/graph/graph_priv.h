@@ -42,7 +42,6 @@ struct dep_graph
     size_t pref_cap;
 };
 
-
 size_t dep_graph_find(const struct dep_graph *g, const char *name);
 
 size_t dep_graph_lookup(const struct dep_graph *g, const char *name);

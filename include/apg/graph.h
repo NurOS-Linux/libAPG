@@ -54,7 +54,9 @@ extern "C"
     /**
      * @brief Add a package to the available pool.
      *
-     * Duplicate names are silently ignored; the existing entry is kept.
+     * Duplicate names keep the metadata of whichever call added the name
+     * first (so an upgrade's new version, added before the installed
+     * pool is scanned, is what dependents check against).
      *
      * @param g   Graph to modify.
      * @param pkg Package metadata to add. The graph borrows the pointer.
@@ -68,6 +70,9 @@ extern "C"
      *
      * If two packages provide the same virtual name, lookups prefer the
      * installed one; with no installed provider, the first one added wins.
+     * If @p pkg's name was already added (e.g. its upgrade target), this
+     * only marks the existing node installed — an in-place upgrade still
+     * counts as installed for that purpose.
      *
      * @param g   Graph to modify.
      * @param pkg Package metadata to add. The graph borrows the pointer.

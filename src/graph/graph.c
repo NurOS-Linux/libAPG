@@ -166,8 +166,14 @@ add_node(struct dep_graph *g, const struct package_metadata *pkg,
 {
     if (!g || !pkg || !pkg->name)
         return DEP_ERR_NOMEM;
-    if (dep_graph_find(g, pkg->name) != SIZE_MAX)
+
+    size_t existing_idx = dep_graph_find(g, pkg->name);
+    if (existing_idx != SIZE_MAX)
+    {
+        if (installed)
+            g->nodes[existing_idx]->installed = true;
         return DEP_OK;
+    }
 
     if (g->count == g->cap)
     {

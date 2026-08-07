@@ -55,3 +55,4 @@ void test_db_verify_issue_accessors(void);
 void test_journal_entry_accessors(void);
 void test_trans_prefer_provider_overrides_installed_default(void);
 void test_trans_default_prefers_installed_provider(void);
+void test_trans_upgrade_in_place_keeps_installed_preference(void);

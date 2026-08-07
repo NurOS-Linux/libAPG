@@ -59,7 +59,8 @@ main(void)
     test_journal_entry_accessors();
     test_trans_prefer_provider_overrides_installed_default();
     test_trans_default_prefers_installed_provider();
+    test_trans_upgrade_in_place_keeps_installed_preference();
 
-    printf("All 47 tests passed.\n");
+    printf("All 48 tests passed.\n");
     return 0;
 }
