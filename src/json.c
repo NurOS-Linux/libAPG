@@ -181,6 +181,10 @@ package_from_json(const char *json, size_t len)
     if (yyjson_is_bool(held))
         pkg->held = yyjson_get_bool(held);
 
+    yyjson_val *pp = yyjson_obj_get(root, "pkg_path");
+    if (yyjson_is_str(pp) && *yyjson_get_str(pp))
+        pkg->pkg_path = strdup(yyjson_get_str(pp));
+
     yyjson_doc_free(doc);
     return pkg;
 }
@@ -240,6 +244,8 @@ package_to_json(struct package *pkg)
     yyjson_mut_obj_add_bool(doc, root, "installed_by_hand",
                             pkg->installed_by_hand);
     yyjson_mut_obj_add_bool(doc, root, "held", pkg->held);
+    yyjson_mut_obj_add_str(doc, root, "pkg_path",
+                           pkg->pkg_path ? pkg->pkg_path : "");
 
     add_str_array(doc, root, "tags", &m->tags);
     add_dep_array(doc, root, "dependencies", &m->dependencies);

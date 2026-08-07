@@ -264,6 +264,7 @@ test_db_add_get_remove_roundtrip(void)
     pkg->meta->version = strdup("2.1.0");
     pkg->meta->description = strdup("A demo package for install tests");
     pkg->installed_by_hand = true;
+    pkg->pkg_path = strdup("/var/cache/apg/demo-pkg-2.1.0.apg");
 
     assert(db_add(db, pkg));
 
@@ -272,6 +273,8 @@ test_db_add_get_remove_roundtrip(void)
     assert(strcmp(fetched->meta->name, "demo-pkg") == 0);
     assert(strcmp(fetched->meta->version, "2.1.0") == 0);
     assert(fetched->installed_by_hand);
+    assert(fetched->pkg_path);
+    assert(strcmp(fetched->pkg_path, "/var/cache/apg/demo-pkg-2.1.0.apg") == 0);
     package_free(fetched);
 
     assert(db_remove(db, "demo-pkg"));
