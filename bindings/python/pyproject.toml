@@ -1,0 +1,20 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "libapg"
+version = "2.0.0"
+description = "Python bindings for libapg, the NurOS package management library"
+license = "GPL-3.0-only"
+requires-python = ">=3.8"
+authors = [{ name = "AnmiTaliDev", email = "anmitalidev@nuros.org" }]
+
+[project.urls]
+Repository = "https://git.nuros.org/core/libapg"
+
+[tool.hatch.build.targets.wheel]
+packages = ["apg"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

@@ -91,6 +91,14 @@ compile_commands.json
 # Meson private directory
 .mesonpy-*
 
+# python
+# @detect: bindings/python
+__pycache__/
+*.pyc
+*.egg-info/
+.pytest_cache/
+.venv/
+
 # nix
 # @detect: *.nix flake.nix default.nix
 # Nix build outputs

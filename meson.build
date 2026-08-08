@@ -169,3 +169,4 @@ endif
 subdir('test')
 subdir('fuzz')
 subdir('bindings/cpp')
+subdir('bindings/python')

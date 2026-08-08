@@ -33,3 +33,9 @@ option('cxx_bindings',
   value: 'disabled',
   description: 'Install the header-only apg++ C++ bindings under bindings/cpp/ (requires a C++17 compiler)',
 )
+
+option('python_bindings',
+  type: 'feature',
+  value: 'disabled',
+  description: 'Run the ctypes-based Python bindings test suite under bindings/python/ (requires python3 and pytest)',
+)
