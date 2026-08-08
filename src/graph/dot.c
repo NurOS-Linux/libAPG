@@ -179,23 +179,13 @@ emit_dependency_edges(struct dot_buf *buf, const struct dep_graph *g)
 }
 
 static bool
-alias_already_emitted(const struct dep_graph *g, size_t upto, const char *alias)
-{
-    for (size_t k = 0; k < upto; k++)
-        if (strcmp(g->aliases[k].alias, alias) == 0)
-            return true;
-    return false;
-}
-
-static bool
 emit_providers(struct dot_buf *buf, const struct dep_graph *g)
 {
-    for (size_t i = 0; i < g->alias_count; i++)
+    for (size_t i = 0; i < g->alias_group_count; i++)
     {
-        if (alias_already_emitted(g, i, g->aliases[i].alias))
-            continue;
+        const struct alias_group *group = &g->alias_groups[i];
 
-        char *alias = dot_escape(g->aliases[i].alias);
+        char *alias = dot_escape(group->alias);
         if (!alias)
             return false;
         if (!dot_appendf(buf, "    \"%s\" [shape=diamond, style=dashed];\n",
@@ -205,13 +195,10 @@ emit_providers(struct dot_buf *buf, const struct dep_graph *g)
             return false;
         }
 
-        size_t resolved = dep_graph_lookup(g, g->aliases[i].alias);
-        for (size_t k = i; k < g->alias_count; k++)
+        size_t resolved = dep_graph_lookup(g, group->alias);
+        for (size_t k = 0; k < group->provider_count; k++)
         {
-            if (strcmp(g->aliases[k].alias, g->aliases[i].alias) != 0)
-                continue;
-
-            size_t node_idx = g->aliases[k].node_idx;
+            size_t node_idx = group->providers[k];
             char *provider = dot_escape(g->nodes[node_idx]->name);
             bool ok =
                 provider &&

@@ -6,6 +6,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+#include "hashmap_priv.h"
 #include "../../include/apg/graph.h"
 
 #define GRAPH_INITIAL_CAP 16
@@ -17,10 +18,12 @@ struct dep_node
     bool installed;
 };
 
-struct alias_entry
+struct alias_group
 {
-    char *alias; // owned copy (from provides/replaces)
-    size_t node_idx;
+    char *alias;       // owned copy (from provides/replaces)
+    size_t *providers; // owned array of node indices
+    size_t provider_count;
+    size_t provider_cap;
 };
 
 struct dep_provider_pref
@@ -34,9 +37,13 @@ struct dep_graph
     struct dep_node **nodes;
     size_t count;
     size_t cap;
-    struct alias_entry *aliases;
-    size_t alias_count;
-    size_t alias_cap;
+    struct str_map node_map; // name -> index into nodes
+
+    struct alias_group *alias_groups;
+    size_t alias_group_count;
+    size_t alias_group_cap;
+    struct str_map alias_map; // alias -> index into alias_groups
+
     struct dep_provider_pref *prefs;
     size_t pref_count;
     size_t pref_cap;

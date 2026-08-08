@@ -15,19 +15,20 @@ dep_graph_new(void)
 
     g->nodes = malloc(GRAPH_INITIAL_CAP * sizeof(*g->nodes));
     if (!g->nodes)
-        goto fail_nodes;
+        goto fail;
     g->cap = GRAPH_INITIAL_CAP;
 
-    g->aliases = malloc(GRAPH_INITIAL_CAP * sizeof(*g->aliases));
-    if (!g->aliases)
-        goto fail_aliases;
-    g->alias_cap = GRAPH_INITIAL_CAP;
+    if (!str_map_init(&g->node_map))
+        goto fail;
+    if (!str_map_init(&g->alias_map))
+        goto fail;
 
     return g;
 
-fail_aliases:
+fail:
     free(g->nodes);
-fail_nodes:
+    str_map_free(&g->node_map);
+    str_map_free(&g->alias_map);
     free(g);
     return NULL;
 }
@@ -37,30 +38,39 @@ dep_graph_free(struct dep_graph *g)
 {
     if (!g)
         return;
+
     for (size_t i = 0; i < g->count; i++)
     {
         free(g->nodes[i]->name);
         free(g->nodes[i]);
     }
     free(g->nodes);
-    for (size_t i = 0; i < g->alias_count; i++)
-        free(g->aliases[i].alias);
-    free(g->aliases);
+    str_map_free(&g->node_map);
+
+    for (size_t i = 0; i < g->alias_group_count; i++)
+    {
+        free(g->alias_groups[i].alias);
+        free(g->alias_groups[i].providers);
+    }
+    free(g->alias_groups);
+    str_map_free(&g->alias_map);
+
     for (size_t i = 0; i < g->pref_count; i++)
     {
         free(g->prefs[i].alias);
         free(g->prefs[i].pkg_name);
     }
     free(g->prefs);
+
     free(g);
 }
 
 size_t
 dep_graph_find(const struct dep_graph *g, const char *name)
 {
-    for (size_t i = 0; i < g->count; i++)
-        if (strcmp(g->nodes[i]->name, name) == 0)
-            return i;
+    size_t idx;
+    if (str_map_get(&g->node_map, name, &idx))
+        return idx;
     return SIZE_MAX;
 }
 
@@ -81,12 +91,15 @@ dep_graph_lookup(const struct dep_graph *g, const char *name)
         break;
     }
 
+    size_t group_idx;
+    if (!str_map_get(&g->alias_map, name, &group_idx))
+        return SIZE_MAX;
+
+    const struct alias_group *group = &g->alias_groups[group_idx];
     size_t first_match = SIZE_MAX;
-    for (size_t i = 0; i < g->alias_count; i++)
+    for (size_t i = 0; i < group->provider_count; i++)
     {
-        if (strcmp(g->aliases[i].alias, name) != 0)
-            continue;
-        size_t node_idx = g->aliases[i].node_idx;
+        size_t node_idx = group->providers[i];
         if (first_match == SIZE_MAX)
             first_match = node_idx;
         if (g->nodes[node_idx]->installed)
@@ -98,22 +111,49 @@ dep_graph_lookup(const struct dep_graph *g, const char *name)
 static dep_error_t
 add_alias(struct dep_graph *g, const char *alias, size_t node_idx)
 {
-    if (g->alias_count == g->alias_cap)
+    size_t group_idx;
+    if (!str_map_get(&g->alias_map, alias, &group_idx))
     {
-        size_t new_cap =
-            g->alias_cap == 0 ? GRAPH_INITIAL_CAP : g->alias_cap * 2;
-        struct alias_entry *tmp = realloc(g->aliases, new_cap * sizeof(*tmp));
+        if (g->alias_group_count == g->alias_group_cap)
+        {
+            size_t new_cap = g->alias_group_cap == 0 ? GRAPH_INITIAL_CAP
+                                                     : g->alias_group_cap * 2;
+            struct alias_group *tmp =
+                realloc(g->alias_groups, new_cap * sizeof(*tmp));
+            if (!tmp)
+                return DEP_ERR_NOMEM;
+            g->alias_groups = tmp;
+            g->alias_group_cap = new_cap;
+        }
+
+        char *dup = strdup(alias);
+        if (!dup)
+            return DEP_ERR_NOMEM;
+
+        group_idx = g->alias_group_count;
+        g->alias_groups[group_idx] = (struct alias_group){0};
+        g->alias_groups[group_idx].alias = dup;
+        g->alias_group_count++;
+
+        if (!str_map_set(&g->alias_map, alias, group_idx))
+        {
+            free(g->alias_groups[group_idx].alias);
+            g->alias_group_count--;
+            return DEP_ERR_NOMEM;
+        }
+    }
+
+    struct alias_group *group = &g->alias_groups[group_idx];
+    if (group->provider_count == group->provider_cap)
+    {
+        size_t new_cap = group->provider_cap == 0 ? 2 : group->provider_cap * 2;
+        size_t *tmp = realloc(group->providers, new_cap * sizeof(*tmp));
         if (!tmp)
             return DEP_ERR_NOMEM;
-        g->aliases = tmp;
-        g->alias_cap = new_cap;
+        group->providers = tmp;
+        group->provider_cap = new_cap;
     }
-    char *dup = strdup(alias);
-    if (!dup)
-        return DEP_ERR_NOMEM;
-    g->aliases[g->alias_count].alias = dup;
-    g->aliases[g->alias_count].node_idx = node_idx;
-    g->alias_count++;
+    group->providers[group->provider_count++] = node_idx;
     return DEP_OK;
 }
 
@@ -200,6 +240,14 @@ add_node(struct dep_graph *g, const struct package_metadata *pkg,
     size_t idx = g->count;
     g->nodes[idx] = node;
     g->count++;
+
+    if (!str_map_set(&g->node_map, node->name, idx))
+    {
+        g->count--;
+        free(node->name);
+        free(node);
+        return DEP_ERR_NOMEM;
+    }
 
     for (int i = 0; i < pkg->provides.count; i++)
     {
