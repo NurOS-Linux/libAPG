@@ -16,6 +16,15 @@ struct db_verify_issue
     int missing_count;
 };
 
+struct str_vec
+{
+    char **items;
+    int count;
+    int cap;
+};
+
+bool str_vec_push(struct str_vec *v, const char *str);
+
 struct db_handle
 {
     MDB_env *env;

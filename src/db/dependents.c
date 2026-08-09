@@ -7,6 +7,7 @@
 #include "../../include/apg/db.h"
 #include "../../include/apg/package.h"
 #include "../../include/apg/version.h"
+#include "db_priv.h"
 
 static bool
 names_match(const char *needle, const char *pkg_name,
@@ -40,10 +41,7 @@ db_get_dependents(struct db_handle *db, const char *pkg_name, int *count)
         return NULL;
     }
 
-    int cap = 8;
-    char **result = malloc(cap * sizeof(char *));
-    if (!result)
-        goto out;
+    struct str_vec result = {0};
 
     for (int i = 0; i < all_count; i++)
     {
@@ -61,24 +59,14 @@ db_get_dependents(struct db_handle *db, const char *pkg_name, int *count)
         if (!found)
             continue;
 
-        if (*count == cap)
-        {
-            cap *= 2;
-            char **tmp = realloc(result, cap * sizeof(char *));
-            if (!tmp)
-                break;
-            result = tmp;
-        }
-        char *name = strdup(p->meta->name);
-        if (!name)
+        if (!str_vec_push(&result, p->meta->name))
             break;
-        result[(*count)++] = name;
     }
 
-out:
     for (int i = 0; i < all_count; i++)
         package_free(all[i]);
     free(all);
     package_free(target);
-    return result;
+    *count = result.count;
+    return result.items;
 }

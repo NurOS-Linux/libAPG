@@ -7,6 +7,7 @@
 #include "../../include/apg/db.h"
 #include "../../include/apg/package.h"
 #include "../hashmap_priv.h"
+#include "db_priv.h"
 
 static bool
 build_needed_set(struct str_map *needed, struct package **all, int all_count)
@@ -61,10 +62,7 @@ db_get_orphans(struct db_handle *db, int *count)
         return NULL;
     }
 
-    int cap = 8;
-    char **result = malloc(cap * sizeof(char *));
-    if (!result)
-        goto out;
+    struct str_vec result = {0};
 
     for (int i = 0; i < all_count; i++)
     {
@@ -76,24 +74,14 @@ db_get_orphans(struct db_handle *db, int *count)
         if (is_needed(p, &needed))
             continue;
 
-        if (*count == cap)
-        {
-            cap *= 2;
-            char **tmp = realloc(result, cap * sizeof(char *));
-            if (!tmp)
-                break;
-            result = tmp;
-        }
-        char *name = strdup(p->meta->name);
-        if (!name)
+        if (!str_vec_push(&result, p->meta->name))
             break;
-        result[(*count)++] = name;
     }
 
-out:
     str_map_free(&needed);
     for (int i = 0; i < all_count; i++)
         package_free(all[i]);
     free(all);
-    return result;
+    *count = result.count;
+    return result.items;
 }
