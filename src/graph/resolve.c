@@ -194,27 +194,41 @@ dep_graph_resolve_parallel(const struct dep_graph *g, const char **pkg_names,
         return DEP_ERR_NOMEM;
     }
 
+    struct str_map seen = {0};
+    if (!str_map_init(&seen))
+    {
+        for (size_t i = 0; i < count; i++)
+            free(tasks[i].order);
+        free(tasks);
+        free(merged);
+        return DEP_ERR_NOMEM;
+    }
+
     size_t merged_count = 0;
     for (size_t i = 0; i < count; i++)
     {
         for (size_t j = 0; j < tasks[i].order_count; j++)
         {
             const char *name = tasks[i].order[j];
-            bool exists = false;
-            for (size_t k = 0; k < merged_count; k++)
+            size_t unused;
+            if (!str_map_get(&seen, name, &unused))
             {
-                if (strcmp(merged[k], name) == 0)
+                if (!str_map_set(&seen, name, 1))
                 {
-                    exists = true;
-                    break;
+                    str_map_free(&seen);
+                    for (size_t k = i; k < count; k++)
+                        free(tasks[k].order);
+                    free(tasks);
+                    free(merged);
+                    return DEP_ERR_NOMEM;
                 }
-            }
-            if (!exists)
                 merged[merged_count++] = (char *)name;
+            }
         }
         free(tasks[i].order);
     }
 
+    str_map_free(&seen);
     free(tasks);
     *order = merged;
     *order_count = merged_count;
