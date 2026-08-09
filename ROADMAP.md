@@ -9,6 +9,40 @@
 - [x] pkg-config and CMake find module
 - [x] Drop the gpgme (OpenPGP) signing backend entirely; libsodium (Ed25519) becomes the only one
 
+## v2.2.0 — SAT-based dependency solver
+
+Additive only: existing `dep_graph_resolve()` / `dep_graph_resolve_parallel()`
+keep their current behavior and ABI. This ships as a new, separate resolve
+entry point; it does not touch `.apg`, `struct package`, or
+`struct package_metadata`.
+
+- [ ] `dep_graph` today maps one name to exactly one node (`node_map`,
+      `alias_map`); it cannot represent multiple candidate versions/providers
+      for the same name. Needs a parallel candidate-set representation
+      usable by the solver without disturbing the existing single-candidate
+      graph used by the current resolvers.
+- [ ] Constraint model: turn each package's `dependencies` (name + version
+      op) and `conflicts` into SAT clauses over candidate selection
+      variables.
+- [ ] Provider/alias handling: a `provides`/`replaces` alias can be satisfied
+      by any of several candidates — needs "at least one of" clauses instead
+      of today's single deterministic pick.
+- [ ] Solver core: pick and implement an actual SAT (or CDCL-lite/PubGrub-style
+      incremental) algorithm; decide on backtracking strategy and a search
+      budget/timeout for pathological inputs.
+- [ ] Conflict reporting: on UNSAT, produce a human-readable explanation
+      (which constraints clashed), not just an error code.
+- [ ] New public API surface (new header declarations, new exported
+      symbols) — additive, `APG_API`, no changes to existing signatures.
+- [ ] Threading: decide whether/how this interacts with the existing
+      `pthread`-parallel resolve path, or whether the solver stays
+      single-threaded initially.
+- [ ] Tests: unit tests for satisfiable/unsatisfiable cases, fuzzing over
+      randomly generated constraint sets, and a perf benchmark against the
+      current resolver on typical (non-pathological) dependency sets.
+- [ ] Docs: doxygen for the new public functions, ROADMAP/CHANGELOG update
+      on ship.
+
 ## Maybe in the future
 
 - [ ] Atomic installation: all-or-nothing semantics
