@@ -37,6 +37,7 @@ libapg_sources = files(
   'src/graph/resolve.c',
   'src/graph/conflict.c',
   'src/graph/dot.c',
+  'src/graph/candidates.c',
   'src/version/version.c',
   'src/transaction/transaction.c',
   'src/transaction/prepare.c',

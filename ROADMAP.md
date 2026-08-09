@@ -16,7 +16,7 @@ keep their current behavior and ABI. This ships as a new, separate resolve
 entry point; it does not touch `.apg`, `struct package`, or
 `struct package_metadata`.
 
-- [ ] `dep_graph` today maps one name to exactly one node (`node_map`,
+- [x] `dep_graph` today maps one name to exactly one node (`node_map`,
       `alias_map`); it cannot represent multiple candidate versions/providers
       for the same name. Needs a parallel candidate-set representation
       usable by the solver without disturbing the existing single-candidate
