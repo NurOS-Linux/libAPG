@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [Unreleased]
+## [2.1.0] - 2026-08-09
 
 ### Added
 
@@ -18,6 +18,10 @@ All notable changes to this project will be documented in this file.
 ### Changed
 
 - `dep_graph` (`src/graph/graph.c`, `src/graph/graph_priv.h`) now indexes package names and `provides`/`replaces` aliases with a hash map (`src/graph/hashmap.c`, new internal `str_map`) instead of scanning a flat array on every `dep_graph_find()`/`dep_graph_lookup()` call. `dep_graph_add()` itself calls `dep_graph_find()` once per package for deduplication, so graph construction was O(n²) before this; each dependency edge walked during `dep_graph_resolve()` also did an O(n) scan. Measured on a synthetic 8000-package chain: graph construction dropped from ~108ms to ~2ms, and resolving the full chain dropped from ~111ms to ~1ms. No public API or resolution behavior changed — verified by running the full existing test suite (multi-provider, alias, replaces, cycle, and conflict tests included) unmodified against the new implementation
+- The internal `str_map` hash map moved out of `src/graph/` into a shared `src/hashmap.c`/`src/hashmap_priv.h`, so it's no longer graph-private. Purely a file relocation, no behavior change
+- `db_get_orphans()` (`src/db/orphans.c`) rescanned every other package's full dependency list for every package (O(n² × avg_deps)). Now builds a single `str_map` set of all needed names/provides up front and does O(1) membership checks per package instead
+- `dep_graph_resolve_parallel()` (`src/graph/resolve.c`) deduplicated merged resolve orders with a linear scan of the already-merged array per item (O(n²) across the merge). Now uses a `str_map` to track seen names, making the merge O(n)
+- `db_get_orphans()` and `db_get_dependents()` (`src/db/orphans.c`, `src/db/dependents.c`) shared an identical hand-rolled growable `char **` (doubling `realloc`, `strdup`, append) — extracted into a single `str_vec_push()` helper (`src/db/db_priv.h`, `src/db/str_vec.c`)
 
 ### Fixed
 
