@@ -6,9 +6,10 @@
 
 #include "../../include/apg/db.h"
 #include "../../include/apg/package.h"
+#include "../hashmap_priv.h"
 
 static bool
-name_in_deps(const char *name, struct package **all, int all_count)
+build_needed_set(struct str_map *needed, struct package **all, int all_count)
 {
     for (int i = 0; i < all_count; i++)
     {
@@ -16,22 +17,24 @@ name_in_deps(const char *name, struct package **all, int all_count)
             continue;
         const struct dep_constraint_list *deps = &all[i]->meta->dependencies;
         for (int j = 0; j < deps->count; j++)
-            if (deps->items[j].name && strcmp(deps->items[j].name, name) == 0)
-                return true;
+            if (deps->items[j].name &&
+                !str_map_set(needed, deps->items[j].name, 1))
+                return false;
     }
-    return false;
+    return true;
 }
 
 static bool
-is_needed(struct package *pkg, struct package **all, int all_count)
+is_needed(struct package *pkg, const struct str_map *needed)
 {
     if (!pkg->meta || !pkg->meta->name)
         return false;
-    if (name_in_deps(pkg->meta->name, all, all_count))
+    size_t unused;
+    if (str_map_get(needed, pkg->meta->name, &unused))
         return true;
     const struct str_list *prov = &pkg->meta->provides;
     for (int i = 0; i < prov->count; i++)
-        if (prov->items[i] && name_in_deps(prov->items[i], all, all_count))
+        if (prov->items[i] && str_map_get(needed, prov->items[i], &unused))
             return true;
     return false;
 }
@@ -48,6 +51,16 @@ db_get_orphans(struct db_handle *db, int *count)
     if (!all)
         return NULL;
 
+    struct str_map needed = {0};
+    if (!str_map_init(&needed) || !build_needed_set(&needed, all, all_count))
+    {
+        str_map_free(&needed);
+        for (int i = 0; i < all_count; i++)
+            package_free(all[i]);
+        free(all);
+        return NULL;
+    }
+
     int cap = 8;
     char **result = malloc(cap * sizeof(char *));
     if (!result)
@@ -60,7 +73,7 @@ db_get_orphans(struct db_handle *db, int *count)
             continue;
         if (p->installed_by_hand)
             continue;
-        if (is_needed(p, all, all_count))
+        if (is_needed(p, &needed))
             continue;
 
         if (*count == cap)
@@ -78,6 +91,7 @@ db_get_orphans(struct db_handle *db, int *count)
     }
 
 out:
+    str_map_free(&needed);
     for (int i = 0; i < all_count; i++)
         package_free(all[i]);
     free(all);
