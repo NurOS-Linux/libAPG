@@ -6,7 +6,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-#include "hashmap_priv.h"
+#include "../hashmap_priv.h"
 #include "../../include/apg/graph.h"
 
 #define GRAPH_INITIAL_CAP 16
