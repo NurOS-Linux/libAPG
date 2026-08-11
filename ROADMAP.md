@@ -49,8 +49,6 @@ entry point; it does not touch `.apg`, `struct package`, or
 - [ ] Tests: unit tests for satisfiable/unsatisfiable cases, fuzzing over
       randomly generated constraint sets, and a perf benchmark against the
       current resolver on typical (non-pathological) dependency sets.
-- [ ] Docs: doxygen for the new public functions, ROADMAP/CHANGELOG update
-      on ship.
 
 ## Maybe in the future
 
