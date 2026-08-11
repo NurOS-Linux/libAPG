@@ -51,6 +51,7 @@ dot_appendf(struct dot_buf *buf, const char *fmt, ...)
     va_start(args, fmt);
     va_list args_copy;
     va_copy(args_copy, args);
+    // NOLINTNEXTLINE(clang-analyzer-valist.Uninitialized)
     int needed = vsnprintf(NULL, 0, fmt, args_copy);
     va_end(args_copy);
     if (needed < 0)
