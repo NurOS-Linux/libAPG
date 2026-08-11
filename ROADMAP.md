@@ -30,9 +30,15 @@ entry point; it does not touch `.apg`, `struct package`, or
       `candidate_set` model (a `provides` name and a real package name share
       the same lookup) — no separate handling needed, verified with a
       multi-provider dependency clause. `replaces` is not covered yet.
-- [ ] Solver core: pick and implement an actual SAT (or CDCL-lite/PubGrub-style
+- [x] Solver core: pick and implement an actual SAT (or CDCL-lite/PubGrub-style
       incremental) algorithm; decide on backtracking strategy and a search
-      budget/timeout for pathological inputs.
+      budget/timeout for pathological inputs. Shipped as a plain DPLL solver
+      (unit propagation + backtracking, first-unassigned-variable decision
+      order, decision-count budget) in `src/graph/sat_solve.c`. No clause
+      learning (not CDCL) — a reasonable first cut, not the final version.
+      Note: `sat_model_build()` alone doesn't force any package to be
+      installed — the caller must add a unit clause for each root package it
+      actually wants, same as the `[app forced]` case used to verify this.
 - [ ] Conflict reporting: on UNSAT, produce a human-readable explanation
       (which constraints clashed), not just an error code.
 - [ ] New public API surface (new header declarations, new exported
