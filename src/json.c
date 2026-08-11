@@ -72,7 +72,7 @@ add_dep_array(yyjson_mut_doc *doc, yyjson_mut_val *obj, const char *key,
         char *s = dep_constraint_to_str(&list->items[i]);
         if (s)
         {
-            yyjson_mut_arr_add_str(doc, arr, s);
+            yyjson_mut_arr_add_strcpy(doc, arr, s);
             free(s);
         }
     }
