@@ -21,12 +21,15 @@ entry point; it does not touch `.apg`, `struct package`, or
       for the same name. Needs a parallel candidate-set representation
       usable by the solver without disturbing the existing single-candidate
       graph used by the current resolvers.
-- [ ] Constraint model: turn each package's `dependencies` (name + version
+- [x] Constraint model: turn each package's `dependencies` (name + version
       op) and `conflicts` into SAT clauses over candidate selection
       variables.
-- [ ] Provider/alias handling: a `provides`/`replaces` alias can be satisfied
+- [x] Provider/alias handling: a `provides`/`replaces` alias can be satisfied
       by any of several candidates — needs "at least one of" clauses instead
-      of today's single deterministic pick.
+      of today's single deterministic pick. Falls out of the unified
+      `candidate_set` model (a `provides` name and a real package name share
+      the same lookup) — no separate handling needed, verified with a
+      multi-provider dependency clause. `replaces` is not covered yet.
 - [ ] Solver core: pick and implement an actual SAT (or CDCL-lite/PubGrub-style
       incremental) algorithm; decide on backtracking strategy and a search
       budget/timeout for pathological inputs.
