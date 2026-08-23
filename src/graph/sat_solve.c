@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-only
 // SPDX-FileCopyrightText: 2026 AnmiTaliDev <anmitalidev@nuros.org>
 
+#include <pthread.h>
 #include <stdarg.h>
+#include <stdatomic.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -18,6 +20,10 @@ struct sat_solve_ctx
     bool timed_out;
     bool has_conflict;
     size_t conflict_clause;
+    const atomic_bool *cancel;
+    bool aborted;
+    bool reverse_order;
+    bool prefer_false;
 };
 
 static bool
@@ -98,9 +104,32 @@ undo_to(struct sat_solve_ctx *ctx, const int *trail, size_t *trail_len,
     }
 }
 
+static size_t
+pick_var(struct sat_solve_ctx *ctx)
+{
+    if (!ctx->reverse_order)
+    {
+        for (size_t v = 1; v <= ctx->m->var_count; v++)
+            if (ctx->assign[v] == 0)
+                return v;
+        return 0;
+    }
+
+    for (size_t v = ctx->m->var_count; v >= 1; v--)
+        if (ctx->assign[v] == 0)
+            return v;
+    return 0;
+}
+
 static bool
 dpll(struct sat_solve_ctx *ctx, int *trail, size_t *trail_len)
 {
+    if (ctx->cancel && atomic_load_explicit(ctx->cancel, memory_order_relaxed))
+    {
+        ctx->aborted = true;
+        return false;
+    }
+
     size_t mark = *trail_len;
     if (!propagate(ctx, trail, trail_len))
     {
@@ -108,14 +137,7 @@ dpll(struct sat_solve_ctx *ctx, int *trail, size_t *trail_len)
         return false;
     }
 
-    size_t chosen = 0;
-    for (size_t v = 1; v <= ctx->m->var_count; v++)
-        if (ctx->assign[v] == 0)
-        {
-            chosen = v;
-            break;
-        }
-
+    size_t chosen = pick_var(ctx);
     if (!chosen)
         return true;
 
@@ -127,15 +149,19 @@ dpll(struct sat_solve_ctx *ctx, int *trail, size_t *trail_len)
     }
     ctx->decisions++;
 
-    ctx->assign[chosen] = 1;
+    int first_val = ctx->prefer_false ? -1 : 1;
+
+    ctx->assign[chosen] = first_val;
+    // NOLINTNEXTLINE(clang-analyzer-security.ArrayBound)
     trail[(*trail_len)++] = (int)chosen;
     if (dpll(ctx, trail, trail_len))
         return true;
     undo_to(ctx, trail, trail_len, mark);
-    if (ctx->timed_out)
+    if (ctx->timed_out || ctx->aborted)
         return false;
 
-    ctx->assign[chosen] = -1;
+    ctx->assign[chosen] = -first_val;
+    // NOLINTNEXTLINE(clang-analyzer-security.ArrayBound)
     trail[(*trail_len)++] = (int)chosen;
     if (dpll(ctx, trail, trail_len))
         return true;
@@ -205,9 +231,10 @@ explain_conflict(const struct sat_model *m, size_t clause_idx)
     }
 }
 
-enum sat_result
-sat_solve(const struct sat_model *m, size_t decision_budget,
-          int **out_assignment, char **out_conflict)
+static enum sat_result
+solve_core(const struct sat_model *m, size_t decision_budget,
+           int **out_assignment, char **out_conflict, const atomic_bool *cancel,
+           bool reverse_order, bool prefer_false)
 {
     *out_assignment = NULL;
     if (out_conflict)
@@ -229,11 +256,19 @@ sat_solve(const struct sat_model *m, size_t decision_budget,
     for (size_t v = 0; v <= m->var_count; v++)
         antecedent[v] = SIZE_MAX;
 
-    struct sat_solve_ctx ctx = {m, assign, antecedent, decision_budget,
-                                0, false,  false,      0};
+    struct sat_solve_ctx ctx = {m,      assign, antecedent,    decision_budget,
+                                0,      false,  false,         0,
+                                cancel, false,  reverse_order, prefer_false};
     size_t trail_len = 0;
     bool sat = dpll(&ctx, trail, &trail_len);
     free(trail);
+
+    if (ctx.aborted)
+    {
+        free(assign);
+        free(antecedent);
+        return SAT_RESULT_ERROR;
+    }
 
     if (ctx.timed_out)
     {
@@ -254,4 +289,127 @@ sat_solve(const struct sat_model *m, size_t decision_budget,
 
     *out_assignment = assign;
     return SAT_RESULT_SATISFIABLE;
+}
+
+enum sat_result
+sat_solve(const struct sat_model *m, size_t decision_budget,
+          int **out_assignment, char **out_conflict)
+{
+    return solve_core(m, decision_budget, out_assignment, out_conflict, NULL,
+                      false, false);
+}
+
+struct sat_worker_arg
+{
+    const struct sat_model *m;
+    size_t budget;
+    bool reverse_order;
+    bool prefer_false;
+    atomic_bool *cancel;
+
+    pthread_mutex_t *result_lock;
+    bool *result_set;
+    enum sat_result *final_result;
+    int **final_assignment;
+    char **final_conflict;
+};
+
+static void *
+sat_worker_fn(void *raw_arg)
+{
+    struct sat_worker_arg *arg = raw_arg;
+    int *assignment = NULL;
+    char *conflict = NULL;
+    enum sat_result r =
+        solve_core(arg->m, arg->budget, &assignment, &conflict, arg->cancel,
+                   arg->reverse_order, arg->prefer_false);
+
+    if (r == SAT_RESULT_SATISFIABLE || r == SAT_RESULT_UNSATISFIABLE)
+    {
+        pthread_mutex_lock(arg->result_lock);
+        if (!*arg->result_set)
+        {
+            *arg->result_set = true;
+            *arg->final_result = r;
+            *arg->final_assignment = assignment;
+            *arg->final_conflict = conflict;
+            assignment = NULL;
+            conflict = NULL;
+            atomic_store_explicit(arg->cancel, true, memory_order_relaxed);
+        }
+        pthread_mutex_unlock(arg->result_lock);
+    }
+
+    free(assignment);
+    free(conflict);
+    return NULL;
+}
+
+enum sat_result
+sat_solve_parallel(const struct sat_model *m, size_t decision_budget,
+                   int thread_count, int **out_assignment, char **out_conflict)
+{
+    if (thread_count <= 1)
+        return sat_solve(m, decision_budget, out_assignment, out_conflict);
+
+    *out_assignment = NULL;
+    if (out_conflict)
+        *out_conflict = NULL;
+
+    pthread_t *threads = malloc((size_t)thread_count * sizeof(*threads));
+    struct sat_worker_arg *args = malloc((size_t)thread_count * sizeof(*args));
+    bool *started = calloc((size_t)thread_count, sizeof(*started));
+    if (!threads || !args || !started)
+    {
+        free(threads);
+        free(args);
+        free(started);
+        return sat_solve(m, decision_budget, out_assignment, out_conflict);
+    }
+
+    atomic_bool cancel = false;
+    pthread_mutex_t result_lock;
+    pthread_mutex_init(&result_lock, NULL);
+    bool result_set = false;
+    enum sat_result final_result = SAT_RESULT_ERROR;
+    int *final_assignment = NULL;
+    char *final_conflict = NULL;
+
+    for (int i = 0; i < thread_count; i++)
+    {
+        args[i].m = m;
+        args[i].budget = decision_budget;
+        args[i].reverse_order = (i & 1) != 0;
+        args[i].prefer_false = (i & 2) != 0;
+        args[i].cancel = &cancel;
+        args[i].result_lock = &result_lock;
+        args[i].result_set = &result_set;
+        args[i].final_result = &final_result;
+        args[i].final_assignment = &final_assignment;
+        args[i].final_conflict = &final_conflict;
+
+        if (pthread_create(&threads[i], NULL, sat_worker_fn, &args[i]) == 0)
+            started[i] = true;
+        else
+            sat_worker_fn(&args[i]);
+    }
+
+    for (int i = 0; i < thread_count; i++)
+        if (started[i])
+            pthread_join(threads[i], NULL);
+
+    free(started);
+    free(threads);
+    free(args);
+    pthread_mutex_destroy(&result_lock);
+
+    if (!result_set)
+        return SAT_RESULT_BUDGET_EXCEEDED;
+
+    *out_assignment = final_assignment;
+    if (out_conflict)
+        *out_conflict = final_conflict;
+    else
+        free(final_conflict);
+    return final_result;
 }

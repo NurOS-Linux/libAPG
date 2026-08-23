@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 // SPDX-FileCopyrightText: 2026 AnmiTaliDev <anmitalidev@nuros.org>
 
+#include <assert.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -134,6 +135,19 @@ LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
                     if (res == SAT_RESULT_SATISFIABLE)
                         free(assignment);
                     free(conflict);
+
+                    int *assignment2 = NULL;
+                    char *conflict2 = NULL;
+                    enum sat_result res2 = sat_solve_parallel(
+                        &model, 500, 3, &assignment2, &conflict2);
+                    if ((res == SAT_RESULT_SATISFIABLE ||
+                         res == SAT_RESULT_UNSATISFIABLE) &&
+                        (res2 == SAT_RESULT_SATISFIABLE ||
+                         res2 == SAT_RESULT_UNSATISFIABLE))
+                        assert(res == res2);
+                    if (res2 == SAT_RESULT_SATISFIABLE)
+                        free(assignment2);
+                    free(conflict2);
                 }
                 sat_model_free(&model);
             }

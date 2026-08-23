@@ -11,6 +11,8 @@ void test_sat_multi_provider_at_least_one(void);
 void test_sat_conflict_forces_unsat_when_both_pinned(void);
 void test_sat_no_conflict_clause_when_not_pinned(void);
 void test_sat_budget_exceeded_on_many_free_vars(void);
+void test_sat_solve_parallel_matches_sequential(void);
+void test_sat_solve_parallel_reports_unsat(void);
 
 int
 main(void)
@@ -22,7 +24,9 @@ main(void)
     test_sat_conflict_forces_unsat_when_both_pinned();
     test_sat_no_conflict_clause_when_not_pinned();
     test_sat_budget_exceeded_on_many_free_vars();
+    test_sat_solve_parallel_matches_sequential();
+    test_sat_solve_parallel_reports_unsat();
 
-    printf("All 7 SAT tests passed.\n");
+    printf("All 9 SAT tests passed.\n");
     return 0;
 }

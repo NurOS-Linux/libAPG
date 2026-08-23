@@ -43,6 +43,14 @@ entry point; it does not touch `.apg`, `struct package`, or
       string on UNSAT (`src/graph/sat_solve.c`), not just an error code.
 - [ ] New public API surface (new header declarations, new exported
       symbols) — additive, `APG_API`, no changes to existing signatures.
+- [x] Threading: `sat_solve_parallel()` (`src/graph/sat_solve.c`) runs a
+      portfolio of DPLL searches over the same `sat_model` (varied
+      decision order/polarity per thread), first definitive result wins,
+      others cancelled via an atomic flag checked in `dpll()`. Sharding by
+      root name (like `dep_graph_resolve_parallel()`) was rejected: it
+      would hide cross-root conflicts, the whole reason for using SAT.
+      Race-checked with ThreadSanitizer, cross-checked against
+      `sat_solve()` via fuzzing.
 
 - [x] Tests: unit tests (`test/src/test_sat.c`, `sat-test`)
 - [x] Fuzzing (`fuzz/fuzz_sat_model.c`, `fuzz-sat-model`)

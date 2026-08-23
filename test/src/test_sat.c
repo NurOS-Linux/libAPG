@@ -274,3 +274,88 @@ test_sat_budget_exceeded_on_many_free_vars(void)
         package_metadata_free(pkgs_meta[i]);
     printf("test_sat_budget_exceeded_on_many_free_vars: PASS\n");
 }
+
+void
+test_sat_solve_parallel_matches_sequential(void)
+{
+    struct package_metadata *app =
+        make_pkg("app", (const char *[]){"lib>=2.0.0"}, 1, NOCONFLICTS,
+                 NOPROVIDES, NOREPLACES);
+    struct package_metadata *lib1 =
+        make_pkg("lib", NODEPS, NOCONFLICTS, NOPROVIDES, NOREPLACES);
+    free(lib1->version);
+    lib1->version = strdup("1.0.0");
+    struct package_metadata *lib2 =
+        make_pkg("lib", NODEPS, NOCONFLICTS, NOPROVIDES, NOREPLACES);
+    free(lib2->version);
+    lib2->version = strdup("2.0.0");
+
+    struct candidate_set cs;
+    assert(candidate_set_init(&cs));
+    assert(candidate_set_add_package(&cs, app));
+    assert(candidate_set_add_package(&cs, lib1));
+    assert(candidate_set_add_package(&cs, lib2));
+
+    const struct package_metadata *pkgs[] = {app, lib1, lib2};
+
+    struct sat_model m;
+    assert(sat_model_init(&m));
+    assert(sat_model_build(&m, &cs, pkgs, 3));
+    assert(sat_model_force(&m, app));
+
+    int app_var = sat_model_var(&m, app);
+    int lib2_var = sat_model_var(&m, lib2);
+
+    int *assignment = NULL;
+    char *conflict = NULL;
+    enum sat_result r = sat_solve_parallel(&m, 1000, 4, &assignment, &conflict);
+    assert(r == SAT_RESULT_SATISFIABLE);
+    assert(assignment != NULL);
+    assert(assignment[app_var] == 1);
+    assert(assignment[lib2_var] == 1);
+    assert(conflict == NULL);
+
+    free(assignment);
+    sat_model_free(&m);
+    candidate_set_free(&cs);
+    package_metadata_free(app);
+    package_metadata_free(lib1);
+    package_metadata_free(lib2);
+    printf("test_sat_solve_parallel_matches_sequential: PASS\n");
+}
+
+void
+test_sat_solve_parallel_reports_unsat(void)
+{
+    struct package_metadata *a =
+        make_pkg("a", NODEPS, (const char *[]){"b"}, 1, NOPROVIDES, NOREPLACES);
+    struct package_metadata *b =
+        make_pkg("b", NODEPS, NOCONFLICTS, NOPROVIDES, NOREPLACES);
+
+    struct candidate_set cs;
+    assert(candidate_set_init(&cs));
+    assert(candidate_set_add_package(&cs, a));
+    assert(candidate_set_add_package(&cs, b));
+
+    const struct package_metadata *pkgs[] = {a, b};
+
+    struct sat_model m;
+    assert(sat_model_init(&m));
+    assert(sat_model_build(&m, &cs, pkgs, 2));
+    assert(sat_model_force(&m, a));
+    assert(sat_model_force(&m, b));
+
+    int *assignment = NULL;
+    char *conflict = NULL;
+    enum sat_result r = sat_solve_parallel(&m, 1000, 4, &assignment, &conflict);
+    assert(r == SAT_RESULT_UNSATISFIABLE);
+    assert(assignment == NULL);
+    assert(conflict != NULL);
+    free(conflict);
+
+    sat_model_free(&m);
+    candidate_set_free(&cs);
+    package_metadata_free(a);
+    package_metadata_free(b);
+    printf("test_sat_solve_parallel_reports_unsat: PASS\n");
+}

@@ -16,3 +16,7 @@ enum sat_result
 
 enum sat_result sat_solve(const struct sat_model *m, size_t decision_budget,
                           int **out_assignment, char **out_conflict);
+
+enum sat_result sat_solve_parallel(const struct sat_model *m,
+                                   size_t decision_budget, int thread_count,
+                                   int **out_assignment, char **out_conflict);
