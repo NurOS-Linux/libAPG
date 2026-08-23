@@ -6,6 +6,7 @@ apg_test = executable('apg-test',
   'src/test_policy.c',
   'src/test_install.c',
   'src/test_accessors.c',
+  'src/test_sat_public.c',
   dependencies: libapg_dep,
   build_by_default: false,
 )

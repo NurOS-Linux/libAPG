@@ -40,6 +40,7 @@ libapg_sources = files(
   'src/graph/candidates.c',
   'src/graph/sat_model.c',
   'src/graph/sat_solve.c',
+  'src/graph/sat.c',
   'src/version/version.c',
   'src/transaction/transaction.c',
   'src/transaction/prepare.c',

@@ -165,6 +165,63 @@ extern "C"
      */
     APG_API char *dep_graph_export_dot(const struct dep_graph *g);
 
+    /**
+     * @brief Outcome of a dep_graph_resolve_sat() call.
+     */
+    typedef enum
+    {
+        SAT_SOLVE_SATISFIABLE,     /**< A consistent selection was found. */
+        SAT_SOLVE_UNSATISFIABLE,   /**< No consistent selection exists. */
+        SAT_SOLVE_BUDGET_EXCEEDED, /**< Search exhausted its decision budget,
+                                        without a definitive answer. */
+        SAT_SOLVE_ERROR,           /**< Allocation or internal failure. */
+    } sat_solve_result_t;
+
+    /**
+     * @brief Resolve a set of required root packages against a pool of
+     * candidates using a SAT solver.
+     *
+     * Unlike dep_graph_resolve(), which assumes exactly one candidate per
+     * package name, this considers every package in @p candidates a
+     * possible provider of its own name and its `provides` names, and
+     * searches for a selection that satisfies every root's dependencies
+     * and every selected package's conflicts simultaneously — including
+     * conflicts between two different roots, which dep_graph_resolve()
+     * cannot detect since it resolves one root at a time.
+     *
+     * Backed by a plain DPLL solver (no clause learning): correctness is
+     * not affected, but pathological inputs can exhaust @p decision_budget
+     * before finding an answer.
+     *
+     * @param candidates          Pool of packages that may be selected.
+     *                            @p roots must be a subset of this array.
+     * @param candidate_count     Number of entries in @p candidates.
+     * @param roots               Packages that must be selected.
+     * @param root_count          Number of entries in @p roots.
+     * @param decision_budget     Maximum number of solver decisions before
+     *                            giving up (@ref SAT_SOLVE_BUDGET_EXCEEDED).
+     * @param thread_count        Number of parallel search strategies to
+     *                            run; 1 disables parallelism.
+     * @param out_selected        Set to a heap-allocated array of pointers
+     *                            borrowed from @p candidates on
+     *                            @ref SAT_SOLVE_SATISFIABLE, NULL otherwise.
+     *                            Caller frees the array, not the pointed-to
+     *                            packages.
+     * @param out_selected_count  Set to the number of entries in
+     *                            @p *out_selected.
+     * @param out_conflict        If non-NULL, set to a heap-allocated
+     *                            human-readable explanation on
+     *                            @ref SAT_SOLVE_UNSATISFIABLE, NULL
+     *                            otherwise. Caller frees it.
+     * @return The solve outcome.
+     */
+    APG_API sat_solve_result_t dep_graph_resolve_sat(
+        const struct package_metadata **candidates, size_t candidate_count,
+        const struct package_metadata **roots, size_t root_count,
+        size_t decision_budget, int thread_count,
+        struct package_metadata ***out_selected, size_t *out_selected_count,
+        char **out_conflict);
+
 #ifdef __cplusplus
 }
 #endif

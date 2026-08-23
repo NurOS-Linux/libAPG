@@ -57,3 +57,6 @@ void test_journal_entry_accessors(void);
 void test_trans_prefer_provider_overrides_installed_default(void);
 void test_trans_default_prefers_installed_provider(void);
 void test_trans_upgrade_in_place_keeps_installed_preference(void);
+
+void test_sat_public_satisfiable(void);
+void test_sat_public_unsatisfiable(void);

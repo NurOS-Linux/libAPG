@@ -62,6 +62,9 @@ main(void)
     test_trans_default_prefers_installed_provider();
     test_trans_upgrade_in_place_keeps_installed_preference();
 
-    printf("All 49 tests passed.\n");
+    test_sat_public_satisfiable();
+    test_sat_public_unsatisfiable();
+
+    printf("All 51 tests passed.\n");
     return 0;
 }

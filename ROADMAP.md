@@ -41,8 +41,12 @@ entry point; it does not touch `.apg`, `struct package`, or
       actually wants, same as the `[app forced]` case used to verify this.
 - [x] Conflict reporting: `sat_solve()` returns a human-readable explanation
       string on UNSAT (`src/graph/sat_solve.c`), not just an error code.
-- [ ] New public API surface (new header declarations, new exported
-      symbols) — additive, `APG_API`, no changes to existing signatures.
+- [x] New public API surface: `dep_graph_resolve_sat()` (`include/apg/graph.h`,
+      `src/graph/sat.c`), additive, no changes to existing signatures.
+      Wraps `candidate_set`/`sat_model`/`sat_solve_parallel()` (all still
+      private) behind a package-pointer-in, package-pointer-out interface,
+      callers never see var ids or clauses. Tested from `test/apg-test`
+      using only public headers.
 - [x] Threading: `sat_solve_parallel()` (`src/graph/sat_solve.c`) runs a
       portfolio of DPLL searches over the same `sat_model` (varied
       decision order/polarity per thread), first definitive result wins,
