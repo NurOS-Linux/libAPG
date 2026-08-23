@@ -43,11 +43,11 @@ entry point; it does not touch `.apg`, `struct package`, or
       string on UNSAT (`src/graph/sat_solve.c`), not just an error code.
 - [ ] New public API surface (new header declarations, new exported
       symbols) — additive, `APG_API`, no changes to existing signatures.
-- [ ] Threading: decide whether/how this interacts with the existing
-      `pthread`-parallel resolve path, or whether the solver stays
-      single-threaded initially.
+
 - [x] Tests: unit tests (`test/src/test_sat.c`, `sat-test`)
 - [x] Fuzzing (`fuzz/fuzz_sat_model.c`, `fuzz-sat-model`)
+- [x] `sat_model_var()` was a linear scan, making `sat_model_build()` O(n²);
+      indexed by pointer hash, now O(n). 4000 pkgs: 9.04ms → 0.98ms.
 - [ ] Perf benchmark vs. current resolver: not comparable yet, different
       problems
 

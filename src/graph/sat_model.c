@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 // SPDX-FileCopyrightText: 2026 AnmiTaliDev <anmitalidev@nuros.org>
 
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -9,6 +10,51 @@
 
 #define SAT_VAR_INITIAL_CAP 16
 #define SAT_CLAUSE_INITIAL_CAP 16
+#define VAR_INDEX_INITIAL_BUCKETS 16
+
+struct ptr_index_entry
+{
+    const struct package_metadata *key;
+    int value;
+    struct ptr_index_entry *next;
+};
+
+static size_t
+ptr_hash(const void *p)
+{
+    uintptr_t v = (uintptr_t)p;
+    v ^= v >> 16;
+    v *= 0x9e3779b97f4a7c15ULL;
+    v ^= v >> 32;
+    return (size_t)v;
+}
+
+static bool
+var_index_rehash(struct sat_model *m, size_t new_bucket_count)
+{
+    struct ptr_index_entry **new_buckets =
+        calloc(new_bucket_count, sizeof(*new_buckets));
+    if (!new_buckets)
+        return false;
+
+    for (size_t i = 0; i < m->var_bucket_count; i++)
+    {
+        struct ptr_index_entry *e = m->var_buckets[i];
+        while (e)
+        {
+            struct ptr_index_entry *next = e->next;
+            size_t idx = ptr_hash(e->key) % new_bucket_count;
+            e->next = new_buckets[idx];
+            new_buckets[idx] = e;
+            e = next;
+        }
+    }
+
+    free(m->var_buckets);
+    m->var_buckets = new_buckets;
+    m->var_bucket_count = new_bucket_count;
+    return true;
+}
 
 bool
 sat_model_init(struct sat_model *m)
@@ -16,6 +62,8 @@ sat_model_init(struct sat_model *m)
     m->vars = NULL;
     m->var_count = 0;
     m->var_cap = 0;
+    m->var_buckets = NULL;
+    m->var_bucket_count = 0;
     m->clauses = NULL;
     m->clause_count = 0;
     m->clause_cap = 0;
@@ -32,6 +80,20 @@ sat_model_free(struct sat_model *m)
     m->clause_count = 0;
     m->clause_cap = 0;
 
+    for (size_t i = 0; i < m->var_bucket_count; i++)
+    {
+        struct ptr_index_entry *e = m->var_buckets[i];
+        while (e)
+        {
+            struct ptr_index_entry *next = e->next;
+            free(e);
+            e = next;
+        }
+    }
+    free(m->var_buckets);
+    m->var_buckets = NULL;
+    m->var_bucket_count = 0;
+
     free(m->vars);
     m->vars = NULL;
     m->var_count = 0;
@@ -41,9 +103,13 @@ sat_model_free(struct sat_model *m)
 int
 sat_model_var(struct sat_model *m, const struct package_metadata *pkg)
 {
-    for (size_t i = 0; i < m->var_count; i++)
-        if (m->vars[i] == pkg)
-            return (int)(i + 1);
+    if (m->var_bucket_count > 0)
+    {
+        size_t idx = ptr_hash(pkg) % m->var_bucket_count;
+        for (struct ptr_index_entry *e = m->var_buckets[idx]; e; e = e->next)
+            if (e->key == pkg)
+                return e->value;
+    }
 
     if (m->var_count == m->var_cap)
     {
@@ -56,8 +122,30 @@ sat_model_var(struct sat_model *m, const struct package_metadata *pkg)
         m->var_cap = new_cap;
     }
 
+    if (m->var_count + 1 > m->var_bucket_count - (m->var_bucket_count / 4))
+    {
+        size_t new_bucket_count = m->var_bucket_count
+                                      ? m->var_bucket_count * 2
+                                      : VAR_INDEX_INITIAL_BUCKETS;
+        if (!var_index_rehash(m, new_bucket_count))
+            return 0;
+    }
+
+    struct ptr_index_entry *entry = malloc(sizeof(*entry));
+    if (!entry)
+        return 0;
+
     m->vars[m->var_count++] = pkg;
-    return (int)m->var_count;
+    int var = (int)m->var_count;
+
+    entry->key = pkg;
+    entry->value = var;
+    // NOLINTNEXTLINE(clang-analyzer-core.DivideZero)
+    size_t idx = ptr_hash(pkg) % m->var_bucket_count;
+    entry->next = m->var_buckets[idx];
+    m->var_buckets[idx] = entry;
+
+    return var;
 }
 
 static bool

@@ -22,11 +22,16 @@ struct sat_clause
     const char *dep_name;
 };
 
+struct ptr_index_entry;
+
 struct sat_model
 {
     const struct package_metadata **vars;
     size_t var_count;
     size_t var_cap;
+
+    struct ptr_index_entry **var_buckets;
+    size_t var_bucket_count;
 
     struct sat_clause *clauses;
     size_t clause_count;
