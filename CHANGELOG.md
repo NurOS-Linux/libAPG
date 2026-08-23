@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Added
+
+- `dep_graph_resolve_sat(candidates, candidate_count, roots, root_count, decision_budget, thread_count, out_selected, out_selected_count, out_conflict)` (`include/apg/graph.h`, `src/graph/sat.c`): a second, SAT-based dependency resolver, additive alongside `dep_graph_resolve()`/`dep_graph_resolve_parallel()` (no changes to either). Unlike those, which resolve one root at a time and assume exactly one candidate per name, this considers every package in `candidates` a possible provider of its own name and its `provides` names, and searches for a selection that satisfies every root's dependencies and every selected package's conflicts jointly, so it can catch a conflict between two different roots that the one-root-at-a-time resolvers can't see. Backed internally (not exposed) by: `candidate_set` (`src/graph/candidates.c`), a name-to-multi-candidate map; `sat_model` (`src/graph/sat_model.c`), which turns `dependencies`/`conflicts` into SAT clauses over per-package selection variables; and `sat_solve()`/`sat_solve_parallel()` (`src/graph/sat_solve.c`), a plain DPLL solver (unit propagation, backtracking, decision-count budget, no clause learning) with a human-readable UNSAT explanation instead of just an error code. `sat_solve_parallel()` runs a portfolio of DPLL searches with varied decision order/polarity across threads, first definitive result wins; correctness cross-checked against `sat_solve()` by fuzzing, race-checked with ThreadSanitizer. Covered by `test/apg-test` (public API), `test/sat-test` (internals), and `fuzz/fuzz_sat_model.c`
+
+### Fixed
+
+- `package_to_json()` (`src/json.c`) could serialize a dangling pointer for any package with a non-empty `dependencies` list: `add_dep_array()` passed a temporary string from `dep_constraint_to_str()` to `yyjson_mut_arr_add_str()`, which does not copy the string, then freed it immediately. The freed memory was read back when the JSON document was serialized, producing corrupted JSON that `db_add()` still wrote to LMDB (returning success) but that `package_from_json()` could then fail to parse on read, making the package silently vanish from `db_get()`/`db_list()`. Fixed by using the copying `yyjson_mut_arr_add_strcpy()` instead
+
+### Changed
+
+- `db_get_orphans()`/`db_get_dependents()` (`src/db/orphans.c`, `src/db/dependents.c`) shared an identical hand-rolled growable `char **` (doubling `realloc`, `strdup`, append), extracted into `str_vec_push()` (`src/db/db_priv.h`, `src/db/str_vec.c`)
+- `db_get_orphans()` rescanned every other package's full dependency list for every package (O(n² × avg_deps)); now builds a `str_map` set of needed names/provides once up front, O(n × avg_deps)
+- `dep_graph_resolve_parallel()` (`src/graph/resolve.c`) deduplicated merged resolve orders with a linear scan per item (O(n²) across the merge); now uses a `str_map`, O(n)
+- `sat_model_var()` (`src/graph/sat_model.c`) was a linear scan over all known packages, making `sat_model_build()` O(n²); indexed by pointer hash instead, O(n) (measured: 4000 packages, 9.04ms → 0.98ms)
+- The internal `str_map` hash map moved out of `src/graph/` into a shared `src/hashmap.c`/`src/hashmap_priv.h`, so `src/db/orphans.c` can reuse it too. No behavior change
+
 ## [2.1.0] - 2026-08-09
 
 ### Added
