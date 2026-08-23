@@ -11,3 +11,16 @@ apg_test = executable('apg-test',
 )
 
 test('apg-test', apg_test)
+
+sat_test = executable('sat-test',
+  'src/main_sat.c',
+  'src/test_sat.c',
+  '../src/graph/candidates.c',
+  '../src/graph/sat_model.c',
+  '../src/graph/sat_solve.c',
+  '../src/hashmap.c',
+  dependencies: libapg_dep,
+  build_by_default: false,
+)
+
+test('sat-test', sat_test)

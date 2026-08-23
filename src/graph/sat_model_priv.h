@@ -30,5 +30,7 @@ void sat_model_free(struct sat_model *m);
 
 int sat_model_var(struct sat_model *m, const struct package_metadata *pkg);
 
+bool sat_model_force(struct sat_model *m, const struct package_metadata *pkg);
+
 bool sat_model_build(struct sat_model *m, const struct candidate_set *cs,
                      const struct package_metadata **pkgs, size_t pkg_count);

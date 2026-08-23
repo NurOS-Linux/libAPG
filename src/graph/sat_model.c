@@ -89,6 +89,17 @@ add_clause(struct sat_model *m, const int *lits, size_t count)
     return true;
 }
 
+bool
+sat_model_force(struct sat_model *m, const struct package_metadata *pkg)
+{
+    int var = sat_model_var(m, pkg);
+    if (!var)
+        return false;
+
+    int lits[1] = {var};
+    return add_clause(m, lits, 1);
+}
+
 static bool
 add_dependency_clauses(struct sat_model *m, const struct candidate_set *cs,
                        const struct package_metadata *pkg)
