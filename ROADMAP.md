@@ -39,8 +39,8 @@ entry point; it does not touch `.apg`, `struct package`, or
       Note: `sat_model_build()` alone doesn't force any package to be
       installed — the caller must add a unit clause for each root package it
       actually wants, same as the `[app forced]` case used to verify this.
-- [ ] Conflict reporting: on UNSAT, produce a human-readable explanation
-      (which constraints clashed), not just an error code.
+- [x] Conflict reporting: `sat_solve()` returns a human-readable explanation
+      string on UNSAT (`src/graph/sat_solve.c`), not just an error code.
 - [ ] New public API surface (new header declarations, new exported
       symbols) — additive, `APG_API`, no changes to existing signatures.
 - [ ] Threading: decide whether/how this interacts with the existing

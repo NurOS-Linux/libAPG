@@ -61,7 +61,8 @@ sat_model_var(struct sat_model *m, const struct package_metadata *pkg)
 }
 
 static bool
-add_clause(struct sat_model *m, const int *lits, size_t count)
+add_clause(struct sat_model *m, const int *lits, size_t count,
+           enum sat_clause_kind kind, const char *dep_name)
 {
     if (m->clause_count == m->clause_cap)
     {
@@ -85,6 +86,8 @@ add_clause(struct sat_model *m, const int *lits, size_t count)
 
     m->clauses[m->clause_count].lits = copy;
     m->clauses[m->clause_count].count = count;
+    m->clauses[m->clause_count].kind = kind;
+    m->clauses[m->clause_count].dep_name = dep_name;
     m->clause_count++;
     return true;
 }
@@ -97,7 +100,7 @@ sat_model_force(struct sat_model *m, const struct package_metadata *pkg)
         return false;
 
     int lits[1] = {var};
-    return add_clause(m, lits, 1);
+    return add_clause(m, lits, 1, SAT_CLAUSE_FORCED, NULL);
 }
 
 static bool
@@ -138,7 +141,8 @@ add_dependency_clauses(struct sat_model *m, const struct candidate_set *cs,
         }
 
         if (ok)
-            ok = add_clause(m, lits, lit_count);
+            ok = add_clause(m, lits, lit_count, SAT_CLAUSE_DEPENDENCY,
+                            dep->name);
         free(lits);
         if (!ok)
             return false;
@@ -174,7 +178,7 @@ add_conflict_clauses(struct sat_model *m, const struct candidate_set *cs,
                 return false;
 
             int lits[2] = {-pkg_var, -other_var};
-            if (!add_clause(m, lits, 2))
+            if (!add_clause(m, lits, 2, SAT_CLAUSE_CONFLICT, NULL))
                 return false;
         }
     }

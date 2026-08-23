@@ -18,7 +18,7 @@ test_sat_empty_model_satisfiable(void)
     assert(sat_model_init(&m));
 
     int *assignment = NULL;
-    enum sat_result r = sat_solve(&m, 100, &assignment);
+    enum sat_result r = sat_solve(&m, 100, &assignment, NULL);
     assert(r == SAT_RESULT_SATISFIABLE);
     assert(assignment == NULL);
 
@@ -58,7 +58,7 @@ test_sat_dependency_selects_satisfying_candidate(void)
     int lib2_var = sat_model_var(&m, lib2);
 
     int *assignment = NULL;
-    enum sat_result r = sat_solve(&m, 1000, &assignment);
+    enum sat_result r = sat_solve(&m, 1000, &assignment, NULL);
     assert(r == SAT_RESULT_SATISFIABLE);
     assert(assignment != NULL);
     assert(assignment[app_var] == 1);
@@ -97,9 +97,14 @@ test_sat_dependency_unsatisfiable_when_version_excludes_only_candidate(void)
     assert(sat_model_force(&m, app));
 
     int *assignment = NULL;
-    enum sat_result r = sat_solve(&m, 1000, &assignment);
+    char *conflict = NULL;
+    enum sat_result r = sat_solve(&m, 1000, &assignment, &conflict);
     assert(r == SAT_RESULT_UNSATISFIABLE);
     assert(assignment == NULL);
+    assert(conflict != NULL);
+    assert(strstr(conflict, "app") != NULL);
+    assert(strstr(conflict, "lib") != NULL);
+    free(conflict);
 
     sat_model_free(&m);
     candidate_set_free(&cs);
@@ -137,7 +142,7 @@ test_sat_multi_provider_at_least_one(void)
     assert(sat_model_force(&m, app));
 
     int *assignment = NULL;
-    enum sat_result r = sat_solve(&m, 1000, &assignment);
+    enum sat_result r = sat_solve(&m, 1000, &assignment, NULL);
     assert(r == SAT_RESULT_SATISFIABLE);
     assert(assignment[sat_model_var(&m, app)] == 1);
     bool a_selected = assignment[sat_model_var(&m, mailer_a)] == 1;
@@ -175,9 +180,14 @@ test_sat_conflict_forces_unsat_when_both_pinned(void)
     assert(sat_model_force(&m, b));
 
     int *assignment = NULL;
-    enum sat_result r = sat_solve(&m, 1000, &assignment);
+    char *conflict = NULL;
+    enum sat_result r = sat_solve(&m, 1000, &assignment, &conflict);
     assert(r == SAT_RESULT_UNSATISFIABLE);
     assert(assignment == NULL);
+    assert(conflict != NULL);
+    assert(strstr(conflict, "a") != NULL);
+    assert(strstr(conflict, "b") != NULL);
+    free(conflict);
 
     sat_model_free(&m);
     candidate_set_free(&cs);
@@ -206,7 +216,7 @@ test_sat_no_conflict_clause_when_not_pinned(void)
     assert(sat_model_build(&m, &cs, pkgs, 2));
 
     int *assignment = NULL;
-    enum sat_result r = sat_solve(&m, 1000, &assignment);
+    enum sat_result r = sat_solve(&m, 1000, &assignment, NULL);
     assert(r == SAT_RESULT_SATISFIABLE);
 
     free(assignment);
@@ -245,7 +255,7 @@ test_sat_budget_exceeded_on_many_free_vars(void)
     assert(sat_model_build(&m, &cs, pkgs, PKG_COUNT));
 
     int *assignment = NULL;
-    enum sat_result r = sat_solve(&m, 2, &assignment);
+    enum sat_result r = sat_solve(&m, 2, &assignment, NULL);
     assert(r == SAT_RESULT_BUDGET_EXCEEDED);
     assert(assignment == NULL);
 
@@ -253,7 +263,7 @@ test_sat_budget_exceeded_on_many_free_vars(void)
     assert(sat_model_init(&m));
     assert(sat_model_build(&m, &cs, pkgs, PKG_COUNT));
 
-    r = sat_solve(&m, PKG_COUNT, &assignment);
+    r = sat_solve(&m, PKG_COUNT, &assignment, NULL);
     assert(r == SAT_RESULT_SATISFIABLE);
     assert(assignment != NULL);
 

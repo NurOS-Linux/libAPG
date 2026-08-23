@@ -128,9 +128,12 @@ LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
                             sat_model_force(&model, pkgs_meta[i]);
 
                     int *assignment = NULL;
-                    enum sat_result res = sat_solve(&model, 500, &assignment);
+                    char *conflict = NULL;
+                    enum sat_result res =
+                        sat_solve(&model, 500, &assignment, &conflict);
                     if (res == SAT_RESULT_SATISFIABLE)
                         free(assignment);
+                    free(conflict);
                 }
                 sat_model_free(&model);
             }

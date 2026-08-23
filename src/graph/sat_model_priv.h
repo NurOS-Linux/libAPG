@@ -7,10 +7,19 @@
 #include <stddef.h>
 #include "candidates_priv.h"
 
+enum sat_clause_kind
+{
+    SAT_CLAUSE_DEPENDENCY,
+    SAT_CLAUSE_CONFLICT,
+    SAT_CLAUSE_FORCED,
+};
+
 struct sat_clause
 {
     int *lits;
     size_t count;
+    enum sat_clause_kind kind;
+    const char *dep_name;
 };
 
 struct sat_model
