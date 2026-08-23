@@ -46,15 +46,10 @@ entry point; it does not touch `.apg`, `struct package`, or
 - [ ] Threading: decide whether/how this interacts with the existing
       `pthread`-parallel resolve path, or whether the solver stays
       single-threaded initially.
-- [ ] Tests: unit tests for satisfiable/unsatisfiable cases (done —
-      `test/src/test_sat.c`, registered as `sat-test` in `meson test`:
-      dependency resolution, version-constrained candidates, multi-provider
-      "at least one", conflict-forced UNSAT, and decision-budget exhaustion),
-      fuzzing over randomly generated constraint sets (not started), and a
-      perf benchmark against the current resolver on typical
-      (non-pathological) dependency sets (not started — also not directly
-      comparable yet, the SAT path and `dep_graph_resolve()` solve different
-      problems).
+- [x] Tests: unit tests (`test/src/test_sat.c`, `sat-test`)
+- [x] Fuzzing (`fuzz/fuzz_sat_model.c`, `fuzz-sat-model`)
+- [ ] Perf benchmark vs. current resolver: not comparable yet, different
+      problems
 
 ## Maybe in the future
 
