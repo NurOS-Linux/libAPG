@@ -60,8 +60,10 @@ entry point; it does not touch `.apg`, `struct package`, or
 - [x] Fuzzing (`fuzz/fuzz_sat_model.c`, `fuzz-sat-model`)
 - [x] `sat_model_var()` was a linear scan, making `sat_model_build()` O(n²);
       indexed by pointer hash, now O(n). 4000 pkgs: 9.04ms → 0.98ms.
-- [ ] Perf benchmark vs. current resolver: not comparable yet, different
-      problems
+- [x] Perf benchmark vs. current resolver: won't do. The two solve
+      different problems (single deterministic candidate per name vs.
+      joint multi-candidate/multi-root search), so a general comparison
+      wouldn't be meaningful.
 
 ## Maybe in the future
 
