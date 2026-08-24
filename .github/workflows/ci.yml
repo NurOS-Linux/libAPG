@@ -37,13 +37,14 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y \
-            meson ninja-build pkg-config \
+            meson ninja-build pkg-config g++ python3-pytest \
             libarchive-dev liblmdb-dev libseccomp-dev \
             libsodium-dev
 
       - name: Build
         run: |
-          meson setup build --buildtype=debug
+          meson setup build --buildtype=debug \
+            -Dcxx_bindings=enabled -Dpython_bindings=enabled
           meson compile -C build
 
       - name: Test
@@ -62,20 +63,56 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y \
-            meson ninja-build pkg-config clang \
+            meson ninja-build pkg-config clang python3-pytest \
             libarchive-dev liblmdb-dev libseccomp-dev \
             libsodium-dev
 
       - name: Build with sanitizers
         run: |
-          CC=clang meson setup build-san \
+          CC=clang CXX=clang++ meson setup build-san \
             --buildtype=debug \
             -Db_sanitize=address,undefined \
-            -Db_lundef=false
+            -Db_lundef=false \
+            -Dcxx_bindings=enabled -Dpython_bindings=enabled
           meson compile -C build-san
 
       - name: Test
         run: meson test -C build-san --print-errorlogs
+
+  tsan:
+    name: Sanitizer (TSan)
+    runs-on: ubuntu-latest
+    env:
+      TSAN_OPTIONS: halt_on_error=1
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            meson ninja-build pkg-config clang python3-pytest \
+            libarchive-dev liblmdb-dev libseccomp-dev \
+            libsodium-dev
+
+      - name: Build with ThreadSanitizer
+        run: |
+          CC=clang CXX=clang++ meson setup build-tsan \
+            --buildtype=debug \
+            -Db_sanitize=thread \
+            -Db_lundef=false \
+            -Dcxx_bindings=enabled -Dpython_bindings=enabled
+          meson compile -C build-tsan
+
+      # apg-test excluded: it exercises run_script()'s
+      # unshare(CLONE_NEWUSER) sandboxing, which requires a single-threaded
+      # caller. TSan's runtime spawns background threads even in code that
+      # looks single-threaded, so unshare() there always fails with EINVAL
+      # under TSan, regardless of libapg's own code.
+      - name: Test
+        run: |
+          meson test -C build-tsan --print-errorlogs \
+            sat-test apgxx-bindings apgpy-bindings
 
   fuzz:
     name: Fuzzing (smoke test)
