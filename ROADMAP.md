@@ -69,8 +69,19 @@ entry point; it does not touch `.apg`, `struct package`, or
 
 No new features. Audit what's already shipped.
 
-- [ ] ASan/UBSan/TSan pass over the full test suite (`meson test`), not just
-      ad hoc scratch runs like this session's.
+- [x] ASan/UBSan/TSan pass over the full test suite (`meson test`), not just
+      ad hoc scratch runs like this session's. Found two real infra bugs
+      along the way: `scripts/checkpatch.py`'s clang-format check only
+      excluded `build/`, not `build-*/`, so it picked up stray files from
+      scratch sanitizer build dirs (fixed). `apgpy-bindings` failed under
+      ASan/TSan because ctypes dlopen()s the sanitizer-instrumented `.so`
+      into a plain `python3` process with no runtime preloaded
+      (`bindings/python/meson.build` now sets `LD_PRELOAD` when
+      `b_sanitize` is active). One TSan failure in `test_run_script_root`
+      traced to a real cause, not a libapg bug: `unshare(CLONE_NEWUSER)`
+      requires a single-threaded caller, and TSan's runtime spawns
+      background threads even in code that looks single-threaded, so
+      `EINVAL`. That code path can't be tested under TSan, full stop.
 - [ ] Extend fuzzing coverage: `candidate_set`/`sat_model` builders directly
       (not just through the fuzz harness's synthetic package generator),
       and the non-SAT paths (`db/`, `install/`, `transaction/`) that have
