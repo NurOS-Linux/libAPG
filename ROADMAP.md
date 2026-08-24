@@ -65,6 +65,26 @@ entry point; it does not touch `.apg`, `struct package`, or
       joint multi-candidate/multi-root search), so a general comparison
       wouldn't be meaningful.
 
+## v2.3.0 — Bug hunting and performance
+
+No new features. Audit what's already shipped.
+
+- [ ] ASan/UBSan/TSan pass over the full test suite (`meson test`), not just
+      ad hoc scratch runs like this session's.
+- [ ] Extend fuzzing coverage: `candidate_set`/`sat_model` builders directly
+      (not just through the fuzz harness's synthetic package generator),
+      and the non-SAT paths (`db/`, `install/`, `transaction/`) that have
+      no fuzz target yet.
+- [ ] Re-check every O(n) claim from the last few milestones against
+      realistic package counts (thousands, not the synthetic benchmarks
+      used to verify each fix in isolation).
+- [ ] Review `src/transaction/prepare.c` and `src/graph/resolve.c` (largest,
+      most nested files by loop count) for correctness, not just the perf
+      angle already covered.
+- [ ] `sat_solve()`'s plain DPLL has no clause learning; profile whether
+      real (non-synthetic) dependency sets ever get close to the decision
+      budget before deciding if CDCL is worth the complexity.
+
 ## Maybe in the future
 
 - [ ] Atomic installation: all-or-nothing semantics
