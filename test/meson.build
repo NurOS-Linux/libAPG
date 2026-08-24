@@ -20,7 +20,7 @@ sat_test = executable('sat-test',
   '../src/graph/sat_model.c',
   '../src/graph/sat_solve.c',
   '../src/hashmap.c',
-  dependencies: libapg_dep,
+  dependencies: [libapg_dep, threads_dep],
   build_by_default: false,
 )
 

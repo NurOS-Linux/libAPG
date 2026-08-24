@@ -24,7 +24,7 @@ if get_option('fuzzing').enabled()
     '../src/graph/sat_model.c',
     '../src/graph/sat_solve.c',
     '../src/hashmap.c',
-    dependencies: libapg_dep,
+    dependencies: [libapg_dep, threads_dep],
     c_args: fuzzer_c_args,
     link_args: fuzzer_link_args,
     build_by_default: false,
