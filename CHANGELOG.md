@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [Unreleased]
+## [2.2.0] - 2026-08-24
 
 ### Added
 
@@ -11,6 +11,7 @@ All notable changes to this project will be documented in this file.
 ### Fixed
 
 - `package_to_json()` (`src/json.c`) could serialize a dangling pointer for any package with a non-empty `dependencies` list: `add_dep_array()` passed a temporary string from `dep_constraint_to_str()` to `yyjson_mut_arr_add_str()`, which does not copy the string, then freed it immediately. The freed memory was read back when the JSON document was serialized, producing corrupted JSON that `db_add()` still wrote to LMDB (returning success) but that `package_from_json()` could then fail to parse on read, making the package silently vanish from `db_get()`/`db_list()`. Fixed by using the copying `yyjson_mut_arr_add_strcpy()` instead
+- `test/sat-test` and `fuzz/fuzz-sat-model` compile `src/graph/sat_solve.c` directly as their own source (not through `libapg.so`), so they need `pthread_create` resolved at their own link time; `libapg_dep` only propagates `lmdb_dep`, not `threads_dep`. Linked fine on Linux (glibc folds pthread into libc) but failed to link on FreeBSD (`ld.lld --no-undefined`, undefined symbol `pthread_create`). Both targets (`test/meson.build`, `fuzz/meson.build`) now depend on `threads_dep` explicitly
 
 ### Changed
 
