@@ -82,10 +82,14 @@ No new features. Audit what's already shipped.
       requires a single-threaded caller, and TSan's runtime spawns
       background threads even in code that looks single-threaded, so
       `EINVAL`. That code path can't be tested under TSan, full stop.
-- [ ] Extend fuzzing coverage: `candidate_set`/`sat_model` builders directly
-      (not just through the fuzz harness's synthetic package generator),
-      and the non-SAT paths (`db/`, `install/`, `transaction/`) that have
-      no fuzz target yet.
+- [x] `candidate_set` fuzzed directly: `fuzz/fuzz_candidate_set.c`
+      (`fuzz-candidate-set`) feeds raw fuzzer bytes straight into
+      `candidate_set_add()`/`candidate_set_lookup()`, no synthetic-package
+      layer in between. 564k execs in a 25s local run, zero crashes.
+- [ ] `sat_model` builder fuzzed directly (still only reachable through
+      `fuzz_sat_model.c`'s package generator).
+- [ ] Non-SAT paths (`db/`, `install/`, `transaction/`) still have no fuzz
+      target.
 - [ ] Re-check every O(n) claim from the last few milestones against
       realistic package counts (thousands, not the synthetic benchmarks
       used to verify each fix in isolation).
