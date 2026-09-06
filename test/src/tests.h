@@ -40,6 +40,8 @@ void test_breaks_unknown_pkg(void);
 void test_policy_unsigned(void);
 void test_policy_no_sig_required(void);
 void test_policy_clear(void);
+void test_policy_missing_dep_rejected_by_default(void);
+void test_policy_skip_dependency_check_allows_missing_dep(void);
 
 void test_install_data_dir_copies_files(void);
 void test_install_data_dir_preserves_file_permissions(void);

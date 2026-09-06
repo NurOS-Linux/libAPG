@@ -226,7 +226,28 @@ trans_prepare(struct apg_trans *trans)
 
     trans_error_t ret = TRANS_OK;
 
-    if (trans->install_count > 0)
+    if (trans->install_count > 0 && trans->skip_dependency_check)
+    {
+        for (size_t i = 0; i < trans->install_count; i++)
+        {
+            struct package *step_pkg = trans->install_pkgs[i];
+            const char *name = step_pkg->meta->name;
+            if (in_strarray(installed_names, (size_t)installed_count, name))
+                continue;
+            if (plan_has(trans, name))
+                continue;
+
+            trans_error_t perr =
+                plan_push(trans, TRANS_OP_INSTALL, name,
+                          step_pkg->meta->version, true, step_pkg);
+            if (perr != TRANS_OK)
+            {
+                ret = perr;
+                goto cleanup;
+            }
+        }
+    }
+    else if (trans->install_count > 0)
     {
         const char **pkg_names =
             malloc(trans->install_count * sizeof(*pkg_names));

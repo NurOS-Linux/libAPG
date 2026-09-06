@@ -44,6 +44,8 @@ main(void)
     test_policy_unsigned();
     test_policy_no_sig_required();
     test_policy_clear();
+    test_policy_missing_dep_rejected_by_default();
+    test_policy_skip_dependency_check_allows_missing_dep();
 
     test_install_data_dir_copies_files();
     test_install_data_dir_preserves_file_permissions();

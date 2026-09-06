@@ -94,4 +94,5 @@ struct apg_trans
 
     bool require_signature;
     char *keyring_dir;
+    bool skip_dependency_check;
 };
