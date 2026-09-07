@@ -86,19 +86,44 @@ No new features. Audit what's already shipped.
       (`fuzz-candidate-set`) feeds raw fuzzer bytes straight into
       `candidate_set_add()`/`candidate_set_lookup()`, no synthetic-package
       layer in between. 564k execs in a 25s local run, zero crashes.
-- [ ] `sat_model` builder fuzzed directly (still only reachable through
-      `fuzz_sat_model.c`'s package generator).
-- [ ] Non-SAT paths (`db/`, `install/`, `transaction/`) still have no fuzz
-      target.
-- [ ] Re-check every O(n) claim from the last few milestones against
-      realistic package counts (thousands, not the synthetic benchmarks
-      used to verify each fix in isolation).
-- [ ] Review `src/transaction/prepare.c` and `src/graph/resolve.c` (largest,
-      most nested files by loop count) for correctness, not just the perf
-      angle already covered.
-- [ ] `sat_solve()`'s plain DPLL has no clause learning; profile whether
-      real (non-synthetic) dependency sets ever get close to the decision
-      budget before deciding if CDCL is worth the complexity.
+- [x] `sat_model` builder fuzzed directly: `fuzz/fuzz_sat_model_vars.c`
+      (`fuzz-sat-model-vars`) drives `sat_model_var()`/`sat_model_force()`
+      straight from fuzzer bytes against a fixed pool of dummy packages, no
+      package generator. 365k execs in 25s, zero crashes.
+- [x] Non-SAT paths now have fuzz targets: `fuzz/fuzz_db.c`
+      (`fuzz-db`, `db_add()`/`db_get()` round-trip, 310k execs/30s, zero
+      crashes), `fuzz/fuzz_install_data_dir.c` (`fuzz-install-data-dir`,
+      synthetic file trees into an isolated temp root, 57.8k execs/20s,
+      zero crashes), `fuzz/fuzz_transaction_prepare.c`
+      (`fuzz-transaction-prepare`, synthetic multi-package
+      dependency/conflict scenarios through `trans_prepare()`, 40.3k
+      execs/25s, zero crashes).
+- [x] Re-checked at n=1000..20000: `db_get_orphans()` and `sat_model_build()`
+      both hold linear (20k pkgs: 60.82ms / 3.82ms). First attempt at
+      re-checking `dep_graph_resolve_parallel()`'s merge fix used a bad
+      benchmark (resolving every node of an n-length chain as its own
+      root, which is inherently O(n²) DFS work regardless of merge cost,
+      not a regression). Redone isolating just the merge (many roots
+      sharing one dependency): clean linear scaling, 20k roots in
+      480.56ms.
+- [x] Reviewed `src/transaction/prepare.c` and `src/graph/resolve.c` for
+      correctness. Found and verified with a standalone repro: upgrade
+      targets' dependencies are never validated. `trans_prepare()` calls
+      `dep_graph_resolve_parallel()` only over `trans->install_pkgs`
+      names, never `trans->upgrade_pkgs`, so an upgrade that adds a new
+      required dependency not already installed silently returns
+      `TRANS_OK` instead of `TRANS_ERR_MISSING_DEP`. Not fixed yet, needs
+      its own design pass (whether/how to fold upgrade targets into the
+      resolve step). `resolve.c`'s concurrent-read safety during
+      `dep_graph_resolve_parallel()` also checked: `str_map_get()` never
+      mutates, so parallel lookups from multiple threads are safe.
+- [x] Profiled `sat_solve()`'s decision budget against a non-pathological,
+      DAG-shaped dependency graph (branching deps, shared virtual
+      providers, no adversarial structure) up to 3000 packages: solves in
+      under 3ms, nowhere near the decision budget. CDCL is not justified
+      by anything seen on realistic-shaped input; the earlier PHP(n)
+      slowdown was a deliberately adversarial worst case, not
+      representative.
 
 ## Maybe in the future
 
