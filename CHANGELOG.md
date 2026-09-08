@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.3.1] - 2026-09-08
+
+### Fixed
+
+- `exec_script()` (`src/install/scripts.c`): execute package scripts via `/bin/sh` (`execl("/bin/sh", "sh", exec_path, NULL)`) instead of direct binary invocation; guarantees standard POSIX shell interpretation, eliminating failures caused by shebang mismatches or `noexec` mount flags on temporary staging paths
+
 ## [2.3.0] - 2026-09-07
 
 ### Added
