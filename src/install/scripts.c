@@ -7,6 +7,7 @@
 #include <limits.h>
 #include <stdatomic.h>
 #include <stdint.h>
+#include <errno.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -146,10 +147,13 @@ exec_script(const char *path, const char *root_path)
         if (unshare(CLONE_NEWUSER | CLONE_NEWNET | CLONE_NEWNS | CLONE_NEWUTS |
                     CLONE_NEWIPC) < 0)
         {
-            uint8_t err = 1;
-            (void)write(pipefd[1], &err, 1);
-            close(pipefd[1]);
-            _exit(1);
+            if (errno != EPERM && errno != EINVAL)
+            {
+                uint8_t err = 1;
+                (void)write(pipefd[1], &err, 1);
+                close(pipefd[1]);
+                _exit(1);
+            }
         }
 
         if (do_chroot)

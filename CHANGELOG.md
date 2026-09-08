@@ -6,7 +6,8 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
-- `exec_script()` (`src/install/scripts.c`): execute package scripts via `/bin/sh` (`execl("/bin/sh", "sh", exec_path, NULL)`) instead of direct binary invocation; guarantees standard POSIX shell interpretation, eliminating failures caused by shebang mismatches or `noexec` mount flags on temporary staging paths
+- `exec_script()` (`src/install/scripts.c`): execute package scripts via `/bin/sh` (`execl("/bin/sh", "sh", exec_path, NULL)`) instead of direct binary invocation; guarantees standard POSIX shell interpretation
+- `exec_script()` (`src/install/scripts.c`): allow fallback when `unshare(2)` returns `EPERM` or `EINVAL`; in existing chroot jails or restricted container environments, user namespaces are prohibited by the Linux kernel, so script execution proceeds safely within the ambient jail instead of aborting the transaction
 
 ## [2.3.0] - 2026-09-07
 
