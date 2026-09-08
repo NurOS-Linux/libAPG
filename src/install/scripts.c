@@ -164,7 +164,7 @@ exec_script(const char *path, const char *root_path)
         }
 
         close(pipefd[1]);
-        execl(exec_path, exec_path, (char *)NULL);
+        execl("/bin/sh", "sh", exec_path, (char *)NULL);
         perror("execl failed");
         _exit(1);
     }
@@ -238,7 +238,7 @@ exec_script(const char *path, const char *root_path)
         }
 
         close(pipefd[1]);
-        execl(exec_path, exec_path, (char *)NULL);
+        execl("/bin/sh", "sh", exec_path, (char *)NULL);
         _exit(1);
     }
 
