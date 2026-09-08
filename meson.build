@@ -1,5 +1,5 @@
 project('libapg', 'c',
-  version: '2.2.0',
+  version: '2.3.0',
   default_options: [
     'libarchive:tests=disabled',
     'libarchive:progs=[]',
@@ -86,9 +86,12 @@ endif
 
 threads_dep = dependency('threads')
 
-libarchive_dep = dependency('libarchive', fallback: ['libarchive', 'libarchive_dep'])
-lmdb_dep = dependency('lmdb', fallback: ['lmdb', 'lmdb_dep'])
-libyyjson_dep = dependency('yyjson', fallback: ['yyjson', 'yyjson_dep'])
+libarchive_dep = dependency('libarchive', fallback: ['libarchive', 'libarchive_dep'],
+  default_options: ['default_library=static'])
+lmdb_dep = dependency('lmdb', fallback: ['lmdb', 'lmdb_dep'],
+  default_options: ['default_library=static'])
+libyyjson_dep = dependency('yyjson', fallback: ['yyjson', 'yyjson_dep'],
+  default_options: ['default_library=static'])
 
 sodium_dep = dependency('libsodium', required: false)
 if not sodium_dep.found()
@@ -147,6 +150,10 @@ install_headers(
   'include/apg/transaction.h',
   'include/apg/version.h',
   subdir: 'apg',
+)
+
+install_headers(
+  'include/util.h',
 )
 
 pkg = import('pkgconfig')

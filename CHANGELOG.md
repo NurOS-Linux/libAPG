@@ -2,6 +2,33 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.3.0] - 2026-09-07
+
+### Added
+
+- `install_policy.skip_dependency_check` (`include/apg/config.h`): when true, `trans_prepare()` plans queued installs exactly as added by `trans_add_install()`, in that order, without resolving or requiring their declared dependencies to be present. Upgrades, removals, and the file-conflict/installed-break checks are unaffected. For force-installing a package with unmet dependencies
+- `fuzz/fuzz_candidate_set.c` (`fuzz-candidate-set`): fuzzes `candidate_set_add()`/`candidate_set_lookup()` directly with raw fuzzer bytes as names, bypassing the synthetic-package generator the other SAT fuzz targets use
+- `fuzz/fuzz_sat_model_vars.c` (`fuzz-sat-model-vars`): fuzzes `sat_model_var()`/`sat_model_force()` directly against a fixed pool of dummy packages, same idea applied to the `sat_model` builder
+- `fuzz/fuzz_db.c` (`fuzz-db`): fuzzes `db_add()`/`db_get()` round-tripping, the first fuzz target for the `db/` storage layer
+- `fuzz/fuzz_install_data_dir.c` (`fuzz-install-data-dir`): fuzzes `install_data_dir()` with a synthetic file tree (names, content, permission bits) copied into an isolated temp root, never touching real system paths
+- `fuzz/fuzz_transaction_prepare.c` (`fuzz-transaction-prepare`): fuzzes `trans_prepare()` with synthetic multi-package dependency/conflict scenarios against a temp db
+- CI: a `tsan` job (`.github/workflows/ci.yml`), building with `-Db_sanitize=thread` and running `sat-test`/`apgxx-bindings`/`apgpy-bindings` (`apg-test` excluded, see Fixed/Known issues below)
+
+### Fixed
+
+- `scripts/checkpatch.py`'s clang-format check only excluded a literal `build/` path component, so scratch sanitizer build directories named `build-*/` (as `.gitignore` itself expects) leaked stray files into the check
+- `apgpy-bindings` failed to load under ASan/TSan: ctypes `dlopen()`s the sanitizer-instrumented `.so` into a plain `python3` process with no sanitizer runtime preloaded. `bindings/python/meson.build` now sets `LD_PRELOAD` to the matching `libclang_rt.*.so` when `b_sanitize` is active
+
+### Verified
+
+- Full `meson test` (including `apgxx-bindings`/`apgpy-bindings`) run clean under ASan+UBSan. Under TSan, `test_run_script_root` fails for a confirmed non-libapg reason: `unshare(CLONE_NEWUSER, ...)` requires a single-threaded caller, and TSan's runtime spawns background threads even in code that looks single-threaded, so the syscall returns `EINVAL` regardless of libapg's own logic. That one test can't run under TSan; the rest of `apg-test` isn't affected, only the CI job excludes the whole binary since `meson test` can't select individual test functions within it
+- Re-checked O(n) claims from the 2.2.0 SAT work at realistic scale (up to 20k packages): `db_get_orphans()` and `sat_model_build()` hold linear. The first attempt at re-checking `dep_graph_resolve_parallel()`'s merge fix used a flawed benchmark (resolving every node of an n-length chain as its own root, which is inherently O(n²) regardless of merge cost); redone correctly (many roots sharing one dependency), the merge itself scales linearly
+- Profiled `sat_solve()`'s decision budget against a non-adversarial, DAG-shaped dependency graph up to 3000 packages: solves in under 3ms, nowhere near the budget. No evidence yet that CDCL (clause learning) is needed for realistic input
+
+### Known issues
+
+- `trans_prepare()` never validates upgrade targets' dependencies: `dep_graph_resolve_parallel()` is only called over `trans->install_pkgs`, never `trans->upgrade_pkgs`, so upgrading a package to a version that adds a new required dependency not already installed silently returns `TRANS_OK` instead of `TRANS_ERR_MISSING_DEP`. Confirmed with a standalone repro. Not fixed yet; needs a design decision on how upgrade targets should fold into the resolve step
+
 ## [2.2.0] - 2026-08-24
 
 ### Added
