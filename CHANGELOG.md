@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.3.2] - 2026-09-09
+
+### Changed
+
+- `include/apg/util.h` (`meson.build`): relocate `util.h` into `include/apg/util.h` (installed to `/usr/include/apg/util.h`); removes the collision with POSIX/BSD `<util.h>` that broke builds of third-party system utilities such as `sudo`
+
 ## [2.3.1] - 2026-09-08
 
 ### Fixed

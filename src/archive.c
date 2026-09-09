@@ -8,7 +8,7 @@
 #include <stdio.h>
 #include "../include/apg/archive.h"
 #include "../include/apg/package.h"
-#include "../include/util.h"
+#include "../include/apg/util.h"
 
 #define PATH_MAX 4096
 

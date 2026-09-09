@@ -9,7 +9,7 @@
 #include <dirent.h>
 #include <unistd.h>
 
-#include "../include/util.h"
+#include "../include/apg/util.h"
 
 char *
 concat(const char *str1, const char *str2)

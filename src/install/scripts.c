@@ -22,7 +22,7 @@
 
 #include "../../include/apg/scripts.h"
 #include "../../include/apg/copy.h"
-#include "../../include/util.h"
+#include "../../include/apg/util.h"
 
 #ifndef PATH_MAX
 #define PATH_MAX 4096

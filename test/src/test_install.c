@@ -14,7 +14,7 @@
 #include <apg/db.h>
 #include <apg/package.h>
 #include <apg/scripts.h>
-#include <util.h>
+#include <apg/util.h>
 
 // concat_dirs() does not insert a separator between its arguments (despite
 // its docstring), so path construction in this file uses plain snprintf.

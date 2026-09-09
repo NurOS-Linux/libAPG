@@ -13,7 +13,7 @@
 #include "../include/apg/package.h"
 #include "../include/apg/version.h"
 #include "../include/apg/install.h"
-#include "../include/util.h"
+#include "../include/apg/util.h"
 #include "../include/apg/scripts.h"
 #include "../include/apg/archive.h"
 #include "../include/apg/json.h"

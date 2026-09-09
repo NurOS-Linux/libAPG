@@ -8,7 +8,7 @@
 #include "db_priv.h"
 #include "../../include/apg/db.h"
 #include "../../include/apg/package.h"
-#include "../../include/util.h"
+#include "../../include/apg/util.h"
 
 struct db_verify_issue *
 db_verify(struct db_handle *db, const char *root_path, int *count)

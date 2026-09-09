@@ -6,7 +6,7 @@
 
 #include "../../include/apg/install.h"
 #include "../../include/apg/copy.h"
-#include "../../include/util.h"
+#include "../../include/apg/util.h"
 
 bool
 install_data_dir(const char *pkg_dir, const char *root_path)

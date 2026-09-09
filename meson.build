@@ -1,5 +1,5 @@
 project('libapg', 'c',
-  version: '2.3.1',
+  version: '2.3.2',
   default_options: [
     'libarchive:tests=disabled',
     'libarchive:progs=[]',
@@ -148,13 +148,12 @@ install_headers(
   'include/apg/scripts.h',
   'include/apg/sign.h',
   'include/apg/transaction.h',
+  'include/apg/util.h',
   'include/apg/version.h',
   subdir: 'apg',
 )
 
-install_headers(
-  'include/util.h',
-)
+
 
 pkg = import('pkgconfig')
 pkg.generate(libapg,

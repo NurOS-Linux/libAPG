@@ -14,7 +14,7 @@
 #include "../../include/apg/journal.h"
 #include "../../include/apg/keyring.h"
 #include "../../include/apg/scripts.h"
-#include "../../include/util.h"
+#include "../../include/apg/util.h"
 
 #define DEFAULT_KEYRING_DIR APG_KEYRING_DIR
 

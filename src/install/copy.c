@@ -9,7 +9,7 @@
 #include <dirent.h>
 
 #include "../../include/apg/copy.h"
-#include "../../include/util.h"
+#include "../../include/apg/util.h"
 
 bool
 copy_file(const char *src, const char *dst)

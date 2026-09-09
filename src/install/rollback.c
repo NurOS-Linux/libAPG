@@ -8,12 +8,8 @@
 #include <dirent.h>
 
 #include "../../include/apg/install.h"
-#include "../../include/util.h"
+#include "../../include/apg/util.h"
 
-// Mirror the src directory tree and remove corresponding files under dst.
-// Directories are removed with rmdir after their contents — rmdir silently
-// fails on non-empty dirs, which is intentional: we only clean up what we put
-// there.
 static void
 remove_mirrored(const char *src, const char *dst)
 {
