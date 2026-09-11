@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.3.3] - 2026-09-11
+
+### Fixed
+
+- `copy_dir()` (`src/install/copy.c`): preserve symbolic links during package installation using `lstat()` and `symlink()`; previously `stat()` followed symlinks, converting UsrMerge directory links (`/bin`, `/lib64`) into real directories and symlinks to files into duplicated regular files
+- `remove_mirrored()`, `remove_dir_recursive()` (`src/install/rollback.c`, `src/util.c`): use `lstat()` when inspecting and removing staged files during rollback, preventing accidental traversal or unlinking into symlinked directory targets
+- `collect_recursive()`, `db_verify()` (`src/util.c`, `src/db/verify.c`): use `lstat()` so that symlinks are recorded in the package manifest and verified without dereferencing
+
 ## [2.3.2] - 2026-09-09
 
 ### Changed
