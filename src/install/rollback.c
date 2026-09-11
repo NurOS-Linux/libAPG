@@ -33,11 +33,11 @@ remove_mirrored(const char *src, const char *dst)
         }
 
         struct stat st;
-        if (stat(src_path, &st) == 0)
+        if (lstat(src_path, &st) == 0)
         {
             if (S_ISDIR(st.st_mode))
                 remove_mirrored(src_path, dst_path);
-            else if (S_ISREG(st.st_mode))
+            else
                 unlink(dst_path);
         }
 

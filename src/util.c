@@ -117,13 +117,13 @@ collect_recursive(const char *dir, size_t base_len, char ***out, int *count,
         (void)snprintf(abs, len, "%s/%s", dir, entry->d_name);
 
         struct stat st;
-        if (stat(abs, &st) == 0)
+        if (lstat(abs, &st) == 0)
         {
             if (S_ISDIR(st.st_mode))
             {
                 collect_recursive(abs, base_len, out, count, cap);
             }
-            else if (S_ISREG(st.st_mode))
+            else
             {
                 if (*count == *cap)
                 {
@@ -165,7 +165,7 @@ remove_dir_recursive(const char *path)
         return;
 
     struct stat st;
-    if (stat(path, &st) != 0)
+    if (lstat(path, &st) != 0)
         return;
 
     if (!S_ISDIR(st.st_mode))

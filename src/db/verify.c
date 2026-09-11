@@ -47,7 +47,7 @@ db_verify(struct db_handle *db, const char *root_path, int *count)
                 goto oom_missing;
 
             struct stat st;
-            bool exists = stat(full, &st) == 0;
+            bool exists = lstat(full, &st) == 0;
             free(full);
 
             if (!exists)

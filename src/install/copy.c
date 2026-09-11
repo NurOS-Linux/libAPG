@@ -1,3 +1,4 @@
+#include <unistd.h>
 // SPDX-License-Identifier: GPL-3.0-only
 // SPDX-FileCopyrightText: 2026 AnmiTaliDev <anmitalidev@nuros.org>
 
@@ -92,7 +93,7 @@ copy_dir(const char *src, const char *dst)
         }
 
         struct stat st;
-        if (stat(src_path, &st) != 0)
+        if (lstat(src_path, &st) != 0)
         {
             free(src_path);
             free(dst_path);
@@ -101,9 +102,57 @@ copy_dir(const char *src, const char *dst)
         }
 
         if (S_ISDIR(st.st_mode))
+        {
+            struct stat dst_item_st;
+            if (stat(dst_path, &dst_item_st) != 0 || !S_ISDIR(dst_item_st.st_mode))
+            {
+                unlink(dst_path);
+            }
             ok = copy_dir(src_path, dst_path);
+        }
+        else if (S_ISLNK(st.st_mode))
+        {
+            char target[PATH_MAX];
+            ssize_t len = readlink(src_path, target, sizeof(target) - 1);
+            if (len < 0)
+            {
+                free(src_path);
+                free(dst_path);
+                ok = false;
+                break;
+            }
+            target[len] = '\0';
+
+            struct stat dst_item_st;
+            if (lstat(dst_path, &dst_item_st) == 0)
+            {
+                if (S_ISDIR(dst_item_st.st_mode))
+                    remove_dir_recursive(dst_path);
+                else
+                    unlink(dst_path);
+            }
+
+            if (symlink(target, dst_path) != 0)
+            {
+                free(src_path);
+                free(dst_path);
+                ok = false;
+                break;
+            }
+            ok = true;
+        }
         else if (S_ISREG(st.st_mode))
+        {
+            struct stat dst_item_st;
+            if (lstat(dst_path, &dst_item_st) == 0)
+            {
+                if (S_ISDIR(dst_item_st.st_mode))
+                    remove_dir_recursive(dst_path);
+                else
+                    unlink(dst_path);
+            }
             ok = copy_file(src_path, dst_path);
+        }
 
         free(src_path);
         free(dst_path);
