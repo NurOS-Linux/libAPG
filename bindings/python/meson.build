@@ -14,13 +14,14 @@ if get_option('python_bindings').enabled()
     preload = []
     if sanitize.contains('address')
       preload += rt_dir / 'libclang_rt.asan-' + host_machine.cpu_family() + '.so'
+      test_env.set('LSAN_OPTIONS',
+        'suppressions=' + meson.current_source_dir() / 'lsan-suppressions.txt')
     endif
     if sanitize.contains('thread')
       preload += rt_dir / 'libclang_rt.tsan-' + host_machine.cpu_family() + '.so'
     endif
     if preload.length() > 0
       test_env.set('LD_PRELOAD', ':'.join(preload))
-      test_env.set('PYTHONMALLOC', 'malloc')
     endif
   endif
 
