@@ -1,3 +1,7 @@
 leak:PyObject_Malloc
 leak:_PyObject_Malloc
 leak:_PyObject_Realloc
+leak:PyMem_Malloc
+leak:PyMem_Realloc
+leak:PyMem_RawMalloc
+leak:PyMem_RawRealloc
