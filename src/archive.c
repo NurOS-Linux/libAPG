@@ -21,6 +21,7 @@ set_error(const char *fmt, ...)
 {
     va_list ap;
     va_start(ap, fmt);
+    // NOLINTNEXTLINE(clang-analyzer-valist.Uninitialized)
     (void)vsnprintf(g_archive_error, sizeof(g_archive_error), fmt, ap);
     va_end(ap);
 }
