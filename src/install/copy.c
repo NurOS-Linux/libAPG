@@ -104,7 +104,8 @@ copy_dir(const char *src, const char *dst)
         if (S_ISDIR(st.st_mode))
         {
             struct stat dst_item_st;
-            if (stat(dst_path, &dst_item_st) != 0 || !S_ISDIR(dst_item_st.st_mode))
+            if (stat(dst_path, &dst_item_st) != 0 ||
+                !S_ISDIR(dst_item_st.st_mode))
             {
                 unlink(dst_path);
             }

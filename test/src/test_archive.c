@@ -204,8 +204,7 @@ test_unarchive_rejects_absolute_hardlink(void)
 {
     char *arch_dir = mktmp_dir("archdir-abs");
     char *archive_path = join_path(arch_dir, "abs.tar.gz");
-    build_hardlink_escape_archive(archive_path,
-                                  "/tmp/apg-hardlink-abs-marker");
+    build_hardlink_escape_archive(archive_path, "/tmp/apg-hardlink-abs-marker");
 
     char *root = mktmp_dir("archroot-abs");
 
