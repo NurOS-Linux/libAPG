@@ -56,6 +56,10 @@ main(void)
     test_parse_package_install_roundtrip();
     test_install_package_in_root_uses_isolated_temp_dirs();
 
+    test_unarchive_preserves_hardlinks();
+    test_unarchive_rejects_path_traversal_hardlink();
+    test_unarchive_rejects_absolute_hardlink();
+
     test_trans_plan_accessors();
     test_trans_conflict_accessors();
     test_db_verify_issue_accessors();
@@ -67,6 +71,6 @@ main(void)
     test_sat_public_satisfiable();
     test_sat_public_unsatisfiable();
 
-    printf("All 51 tests passed.\n");
+    printf("All 54 tests passed.\n");
     return 0;
 }

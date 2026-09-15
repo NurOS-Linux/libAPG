@@ -52,6 +52,10 @@ void test_run_script_root(void);
 void test_parse_package_install_roundtrip(void);
 void test_install_package_in_root_uses_isolated_temp_dirs(void);
 
+void test_unarchive_preserves_hardlinks(void);
+void test_unarchive_rejects_path_traversal_hardlink(void);
+void test_unarchive_rejects_absolute_hardlink(void);
+
 void test_trans_plan_accessors(void);
 void test_trans_conflict_accessors(void);
 void test_db_verify_issue_accessors(void);
