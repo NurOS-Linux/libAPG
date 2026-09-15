@@ -1,6 +1,6 @@
 project = "libapg"
 author = "AnmiTaliDev"
-release = "2.3.3"
+release = "2.4.0"
 copyright = "2026, AnmiTaliDev"
 
 extensions = [
@@ -15,6 +15,6 @@ breathe_domain_by_extension = {"h": "c"}
 breathe_default_members = ("members", "undoc-members")
 
 html_theme = "furo"
-html_title = "libapg 2.3.3"
+html_title = "libapg 2.4.0"
 
 intersphinx_mapping = {}

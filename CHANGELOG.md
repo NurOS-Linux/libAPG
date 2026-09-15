@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.4.0] - 2026-09-15
+
+### Added
+
+- `trans_set_dry_run()` (`include/apg/transaction.h`, `src/transaction/commit.c`): preview a transaction's outcome without side effects — `trans_commit()` still runs signature verification and returns the same error code a real commit would, but skips `install_package_in_root()`, file removal, database writes, script execution, and journal writes. Does not count towards `trans_commit()`'s one-call limit, so the same transaction can still be committed for real afterwards
+- `archive_last_error()` (`include/apg/archive.h`, `src/archive.c`): thread-local description of the most recent `unarchive_package()`/`unarchive_package_in_root()` failure (open failure, unsafe hardlink target, header/data write or read failure), including the underlying libarchive error string where applicable
+
+### Fixed
+
+- `extract_to_dir()` (`src/archive.c`): pass `ARCHIVE_EXTRACT_UNLINK` to `archive_write_disk_set_options()` so existing destination files are unlinked and recreated instead of overwritten in place; previously, extracting a package that replaces a currently-running shared library (e.g. libapg itself, updated by a consumer linked against it) could corrupt that library's pages mid-execution and crash the process
+- `extract_to_dir()` (`src/archive.c`): reject and rewrite hardlink target paths during extraction — an absolute or `..`-traversing hardlink target in a `.apg` archive previously resolved outside the destination root instead of being rejected
+- `bindings/python/apg/_lib.py`: `InstallPolicy` ctypes structure was missing the `skip_dependency_check` field present in the C `install_policy` struct, so `trans_set_policy()` read past the end of the memory ctypes allocated for it — undefined behavior, reproducible as a UBSan abort in `trans_set_policy()`
+- `bindings/python/meson.build`: `apgpy-bindings` reported spurious AddressSanitizer leaks under `build-san` originating entirely from CPython's own allocators (`PyObject_Malloc`, `PyMem_Malloc`, and raw-domain equivalents) during interpreter/import-machinery startup, not from libapg or the bindings; added `bindings/python/lsan-suppressions.txt` and wired it up via `LSAN_OPTIONS` instead of disabling leak detection outright, so a real leak in libapg's own C allocations reached through ctypes would still be caught
+
 ## [2.3.3] - 2026-09-11
 
 ### Fixed
