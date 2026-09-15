@@ -104,6 +104,7 @@ test_unarchive_preserves_hardlinks(void)
     pkg->pkg_path = strdup(archive_path);
 
     assert(unarchive_package_in_root(pkg, root));
+    assert(archive_last_error() == NULL);
 
     char *installed_first = join_path(root, "first.txt");
     char *installed_second = join_path(root, "second.txt");
@@ -179,6 +180,10 @@ test_unarchive_rejects_path_traversal_hardlink(void)
 
     assert(!unarchive_package_in_root(pkg, root));
 
+    const char *err = archive_last_error();
+    assert(err);
+    assert(strstr(err, "unsafe hardlink") != NULL);
+
     char *escape_marker = join_path("/tmp", "apg-hardlink-escape-marker");
     struct stat st;
     assert(stat(escape_marker, &st) != 0);
@@ -210,6 +215,10 @@ test_unarchive_rejects_absolute_hardlink(void)
 
     assert(!unarchive_package_in_root(pkg, root));
 
+    const char *err = archive_last_error();
+    assert(err);
+    assert(strstr(err, "unsafe hardlink") != NULL);
+
     struct stat st;
     assert(stat("/tmp/apg-hardlink-abs-marker", &st) != 0);
 
@@ -220,4 +229,30 @@ test_unarchive_rejects_absolute_hardlink(void)
     free(arch_dir);
     free(root);
     printf("test_unarchive_rejects_absolute_hardlink: PASS\n");
+}
+
+void
+test_unarchive_reports_open_failure(void)
+{
+    char *arch_dir = mktmp_dir("archdir-missing");
+    char *archive_path = join_path(arch_dir, "does-not-exist.tar.gz");
+    char *root = mktmp_dir("archroot-missing");
+
+    struct package *pkg = package_new();
+    assert(pkg);
+    pkg->pkg_path = strdup(archive_path);
+
+    assert(!unarchive_package_in_root(pkg, root));
+
+    const char *err = archive_last_error();
+    assert(err);
+    assert(strstr(err, archive_path) != NULL);
+
+    package_free(pkg);
+    free(archive_path);
+    rmtree(arch_dir);
+    rmtree(root);
+    free(arch_dir);
+    free(root);
+    printf("test_unarchive_reports_open_failure: PASS\n");
 }

@@ -55,6 +55,7 @@ void test_install_package_in_root_uses_isolated_temp_dirs(void);
 void test_unarchive_preserves_hardlinks(void);
 void test_unarchive_rejects_path_traversal_hardlink(void);
 void test_unarchive_rejects_absolute_hardlink(void);
+void test_unarchive_reports_open_failure(void);
 
 void test_trans_plan_accessors(void);
 void test_trans_conflict_accessors(void);

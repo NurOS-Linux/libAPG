@@ -59,6 +59,7 @@ main(void)
     test_unarchive_preserves_hardlinks();
     test_unarchive_rejects_path_traversal_hardlink();
     test_unarchive_rejects_absolute_hardlink();
+    test_unarchive_reports_open_failure();
 
     test_trans_plan_accessors();
     test_trans_conflict_accessors();
@@ -71,6 +72,6 @@ main(void)
     test_sat_public_satisfiable();
     test_sat_public_unsatisfiable();
 
-    printf("All 54 tests passed.\n");
+    printf("All 55 tests passed.\n");
     return 0;
 }

@@ -40,6 +40,19 @@ extern "C"
     APG_API bool unarchive_package_in_root(const struct package *pkg,
                                            const char *root);
 
+    /**
+     * @brief Describe the most recent archive extraction failure on this
+     * thread.
+     *
+     * Set by unarchive_package() / unarchive_package_in_root() whenever
+     * they return false, and cleared at the start of each such call. The
+     * returned pointer is valid until the next call to either function on
+     * the same thread.
+     *
+     * @return Error message, or NULL if the most recent call succeeded.
+     */
+    APG_API const char *archive_last_error(void);
+
 #ifdef __cplusplus
 }
 #endif
