@@ -130,6 +130,7 @@ class InstallPolicy(ctypes.Structure):
     _fields_ = [
         ("require_signature", ctypes.c_bool),
         ("keyring_dir", ctypes.c_char_p),
+        ("skip_dependency_check", ctypes.c_bool),
     ]
 
 
