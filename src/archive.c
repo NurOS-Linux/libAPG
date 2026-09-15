@@ -6,6 +6,7 @@
 #include <archive_entry.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include <string.h>
 #include "../include/apg/archive.h"
 #include "../include/apg/package.h"
 #include "../include/apg/util.h"
@@ -13,10 +14,31 @@
 #define PATH_MAX 4096
 
 static bool
+is_safe_relative_path(const char *path)
+{
+    if (!path || path[0] == '\0' || path[0] == '/')
+        return false;
+
+    const char *p = path;
+    while (*p)
+    {
+        const char *seg_end = strchr(p, '/');
+        size_t seg_len = seg_end ? (size_t)(seg_end - p) : strlen(p);
+        if (seg_len == 2 && p[0] == '.' && p[1] == '.')
+            return false;
+        if (!seg_end)
+            break;
+        p = seg_end + 1;
+    }
+    return true;
+}
+
+static bool
 extract_to_dir(const char *archive_path, const char *path_dest)
 {
     struct archive_entry *entry;
     char full_path[PATH_MAX];
+    char full_link[PATH_MAX];
     bool ok = true;
 
     struct archive *a = archive_read_new();
@@ -44,6 +66,19 @@ extract_to_dir(const char *archive_path, const char *path_dest)
         (void)snprintf(full_path, sizeof(full_path), "%s/%s", path_dest,
                        archive_entry_pathname(entry));
         archive_entry_set_pathname(entry, full_path);
+
+        const char *hardlink = archive_entry_hardlink(entry);
+        if (hardlink)
+        {
+            if (!is_safe_relative_path(hardlink) ||
+                snprintf(full_link, sizeof(full_link), "%s/%s", path_dest,
+                         hardlink) >= (int)sizeof(full_link))
+            {
+                ok = false;
+                continue;
+            }
+            archive_entry_set_hardlink(entry, full_link);
+        }
 
         if (archive_write_header(ext, entry) != ARCHIVE_OK)
         {
