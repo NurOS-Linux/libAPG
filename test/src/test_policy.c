@@ -171,3 +171,103 @@ test_policy_skip_dependency_check_allows_missing_dep(void)
     close_tmp_db(db, db_path);
     printf("test_policy_skip_dependency_check_allows_missing_dep: PASS\n");
 }
+
+void
+test_dry_run_install_reports_ok_without_side_effects(void)
+{
+    char db_path[PATH_MAX];
+    struct db_handle *db = open_tmp_db(db_path);
+    assert(db);
+
+    struct package *pkg = simple_pkg("foo");
+    struct apg_trans *trans = trans_new(db);
+    assert(trans_add_install(trans, pkg) == TRANS_OK);
+    assert(trans_prepare(trans) == TRANS_OK);
+
+    trans_set_dry_run(trans, true);
+
+    assert(trans_commit(trans, "/tmp") == TRANS_OK);
+    assert(db_get(db, "foo") == NULL);
+
+    trans_free(trans);
+    package_free(pkg);
+    close_tmp_db(db, db_path);
+    printf("test_dry_run_install_reports_ok_without_side_effects: PASS\n");
+}
+
+void
+test_dry_run_still_reports_unsigned(void)
+{
+    char db_path[PATH_MAX];
+    struct db_handle *db = open_tmp_db(db_path);
+    assert(db);
+
+    struct package *pkg = simple_pkg("foo");
+    struct apg_trans *trans = trans_new(db);
+    assert(trans_add_install(trans, pkg) == TRANS_OK);
+    assert(trans_prepare(trans) == TRANS_OK);
+
+    install_policy p = {.require_signature = true,
+                        .keyring_dir = "/nonexistent/keys"};
+    trans_set_policy(trans, &p);
+    trans_set_dry_run(trans, true);
+
+    assert(trans_commit(trans, "/tmp") == TRANS_ERR_UNSIGNED);
+    assert(db_get(db, "foo") == NULL);
+
+    trans_free(trans);
+    package_free(pkg);
+    close_tmp_db(db, db_path);
+    printf("test_dry_run_still_reports_unsigned: PASS\n");
+}
+
+void
+test_dry_run_does_not_count_towards_commit_limit(void)
+{
+    char db_path[PATH_MAX];
+    struct db_handle *db = open_tmp_db(db_path);
+    assert(db);
+
+    struct package *pkg = simple_pkg("foo");
+    struct apg_trans *trans = trans_new(db);
+    assert(trans_add_install(trans, pkg) == TRANS_OK);
+    assert(trans_prepare(trans) == TRANS_OK);
+
+    trans_set_dry_run(trans, true);
+    assert(trans_commit(trans, "/tmp") == TRANS_OK);
+
+    trans_set_dry_run(trans, false);
+    assert(trans_commit(trans, "/tmp") != TRANS_ERR_ALREADY_COMMITTED);
+
+    trans_free(trans);
+    package_free(pkg);
+    close_tmp_db(db, db_path);
+    printf("test_dry_run_does_not_count_towards_commit_limit: PASS\n");
+}
+
+void
+test_dry_run_remove_does_not_modify_db(void)
+{
+    char db_path[PATH_MAX];
+    struct db_handle *db = open_tmp_db(db_path);
+    assert(db);
+
+    struct package *pkg = simple_pkg("foo");
+    assert(db_add(db, pkg));
+
+    struct apg_trans *trans = trans_new(db);
+    assert(trans_add_remove(trans, "foo") == TRANS_OK);
+    assert(trans_prepare(trans) == TRANS_OK);
+
+    trans_set_dry_run(trans, true);
+    assert(trans_commit(trans, "/tmp") == TRANS_OK);
+
+    struct package *still_there = db_get(db, "foo");
+    assert(still_there);
+    package_free(still_there);
+
+    trans_free(trans);
+    package_free(pkg);
+    close_tmp_db(db, db_path);
+    printf("test_dry_run_remove_does_not_modify_db: PASS\n");
+}

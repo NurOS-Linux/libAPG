@@ -207,9 +207,11 @@ trans_commit(struct apg_trans *trans, const char *root_path)
                              pkg->pkg_path) >= (int)sizeof(sig_path) ||
                     !keyring_verify(kr, pkg->pkg_path, sig_path))
                 {
-                    journal_write(trans->db->env, JOURNAL_INSTALL,
-                                  step->pkg_name, step->pkg_version,
-                                  JOURNAL_STATUS_FAILED, uid, step->explicit);
+                    if (!trans->dry_run)
+                        journal_write(trans->db->env, JOURNAL_INSTALL,
+                                      step->pkg_name, step->pkg_version,
+                                      JOURNAL_STATUS_FAILED, uid,
+                                      step->explicit);
                     rollback_committed(trans, committed_idx, committed_count,
                                        root_path);
                     free(committed_idx);
@@ -219,7 +221,7 @@ trans_commit(struct apg_trans *trans, const char *root_path)
                 }
             }
 
-            if (!install_package_in_root(pkg, root_path))
+            if (!trans->dry_run && !install_package_in_root(pkg, root_path))
             {
                 journal_write(trans->db->env, JOURNAL_INSTALL, step->pkg_name,
                               step->pkg_version, JOURNAL_STATUS_FAILED, uid,
@@ -232,12 +234,15 @@ trans_commit(struct apg_trans *trans, const char *root_path)
                 return TRANS_ERR_INSTALL_FAILED;
             }
 
-            pkg->installed_by_hand = step->explicit;
-            db_add(trans->db, pkg);
-            journal_write(trans->db->env, JOURNAL_INSTALL, step->pkg_name,
-                          step->pkg_version, JOURNAL_STATUS_OK, uid,
-                          step->explicit);
-            committed_idx[committed_count++] = i;
+            if (!trans->dry_run)
+            {
+                pkg->installed_by_hand = step->explicit;
+                db_add(trans->db, pkg);
+                journal_write(trans->db->env, JOURNAL_INSTALL, step->pkg_name,
+                              step->pkg_version, JOURNAL_STATUS_OK, uid,
+                              step->explicit);
+                committed_idx[committed_count++] = i;
+            }
         }
         else if (step->op == TRANS_OP_UPGRADE)
         {
@@ -251,9 +256,11 @@ trans_commit(struct apg_trans *trans, const char *root_path)
                              pkg->pkg_path) >= (int)sizeof(sig_path) ||
                     !keyring_verify(kr, pkg->pkg_path, sig_path))
                 {
-                    journal_write(trans->db->env, JOURNAL_INSTALL,
-                                  step->pkg_name, step->pkg_version,
-                                  JOURNAL_STATUS_FAILED, uid, step->explicit);
+                    if (!trans->dry_run)
+                        journal_write(trans->db->env, JOURNAL_INSTALL,
+                                      step->pkg_name, step->pkg_version,
+                                      JOURNAL_STATUS_FAILED, uid,
+                                      step->explicit);
                     rollback_committed(trans, committed_idx, committed_count,
                                        root_path);
                     free(committed_idx);
@@ -265,9 +272,9 @@ trans_commit(struct apg_trans *trans, const char *root_path)
 
             int conf_count = 0;
             struct conf_backup *conf_bk =
-                save_confs(pkg, root_path, &conf_count);
+                trans->dry_run ? NULL : save_confs(pkg, root_path, &conf_count);
 
-            if (!install_package_in_root(pkg, root_path))
+            if (!trans->dry_run && !install_package_in_root(pkg, root_path))
             {
                 free_confs(conf_bk, conf_count);
                 journal_write(trans->db->env, JOURNAL_INSTALL, step->pkg_name,
@@ -284,23 +291,27 @@ trans_commit(struct apg_trans *trans, const char *root_path)
             if (conf_bk)
                 restore_confs(conf_bk, conf_count, root_path);
 
-            pkg->installed_by_hand = step->explicit;
-            db_add(trans->db, pkg);
-            journal_write(trans->db->env, JOURNAL_INSTALL, step->pkg_name,
-                          step->pkg_version, JOURNAL_STATUS_OK, uid,
-                          step->explicit);
-            committed_idx[committed_count++] = i;
+            if (!trans->dry_run)
+            {
+                pkg->installed_by_hand = step->explicit;
+                db_add(trans->db, pkg);
+                journal_write(trans->db->env, JOURNAL_INSTALL, step->pkg_name,
+                              step->pkg_version, JOURNAL_STATUS_OK, uid,
+                              step->explicit);
+                committed_idx[committed_count++] = i;
+            }
         }
         else
         {
             struct package *installed = db_get(trans->db, step->pkg_name);
 
             char *scripts_dir = scripts_store_path(root_path, step->pkg_name);
-            bool pre_ok = !scripts_dir ||
+            bool pre_ok = trans->dry_run || !scripts_dir ||
                           run_script(scripts_dir, "pre-remove", root_path);
 
-            bool ok = pre_ok && db_remove(trans->db, step->pkg_name);
-            if (ok && installed)
+            bool ok = pre_ok &&
+                      (trans->dry_run || db_remove(trans->db, step->pkg_name));
+            if (!trans->dry_run && ok && installed)
             {
                 const struct str_list *files = &installed->package_files;
                 for (int j = 0; j < files->count; j++)
@@ -316,26 +327,29 @@ trans_commit(struct apg_trans *trans, const char *root_path)
                 }
             }
 
-            if (ok && scripts_dir)
+            if (!trans->dry_run && ok && scripts_dir)
                 run_script(scripts_dir, "post-remove", root_path);
 
             if (scripts_dir)
             {
-                scripts_persist_remove(root_path, step->pkg_name);
+                if (!trans->dry_run)
+                    scripts_persist_remove(root_path, step->pkg_name);
                 free(scripts_dir);
             }
 
             package_free(installed);
-            journal_write(trans->db->env, JOURNAL_REMOVE, step->pkg_name,
-                          step->pkg_version,
-                          ok ? JOURNAL_STATUS_OK : JOURNAL_STATUS_FAILED, uid,
-                          step->explicit);
+            if (!trans->dry_run)
+                journal_write(trans->db->env, JOURNAL_REMOVE, step->pkg_name,
+                              step->pkg_version,
+                              ok ? JOURNAL_STATUS_OK : JOURNAL_STATUS_FAILED,
+                              uid, step->explicit);
         }
     }
 
     free(committed_idx);
     keyring_free(kr);
     trans->db->suppress_journal = false;
-    trans->committed = true;
+    if (!trans->dry_run)
+        trans->committed = true;
     return TRANS_OK;
 }

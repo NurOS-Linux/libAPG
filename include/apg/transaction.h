@@ -228,6 +228,22 @@ extern "C"
                                        const char *name, const char *pkg_name);
 
     /**
+     * @brief Toggle dry-run mode for a transaction.
+     *
+     * Must be called before trans_commit(). In dry-run mode, trans_commit()
+     * still performs signature verification and reports the error code that
+     * a real commit would return, but skips every side effect: no files are
+     * written or removed, no scripts run, and neither the database nor the
+     * journal are touched. A dry-run commit does not count towards
+     * trans_commit()'s one-call limit, so the same transaction can still be
+     * committed for real afterwards.
+     *
+     * @param trans   Transaction to configure.
+     * @param dry_run True to enable dry-run mode, false to disable it.
+     */
+    APG_API void trans_set_dry_run(struct apg_trans *trans, bool dry_run);
+
+    /**
      * @brief Create a new transaction backed by the given database.
      *
      * @param db Open database handle. The transaction borrows it; the caller

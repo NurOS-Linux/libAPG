@@ -67,6 +67,14 @@ trans_set_policy(struct apg_trans *trans, const install_policy *policy)
 }
 
 void
+trans_set_dry_run(struct apg_trans *trans, bool dry_run)
+{
+    if (!trans)
+        return;
+    trans->dry_run = dry_run;
+}
+
+void
 trans_free(struct apg_trans *trans)
 {
     if (!trans)

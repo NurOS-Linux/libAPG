@@ -46,6 +46,10 @@ main(void)
     test_policy_clear();
     test_policy_missing_dep_rejected_by_default();
     test_policy_skip_dependency_check_allows_missing_dep();
+    test_dry_run_install_reports_ok_without_side_effects();
+    test_dry_run_still_reports_unsigned();
+    test_dry_run_does_not_count_towards_commit_limit();
+    test_dry_run_remove_does_not_modify_db();
 
     test_install_data_dir_copies_files();
     test_install_data_dir_preserves_file_permissions();
@@ -72,6 +76,6 @@ main(void)
     test_sat_public_satisfiable();
     test_sat_public_unsatisfiable();
 
-    printf("All 55 tests passed.\n");
+    printf("All 59 tests passed.\n");
     return 0;
 }
