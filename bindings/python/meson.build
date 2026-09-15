@@ -20,6 +20,7 @@ if get_option('python_bindings').enabled()
     endif
     if preload.length() > 0
       test_env.set('LD_PRELOAD', ':'.join(preload))
+      test_env.set('PYTHONMALLOC', 'malloc')
     endif
   endif
 
