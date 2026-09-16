@@ -23,6 +23,11 @@
  * resolving or requiring their declared dependencies to be present. This
  * does not affect upgrades, removals, or the file-conflict / installed-break
  * checks, which still run as usual.
+ *
+ * When @p skip_dependents_check is true, @c trans_prepare() plans queued
+ * removals even if other installed packages still depend on them, instead of
+ * failing with @c TRANS_ERR_HAS_DEPENDENTS. This does not affect installs,
+ * upgrades, or the file-conflict checks, which still run as usual.
  */
 typedef struct
 {
@@ -31,4 +36,6 @@ typedef struct
         keyring_dir; /**< Trusted key directory; NULL → @c /etc/apg/trusted.d */
     bool skip_dependency_check; /**< Plan installs as given, ignoring their
                                  * declared dependencies. */
+    bool skip_dependents_check; /**< Plan removals as given, ignoring
+                                 * installed packages that depend on them. */
 } install_policy;

@@ -131,6 +131,7 @@ class InstallPolicy(ctypes.Structure):
         ("require_signature", ctypes.c_bool),
         ("keyring_dir", ctypes.c_char_p),
         ("skip_dependency_check", ctypes.c_bool),
+        ("skip_dependents_check", ctypes.c_bool),
     ]
 
 

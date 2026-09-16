@@ -58,10 +58,12 @@ trans_set_policy(struct apg_trans *trans, const install_policy *policy)
     {
         trans->require_signature = false;
         trans->skip_dependency_check = false;
+        trans->skip_dependents_check = false;
         return;
     }
     trans->require_signature = policy->require_signature;
     trans->skip_dependency_check = policy->skip_dependency_check;
+    trans->skip_dependents_check = policy->skip_dependents_check;
     if (policy->keyring_dir)
         trans->keyring_dir = strdup(policy->keyring_dir);
 }

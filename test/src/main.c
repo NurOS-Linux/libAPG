@@ -46,6 +46,8 @@ main(void)
     test_policy_clear();
     test_policy_missing_dep_rejected_by_default();
     test_policy_skip_dependency_check_allows_missing_dep();
+    test_policy_remove_blocked_by_dependents_by_default();
+    test_policy_skip_dependents_check_allows_blocked_remove();
     test_dry_run_install_reports_ok_without_side_effects();
     test_dry_run_still_reports_unsigned();
     test_dry_run_does_not_count_towards_commit_limit();
@@ -76,6 +78,6 @@ main(void)
     test_sat_public_satisfiable();
     test_sat_public_unsatisfiable();
 
-    printf("All 59 tests passed.\n");
+    printf("All 61 tests passed.\n");
     return 0;
 }

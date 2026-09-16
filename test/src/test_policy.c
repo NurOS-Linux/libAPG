@@ -129,6 +129,16 @@ pkg_with_missing_dep(const char *name)
     return pkg;
 }
 
+static struct package *
+pkg_with_dependency(const char *name, const char *dep_name)
+{
+    struct package *pkg = simple_pkg(name);
+    pkg->meta->dependencies.count = 1;
+    pkg->meta->dependencies.items = malloc(sizeof(struct dep_constraint));
+    pkg->meta->dependencies.items[0] = dep_constraint_parse(dep_name);
+    return pkg;
+}
+
 void
 test_policy_missing_dep_rejected_by_default(void)
 {
@@ -243,6 +253,67 @@ test_dry_run_does_not_count_towards_commit_limit(void)
     package_free(pkg);
     close_tmp_db(db, db_path);
     printf("test_dry_run_does_not_count_towards_commit_limit: PASS\n");
+}
+
+void
+test_policy_remove_blocked_by_dependents_by_default(void)
+{
+    char db_path[PATH_MAX];
+    struct db_handle *db = open_tmp_db(db_path);
+    assert(db);
+
+    struct package *libfoo = simple_pkg("libfoo");
+    struct package *app = pkg_with_dependency("app", "libfoo");
+    assert(db_add(db, libfoo));
+    assert(db_add(db, app));
+
+    struct apg_trans *trans = trans_new(db);
+    assert(trans_add_remove(trans, "libfoo") == TRANS_OK);
+
+    assert(trans_prepare(trans) == TRANS_ERR_HAS_DEPENDENTS);
+    assert(trans_blocked_remove_count(trans) == 1);
+
+    const struct trans_blocked_remove *blocked =
+        trans_blocked_remove_at(trans, 0);
+    assert(strcmp(trans_blocked_remove_pkg_name(blocked), "libfoo") == 0);
+    assert(trans_blocked_remove_dependent_count(blocked) == 1);
+    assert(strcmp(trans_blocked_remove_dependent_at(blocked, 0), "app") == 0);
+
+    trans_free(trans);
+    package_free(libfoo);
+    package_free(app);
+    close_tmp_db(db, db_path);
+    printf("test_policy_remove_blocked_by_dependents_by_default: PASS\n");
+}
+
+void
+test_policy_skip_dependents_check_allows_blocked_remove(void)
+{
+    char db_path[PATH_MAX];
+    struct db_handle *db = open_tmp_db(db_path);
+    assert(db);
+
+    struct package *libfoo = simple_pkg("libfoo");
+    struct package *app = pkg_with_dependency("app", "libfoo");
+    assert(db_add(db, libfoo));
+    assert(db_add(db, app));
+
+    struct apg_trans *trans = trans_new(db);
+    assert(trans_add_remove(trans, "libfoo") == TRANS_OK);
+
+    install_policy p = {.skip_dependents_check = true};
+    trans_set_policy(trans, &p);
+
+    assert(trans_prepare(trans) == TRANS_OK);
+    assert(trans_blocked_remove_count(trans) == 0);
+    assert(trans_plan_count(trans) == 1);
+    assert(strcmp(trans_step_pkg_name(trans_plan_at(trans, 0)), "libfoo") == 0);
+
+    trans_free(trans);
+    package_free(libfoo);
+    package_free(app);
+    close_tmp_db(db, db_path);
+    printf("test_policy_skip_dependents_check_allows_blocked_remove: PASS\n");
 }
 
 void

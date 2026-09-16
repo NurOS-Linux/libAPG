@@ -42,6 +42,8 @@ void test_policy_no_sig_required(void);
 void test_policy_clear(void);
 void test_policy_missing_dep_rejected_by_default(void);
 void test_policy_skip_dependency_check_allows_missing_dep(void);
+void test_policy_remove_blocked_by_dependents_by_default(void);
+void test_policy_skip_dependents_check_allows_blocked_remove(void);
 void test_dry_run_install_reports_ok_without_side_effects(void);
 void test_dry_run_still_reports_unsigned(void);
 void test_dry_run_does_not_count_towards_commit_limit(void);
