@@ -342,3 +342,72 @@ test_dry_run_remove_does_not_modify_db(void)
     close_tmp_db(db, db_path);
     printf("test_dry_run_remove_does_not_modify_db: PASS\n");
 }
+
+static const struct trans_step *
+find_step(struct apg_trans *trans, const char *name)
+{
+    size_t count = trans_plan_count(trans);
+    for (size_t i = 0; i < count; i++)
+    {
+        const struct trans_step *step = trans_plan_at(trans, i);
+        if (strcmp(trans_step_pkg_name(step), name) == 0)
+            return step;
+    }
+    return NULL;
+}
+
+void
+test_candidate_resolved_when_needed_and_marked_non_explicit(void)
+{
+    char db_path[PATH_MAX];
+    struct db_handle *db = open_tmp_db(db_path);
+    assert(db);
+
+    struct package *app = pkg_with_dependency("app", "libfoo");
+    struct package *libfoo = simple_pkg("libfoo");
+
+    struct apg_trans *trans = trans_new(db);
+    assert(trans_add_install(trans, app) == TRANS_OK);
+    assert(trans_add_candidate(trans, libfoo) == TRANS_OK);
+
+    assert(trans_prepare(trans) == TRANS_OK);
+    assert(trans_plan_count(trans) == 2);
+
+    const struct trans_step *app_step = find_step(trans, "app");
+    const struct trans_step *libfoo_step = find_step(trans, "libfoo");
+    assert(app_step && trans_step_explicit(app_step));
+    assert(libfoo_step && !trans_step_explicit(libfoo_step));
+
+    trans_free(trans);
+    package_free(app);
+    package_free(libfoo);
+    close_tmp_db(db, db_path);
+    printf(
+        "test_candidate_resolved_when_needed_and_marked_non_explicit: PASS\n");
+}
+
+void
+test_candidate_not_planned_when_unneeded(void)
+{
+    char db_path[PATH_MAX];
+    struct db_handle *db = open_tmp_db(db_path);
+    assert(db);
+
+    struct package *app = simple_pkg("app");
+    struct package *libfoo = simple_pkg("libfoo");
+
+    struct apg_trans *trans = trans_new(db);
+    assert(trans_add_install(trans, app) == TRANS_OK);
+    assert(trans_add_candidate(trans, libfoo) == TRANS_OK);
+
+    assert(trans_prepare(trans) == TRANS_OK);
+    assert(trans_plan_count(trans) == 1);
+    assert(find_step(trans, "app"));
+    assert(!find_step(trans, "libfoo"));
+
+    trans_free(trans);
+    package_free(app);
+    package_free(libfoo);
+    close_tmp_db(db, db_path);
+    printf("test_candidate_not_planned_when_unneeded: PASS\n");
+}

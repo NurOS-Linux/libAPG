@@ -104,6 +104,18 @@ find_install_pkg(const struct apg_trans *trans, const char *name)
     return NULL;
 }
 
+static struct package *
+find_candidate_pkg(const struct apg_trans *trans, const char *name)
+{
+    for (size_t i = 0; i < trans->candidate_count; i++)
+    {
+        const struct package_metadata *m = trans->candidate_pkgs[i]->meta;
+        if (m && m->name && strcmp(m->name, name) == 0)
+            return trans->candidate_pkgs[i];
+    }
+    return NULL;
+}
+
 static trans_error_t
 plan_push(struct apg_trans *trans, trans_op_t op, const char *name,
           const char *version, bool explicit_req, struct package *pkg)
@@ -213,6 +225,9 @@ trans_prepare(struct apg_trans *trans)
     for (size_t i = 0; i < trans->install_count; i++)
         dep_graph_add(g, trans->install_pkgs[i]->meta);
 
+    for (size_t i = 0; i < trans->candidate_count; i++)
+        dep_graph_add(g, trans->candidate_pkgs[i]->meta);
+
     for (size_t i = 0; i < trans->upgrade_count; i++)
         dep_graph_add(g, trans->upgrade_pkgs[i]->meta);
 
@@ -291,6 +306,8 @@ trans_prepare(struct apg_trans *trans)
                 continue;
 
             struct package *step_pkg = find_install_pkg(trans, name);
+            if (!step_pkg)
+                step_pkg = find_candidate_pkg(trans, name);
             if (!step_pkg)
                 continue;
 

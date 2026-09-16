@@ -48,6 +48,8 @@ void test_dry_run_install_reports_ok_without_side_effects(void);
 void test_dry_run_still_reports_unsigned(void);
 void test_dry_run_does_not_count_towards_commit_limit(void);
 void test_dry_run_remove_does_not_modify_db(void);
+void test_candidate_resolved_when_needed_and_marked_non_explicit(void);
+void test_candidate_not_planned_when_unneeded(void);
 
 void test_install_data_dir_copies_files(void);
 void test_install_data_dir_preserves_file_permissions(void);

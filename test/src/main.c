@@ -52,6 +52,8 @@ main(void)
     test_dry_run_still_reports_unsigned();
     test_dry_run_does_not_count_towards_commit_limit();
     test_dry_run_remove_does_not_modify_db();
+    test_candidate_resolved_when_needed_and_marked_non_explicit();
+    test_candidate_not_planned_when_unneeded();
 
     test_install_data_dir_copies_files();
     test_install_data_dir_preserves_file_permissions();
@@ -78,6 +80,6 @@ main(void)
     test_sat_public_satisfiable();
     test_sat_public_unsatisfiable();
 
-    printf("All 61 tests passed.\n");
+    printf("All 63 tests passed.\n");
     return 0;
 }

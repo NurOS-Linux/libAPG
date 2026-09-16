@@ -36,6 +36,12 @@ trans_new(struct db_handle *db)
         goto fail;
     trans->remove_cap = TRANS_INITIAL_CAP;
 
+    trans->candidate_pkgs =
+        malloc(TRANS_INITIAL_CAP * sizeof(*trans->candidate_pkgs));
+    if (!trans->candidate_pkgs)
+        goto fail;
+    trans->candidate_cap = TRANS_INITIAL_CAP;
+
     trans->db = db;
     return trans;
 
@@ -43,6 +49,7 @@ fail:
     free(trans->install_pkgs);
     free(trans->upgrade_pkgs);
     free(trans->remove_names);
+    free(trans->candidate_pkgs);
     free(trans);
     return NULL;
 }
@@ -85,6 +92,7 @@ trans_free(struct apg_trans *trans)
     free(trans->keyring_dir);
     free(trans->install_pkgs);
     free(trans->upgrade_pkgs);
+    free(trans->candidate_pkgs);
 
     for (size_t i = 0; i < trans->remove_count; i++)
         free(trans->remove_names[i]);
@@ -198,6 +206,27 @@ trans_add_install(struct apg_trans *trans, struct package *pkg)
     }
 
     trans->install_pkgs[trans->install_count++] = pkg;
+    return TRANS_OK;
+}
+
+trans_error_t
+trans_add_candidate(struct apg_trans *trans, struct package *pkg)
+{
+    if (!trans || !pkg || !pkg->meta || !pkg->meta->name)
+        return TRANS_ERR_NOMEM;
+
+    if (trans->candidate_count == trans->candidate_cap)
+    {
+        size_t new_cap = trans->candidate_cap * 2;
+        struct package **tmp =
+            realloc(trans->candidate_pkgs, new_cap * sizeof(*tmp));
+        if (!tmp)
+            return TRANS_ERR_NOMEM;
+        trans->candidate_pkgs = tmp;
+        trans->candidate_cap = new_cap;
+    }
+
+    trans->candidate_pkgs[trans->candidate_count++] = pkg;
     return TRANS_OK;
 }
 

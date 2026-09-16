@@ -274,6 +274,27 @@ extern "C"
                                             struct package *pkg);
 
     /**
+     * @brief Register a package as an installable candidate for dependency
+     * resolution, without requesting its installation directly.
+     *
+     * Use this to make locally-available packages (e.g. from a directory of
+     * @c .apg files) resolvable as dependencies of packages queued with
+     * trans_add_install()/trans_add_upgrade(). A candidate is included in
+     * the plan only if something else in the transaction actually depends
+     * on it; when it is, it's planned as a non-explicit install, the same
+     * as any other auto-installed dependency.
+     *
+     * The transaction borrows @p pkg — the caller retains ownership and must
+     * not free it before trans_free().
+     *
+     * @param trans Transaction to modify.
+     * @param pkg   Candidate package.
+     * @return @ref TRANS_OK, or an error code.
+     */
+    APG_API trans_error_t trans_add_candidate(struct apg_trans *trans,
+                                              struct package *pkg);
+
+    /**
      * @brief Queue a package for removal.
      *
      * @param trans    Transaction to modify.

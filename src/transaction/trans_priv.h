@@ -61,6 +61,10 @@ struct apg_trans
     size_t remove_count;
     size_t remove_cap;
 
+    struct package **candidate_pkgs;
+    size_t candidate_count;
+    size_t candidate_cap;
+
     struct trans_step *plan;
     size_t plan_count;
     size_t plan_cap;
