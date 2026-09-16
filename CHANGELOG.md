@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.5.0] - 2026-09-16
+
+### Added
+
+- `install_policy.skip_dependents_check` (`include/apg/config.h`, `src/transaction/prepare.c`): when true, `trans_prepare()` plans queued removals even if other installed packages still depend on them, instead of failing with `TRANS_ERR_HAS_DEPENDENTS`. Does not affect installs, upgrades, or file-conflict checks
+- `trans_add_candidate()` (`include/apg/transaction.h`, `src/transaction/prepare.c`): register a package as an installable candidate for dependency resolution without requesting its installation directly. Lets a caller make locally-available packages (e.g. from a directory of `.apg` files) resolvable as dependencies of packages queued with `trans_add_install()`/`trans_add_upgrade()`; a candidate is only planned if something else in the transaction actually depends on it, and it's always planned as a non-explicit (auto-installed) step, never marked `installed_by_hand`
+
 ## [2.4.0] - 2026-09-15
 
 ### Added
