@@ -15,3 +15,4 @@ API Reference
    install
    json
    config
+   error

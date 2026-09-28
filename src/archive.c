@@ -11,6 +11,7 @@
 #include "../include/apg/archive.h"
 #include "../include/apg/package.h"
 #include "../include/apg/util.h"
+#include "error_priv.h"
 
 #define PATH_MAX 4096
 
@@ -24,6 +25,7 @@ set_error(const char *fmt, ...)
     // NOLINTNEXTLINE(clang-analyzer-valist.Uninitialized)
     (void)vsnprintf(g_archive_error, sizeof(g_archive_error), fmt, ap);
     va_end(ap);
+    apg_set_error("%s", g_archive_error);
 }
 
 static bool
@@ -56,6 +58,7 @@ extract_to_dir(const char *archive_path, const char *path_dest)
     bool ok = true;
 
     g_archive_error[0] = '\0';
+    apg_clear_error();
 
     struct archive *a = archive_read_new();
     archive_read_support_filter_gzip(a);

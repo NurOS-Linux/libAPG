@@ -13,6 +13,7 @@
 #include <dirent.h>
 
 #include <apg/archive.h>
+#include <apg/error.h>
 #include <apg/package.h>
 
 static char *
@@ -246,6 +247,8 @@ test_unarchive_reports_open_failure(void)
     const char *err = archive_last_error();
     assert(err);
     assert(strstr(err, archive_path) != NULL);
+    assert(apg_last_error());
+    assert(strcmp(apg_last_error(), err) == 0);
 
     package_free(pkg);
     free(archive_path);
