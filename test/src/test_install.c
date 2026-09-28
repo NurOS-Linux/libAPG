@@ -322,6 +322,8 @@ test_run_script_root(void)
     assert(res == false);
     assert(apg_last_error());
     assert(strstr(apg_last_error(), "pre-install script could not be started"));
+
+    // Verify script cannot escape root_path to write on host /tmp
     struct stat escape_st;
     assert(stat("/tmp/libapg_escape_test.txt", &escape_st) != 0);
 
