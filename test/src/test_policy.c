@@ -10,6 +10,7 @@
 
 #include <apg/config.h>
 #include <apg/db.h>
+#include <apg/error.h>
 #include <apg/package.h>
 #include <apg/transaction.h>
 #include <apg/version.h>
@@ -151,11 +152,44 @@ test_policy_missing_dep_rejected_by_default(void)
     assert(trans_add_install(trans, pkg) == TRANS_OK);
 
     assert(trans_prepare(trans) == TRANS_ERR_MISSING_DEP);
+    assert(apg_last_error());
+    assert(strcmp(apg_last_error(),
+                  "glibc requires nonexistent-lib, which is not available") ==
+           0);
 
     trans_free(trans);
     package_free(pkg);
     close_tmp_db(db, db_path);
     printf("test_policy_missing_dep_rejected_by_default: PASS\n");
+}
+
+void
+test_prepare_reports_unsatisfied_dep_version(void)
+{
+    char db_path[PATH_MAX];
+    struct db_handle *db = open_tmp_db(db_path);
+    assert(db);
+
+    struct package *app = pkg_with_dependency("app", "libfoo >= 2.0");
+    struct package *lib = simple_pkg("libfoo");
+    free(lib->meta->version);
+    lib->meta->version = strdup("1.5");
+
+    struct apg_trans *trans = trans_new(db);
+    assert(trans_add_install(trans, app) == TRANS_OK);
+    assert(trans_add_install(trans, lib) == TRANS_OK);
+
+    assert(trans_prepare(trans) == TRANS_ERR_MISSING_DEP);
+    assert(apg_last_error());
+    assert(strcmp(apg_last_error(),
+                  "app requires libfoo >= 2.0, but only libfoo 1.5 is "
+                  "available") == 0);
+
+    trans_free(trans);
+    package_free(app);
+    package_free(lib);
+    close_tmp_db(db, db_path);
+    printf("test_prepare_reports_unsatisfied_dep_version: PASS\n");
 }
 
 void

@@ -41,6 +41,7 @@ void test_policy_unsigned(void);
 void test_policy_no_sig_required(void);
 void test_policy_clear(void);
 void test_policy_missing_dep_rejected_by_default(void);
+void test_prepare_reports_unsatisfied_dep_version(void);
 void test_policy_skip_dependency_check_allows_missing_dep(void);
 void test_policy_remove_blocked_by_dependents_by_default(void);
 void test_policy_skip_dependents_check_allows_blocked_remove(void);

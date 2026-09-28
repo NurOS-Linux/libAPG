@@ -15,6 +15,7 @@
 #include "../../include/apg/keyring.h"
 #include "../../include/apg/scripts.h"
 #include "../../include/apg/util.h"
+#include "../error_priv.h"
 
 #define DEFAULT_KEYRING_DIR APG_KEYRING_DIR
 
@@ -155,6 +156,19 @@ rollback_committed(struct apg_trans *trans, const size_t *committed_idx,
     }
 }
 
+static void
+rollback_with_error(struct apg_trans *trans, const size_t *committed_idx,
+                    size_t committed_count, const char *root_path,
+                    const char *pkg_name, const char *fallback)
+{
+    char detail[1024];
+    const char *err = apg_last_error();
+    (void)snprintf(detail, sizeof(detail), "%s: %s", pkg_name,
+                   err ? err : fallback);
+    rollback_committed(trans, committed_idx, committed_count, root_path);
+    apg_set_error("%s", detail);
+}
+
 trans_error_t
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
 trans_commit(struct apg_trans *trans, const char *root_path)
@@ -173,7 +187,10 @@ trans_commit(struct apg_trans *trans, const char *root_path)
             trans->keyring_dir ? trans->keyring_dir : DEFAULT_KEYRING_DIR;
         kr = keyring_load(kdir);
         if (!kr)
+        {
+            apg_set_error("cannot load trusted keys from '%s'", kdir);
             return TRANS_ERR_UNSIGNED;
+        }
     }
 
     size_t *committed_idx =
@@ -194,6 +211,7 @@ trans_commit(struct apg_trans *trans, const char *root_path)
     for (size_t i = 0; i < trans->plan_count; i++)
     {
         struct trans_step *step = &trans->plan[i];
+        apg_clear_error();
 
         if (step->op == TRANS_OP_INSTALL)
         {
@@ -212,8 +230,9 @@ trans_commit(struct apg_trans *trans, const char *root_path)
                                       step->pkg_name, step->pkg_version,
                                       JOURNAL_STATUS_FAILED, uid,
                                       step->explicit);
-                    rollback_committed(trans, committed_idx, committed_count,
-                                       root_path);
+                    rollback_with_error(trans, committed_idx, committed_count,
+                                        root_path, step->pkg_name,
+                                        "signature could not be verified");
                     free(committed_idx);
                     keyring_free(kr);
                     trans->db->suppress_journal = false;
@@ -226,8 +245,9 @@ trans_commit(struct apg_trans *trans, const char *root_path)
                 journal_write(trans->db->env, JOURNAL_INSTALL, step->pkg_name,
                               step->pkg_version, JOURNAL_STATUS_FAILED, uid,
                               step->explicit);
-                rollback_committed(trans, committed_idx, committed_count,
-                                   root_path);
+                rollback_with_error(trans, committed_idx, committed_count,
+                                    root_path, step->pkg_name,
+                                    "installation failed");
                 free(committed_idx);
                 keyring_free(kr);
                 trans->db->suppress_journal = false;
@@ -237,11 +257,23 @@ trans_commit(struct apg_trans *trans, const char *root_path)
             if (!trans->dry_run)
             {
                 pkg->installed_by_hand = step->explicit;
-                db_add(trans->db, pkg);
+                committed_idx[committed_count++] = i;
+                if (!db_add(trans->db, pkg))
+                {
+                    journal_write(trans->db->env, JOURNAL_INSTALL,
+                                  step->pkg_name, step->pkg_version,
+                                  JOURNAL_STATUS_FAILED, uid, step->explicit);
+                    rollback_with_error(trans, committed_idx, committed_count,
+                                        root_path, step->pkg_name,
+                                        "cannot record package in database");
+                    free(committed_idx);
+                    keyring_free(kr);
+                    trans->db->suppress_journal = false;
+                    return TRANS_ERR_DB;
+                }
                 journal_write(trans->db->env, JOURNAL_INSTALL, step->pkg_name,
                               step->pkg_version, JOURNAL_STATUS_OK, uid,
                               step->explicit);
-                committed_idx[committed_count++] = i;
             }
         }
         else if (step->op == TRANS_OP_UPGRADE)
@@ -261,8 +293,9 @@ trans_commit(struct apg_trans *trans, const char *root_path)
                                       step->pkg_name, step->pkg_version,
                                       JOURNAL_STATUS_FAILED, uid,
                                       step->explicit);
-                    rollback_committed(trans, committed_idx, committed_count,
-                                       root_path);
+                    rollback_with_error(trans, committed_idx, committed_count,
+                                        root_path, step->pkg_name,
+                                        "signature could not be verified");
                     free(committed_idx);
                     keyring_free(kr);
                     trans->db->suppress_journal = false;
@@ -280,8 +313,9 @@ trans_commit(struct apg_trans *trans, const char *root_path)
                 journal_write(trans->db->env, JOURNAL_INSTALL, step->pkg_name,
                               step->pkg_version, JOURNAL_STATUS_FAILED, uid,
                               step->explicit);
-                rollback_committed(trans, committed_idx, committed_count,
-                                   root_path);
+                rollback_with_error(trans, committed_idx, committed_count,
+                                    root_path, step->pkg_name,
+                                    "installation failed");
                 free(committed_idx);
                 keyring_free(kr);
                 trans->db->suppress_journal = false;
@@ -294,11 +328,23 @@ trans_commit(struct apg_trans *trans, const char *root_path)
             if (!trans->dry_run)
             {
                 pkg->installed_by_hand = step->explicit;
-                db_add(trans->db, pkg);
+                committed_idx[committed_count++] = i;
+                if (!db_add(trans->db, pkg))
+                {
+                    journal_write(trans->db->env, JOURNAL_INSTALL,
+                                  step->pkg_name, step->pkg_version,
+                                  JOURNAL_STATUS_FAILED, uid, step->explicit);
+                    rollback_with_error(trans, committed_idx, committed_count,
+                                        root_path, step->pkg_name,
+                                        "cannot record package in database");
+                    free(committed_idx);
+                    keyring_free(kr);
+                    trans->db->suppress_journal = false;
+                    return TRANS_ERR_DB;
+                }
                 journal_write(trans->db->env, JOURNAL_INSTALL, step->pkg_name,
                               step->pkg_version, JOURNAL_STATUS_OK, uid,
                               step->explicit);
-                committed_idx[committed_count++] = i;
             }
         }
         else

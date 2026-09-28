@@ -8,6 +8,7 @@
 
 #include "graph_priv.h"
 #include "../../include/apg/version.h"
+#include "../error_priv.h"
 
 #define STATE_UNVISITED 0
 #define STATE_VISITING 1
@@ -37,13 +38,27 @@ dfs(struct dfs_ctx *ctx, size_t idx)
         const struct dep_constraint *c = &pkg->dependencies.items[i];
         size_t dep_idx = dep_graph_lookup(ctx->g, c->name);
         if (dep_idx == SIZE_MAX)
+        {
+            char *want = dep_constraint_to_str(c);
+            apg_set_error("%s requires %s, which is not available", pkg->name,
+                          want ? want : c->name);
+            free(want);
             return DEP_ERR_MISSING;
+        }
 
         if (c->op != VER_OP_ANY)
         {
             const char *dep_ver = ctx->g->nodes[dep_idx]->pkg->version;
             if (!ver_satisfies(dep_ver, c->op, c->version))
+            {
+                char *want = dep_constraint_to_str(c);
+                apg_set_error("%s requires %s, but only %s %s is available",
+                              pkg->name, want ? want : c->name,
+                              ctx->g->nodes[dep_idx]->pkg->name,
+                              dep_ver ? dep_ver : "(no version)");
+                free(want);
                 return DEP_ERR_VERSION;
+            }
         }
 
         dep_error_t err = dfs(ctx, dep_idx);

@@ -65,6 +65,7 @@ extern "C"
                                    */
         TRANS_ERR_FILE_CONFLICT,  /**< File already owned by another package. */
         TRANS_ERR_HELD,           /**< Operation blocked by a held package. */
+        TRANS_ERR_DB, /**< The package database could not be updated. */
     } trans_error_t;
 
     /**
@@ -325,7 +326,8 @@ extern "C"
      *
      * Must be called before trans_plan_at() or trans_commit(). If conflicts are
      * found, @ref TRANS_ERR_CONFLICT is returned; call trans_conflict_at() to
-     * inspect them.
+     * inspect them. On @ref TRANS_ERR_MISSING_DEP, apg_last_error() names the
+     * package and the dependency that is missing or has no matching version.
      *
      * @param trans Transaction to prepare.
      * @return @ref TRANS_OK on success, or an error code.
@@ -447,7 +449,10 @@ extern "C"
      * @brief Execute the prepared plan.
      *
      * Must be called at most once. On failure, DB records for already-committed
-     * installs are rolled back automatically.
+     * installs are rolled back automatically, and apg_last_error() describes
+     * the failing package and the cause. @ref TRANS_ERR_DB is returned when a
+     * package was installed on disk but could not be recorded in the
+     * database; its files are removed again.
      *
      * @param trans     Transaction that has been successfully prepared.
      * @param root_path Filesystem root for installation (e.g. @c "/").

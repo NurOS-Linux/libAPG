@@ -10,6 +10,7 @@
 #include "../../include/apg/graph.h"
 #include "../../include/apg/db.h"
 #include "../../include/apg/package.h"
+#include "../error_priv.h"
 
 struct break_task
 {
@@ -201,6 +202,8 @@ trans_prepare(struct apg_trans *trans)
     if (trans->prepared)
         return TRANS_OK;
 
+    apg_clear_error();
+
     int installed_count = 0;
     struct package **installed = db_list(trans->db, &installed_count);
 
@@ -285,8 +288,18 @@ trans_prepare(struct apg_trans *trans)
             ret = TRANS_ERR_CYCLE;
             goto cleanup;
         }
-        if (err == DEP_ERR_MISSING)
+        if (err == DEP_ERR_MISSING || err == DEP_ERR_VERSION)
         {
+            for (size_t i = 0; i < trans->install_count; i++)
+            {
+                char **one = NULL;
+                size_t one_count = 0;
+                if (dep_graph_resolve(g, trans->install_pkgs[i]->meta->name,
+                                      &one, &one_count) == DEP_OK)
+                    free(one);
+                else
+                    break;
+            }
             ret = TRANS_ERR_MISSING_DEP;
             goto cleanup;
         }
