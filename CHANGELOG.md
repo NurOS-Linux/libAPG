@@ -2,6 +2,29 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.6.0] - 2026-09-28
+
+### Added
+
+- `apg_last_error()` (`include/apg/error.h`, `src/error.c`): thread-local, human-readable description of the most recent libapg failure, naming the failing object and the underlying cause (`strerror()` text, LMDB error, script exit status). `archive_last_error()` messages are mirrored into it
+- `TRANS_ERR_DB` (`include/apg/transaction.h`): returned by `trans_commit()` when a package was installed on disk but could not be recorded in the database; the package's files are removed and already-committed steps are rolled back. Added to the Python bindings as `TransError.DB`
+- `trans_set_progress_cb()` (`include/apg/transaction.h`, `src/transaction/commit.c`): register a `trans_progress_fn` callback that `trans_commit()` calls before each plan step with the step, its index, and the plan size, including in dry-run mode
+
+### Changed
+
+- `copy_file()`, `copy_dir()`, `install_data_dir()` (`src/install/copy.c`, `src/install/install.c`): record the failing path and `strerror()` text via `apg_last_error()`; `copy_file()` also checks the result of closing the destination, where a full disk is often first reported
+- `run_script()` (`src/install/scripts.c`): report non-zero exit status, termination signal, or the reason the script could not be started (sandbox setup, `chroot()`, missing `/bin/sh`) via `apg_last_error()`; no longer prints `perror()` output to stderr
+- `parse_package()`, `install_package_in_root()`, `package_collect_files()` (`src/package.c`): clear `apg_last_error()` on entry; `parse_package()` reports a missing or invalid `metadata.json`; the per-extraction temporary directory is created component by component and a failure is reported instead of being left to libarchive
+- `db_open()`, `db_open_readonly()` (`src/db/db.c`): report whether the database is locked by another process, the lock file cannot be opened, or LMDB failed to open the environment
+- `trans_prepare()` (`src/transaction/prepare.c`, `src/graph/resolve.c`): on `TRANS_ERR_MISSING_DEP`, `apg_last_error()` names the package and the missing dependency or the version that does not satisfy the constraint
+- `trans_commit()` (`src/transaction/commit.c`): failures are reported via `apg_last_error()` prefixed with the failing package name, and the message survives the rollback of earlier steps
+
+### Fixed
+
+- `db_add()` (`src/db/write.c`): results of writes to the `files` and `file_owner` tables and of `mdb_txn_commit()` were ignored, so a full LMDB map (`MDB_MAP_FULL`) left a record without file ownership entries or silently lost the record while returning success; the whole record is now written in one transaction or not at all, and the LMDB error is reported. `db_remove()` checks the commit result the same way
+- `trans_commit()` (`src/transaction/commit.c`): ignored the result of `db_add()`, so an install whose database record failed was reported as successful
+- `trans_prepare()` (`src/transaction/prepare.c`): an unsatisfied dependency version (`DEP_ERR_VERSION`) was returned as `TRANS_ERR_NOMEM`; it now returns `TRANS_ERR_MISSING_DEP`
+
 ## [2.5.0] - 2026-09-16
 
 ### Added
