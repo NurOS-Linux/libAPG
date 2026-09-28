@@ -9,8 +9,11 @@
 #include <sys/file.h>
 #include <unistd.h>
 #include <stdio.h>
+#include <string.h>
+#include <errno.h>
 
 #include "db_priv.h"
+#include "../error_priv.h"
 
 static int
 acquire_write_lock(const char *db_path)
@@ -20,10 +23,21 @@ acquire_write_lock(const char *db_path)
 
     int fd = open(lock_path, O_CREAT | O_RDWR, 0644);
     if (fd < 0)
+    {
+        apg_set_error("cannot open database lock '%s': %s", lock_path,
+                      strerror(errno));
         return -1;
+    }
 
     if (flock(fd, LOCK_EX | LOCK_NB) != 0)
     {
+        if (errno == EWOULDBLOCK)
+            apg_set_error("package database at '%s' is locked by another "
+                          "process",
+                          db_path);
+        else
+            apg_set_error("cannot lock package database at '%s': %s", db_path,
+                          strerror(errno));
         close(fd);
         return -1;
     }
@@ -33,23 +47,35 @@ acquire_write_lock(const char *db_path)
 static struct db_handle *
 open_env(const char *path, unsigned int extra_flags)
 {
+    apg_clear_error();
+
     struct db_handle *db = calloc(1, sizeof(*db));
     if (!db)
+    {
+        apg_set_error("out of memory while opening package database");
         return NULL;
+    }
 
     db->lock_fd = -1;
 
-    if (mdb_env_create(&db->env) != MDB_SUCCESS)
+    int rc = mdb_env_create(&db->env);
+    if (rc != MDB_SUCCESS)
+    {
+        apg_set_error("cannot open package database at '%s': %s", path,
+                      mdb_strerror(rc));
         goto fail;
+    }
     mdb_env_set_maxdbs(db->env, 3);
     mdb_env_set_maxreaders(db->env, 256);
     mdb_env_set_mapsize(db->env, APG_DB_MAPSIZE);
 
-    // MDB_NOTLS: read transactions are not tied to a thread, safe for
-    // concurrent use
-    if (mdb_env_open(db->env, path, extra_flags | MDB_NOTLS, 0664) !=
-        MDB_SUCCESS)
+    rc = mdb_env_open(db->env, path, extra_flags | MDB_NOTLS, 0664);
+    if (rc != MDB_SUCCESS)
+    {
+        apg_set_error("cannot open package database at '%s': %s", path,
+                      mdb_strerror(rc));
         goto fail;
+    }
 
     pthread_mutex_init(&db->write_lock, NULL);
     return db;

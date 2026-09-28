@@ -60,6 +60,8 @@ main(void)
     test_install_data_dir_missing_data_returns_false();
     test_rollback_install_removes_files();
     test_db_add_get_remove_roundtrip();
+    test_db_add_reports_map_full();
+    test_db_open_reports_lock_and_missing_record();
     test_run_script_root();
     test_run_script_reports_exit_status();
     test_install_data_dir_reports_write_error();

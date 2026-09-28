@@ -288,6 +288,61 @@ test_db_add_get_remove_roundtrip(void)
 }
 
 void
+test_db_add_reports_map_full(void)
+{
+    char db_path[PATH_MAX];
+    struct db_handle *db = open_tmp_db(db_path);
+    assert(db);
+
+    size_t count = (size_t)APG_DB_MAPSIZE / 100 + 1;
+    struct package *pkg = package_new();
+    assert(pkg);
+    pkg->meta->name = strdup("huge-pkg");
+    pkg->meta->version = strdup("1.0");
+    pkg->package_files.items = calloc(count, sizeof(char *));
+    assert(pkg->package_files.items);
+    pkg->package_files.count = (int)count;
+    for (size_t i = 0; i < count; i++)
+    {
+        char path[256];
+        snprintf(path, sizeof(path), "/usr/share/huge-pkg/%0180zu", i);
+        pkg->package_files.items[i] = strdup(path);
+    }
+
+    assert(!db_add(db, pkg));
+    const char *err = apg_last_error();
+    assert(err);
+    assert(strstr(err, "huge-pkg"));
+    assert(strstr(err, "MDB_MAP_FULL"));
+
+    struct package *fetched = db_get(db, "huge-pkg");
+    assert(fetched == NULL);
+
+    package_free(pkg);
+    close_tmp_db(db, db_path);
+    printf("test_db_add_reports_map_full: PASS\n");
+}
+
+void
+test_db_open_reports_lock_and_missing_record(void)
+{
+    char db_path[PATH_MAX];
+    struct db_handle *db = open_tmp_db(db_path);
+    assert(db);
+
+    assert(db_open(db_path) == NULL);
+    assert(apg_last_error());
+    assert(strstr(apg_last_error(), "locked by another process"));
+
+    assert(!db_remove(db, "never-installed"));
+    assert(apg_last_error());
+    assert(strstr(apg_last_error(), "never-installed"));
+
+    close_tmp_db(db, db_path);
+    printf("test_db_open_reports_lock_and_missing_record: PASS\n");
+}
+
+void
 test_run_script_root(void)
 {
     char *pkg_dir = mktmp_dir("scriptpkg");
@@ -322,8 +377,6 @@ test_run_script_root(void)
     assert(res == false);
     assert(apg_last_error());
     assert(strstr(apg_last_error(), "pre-install script could not be started"));
-
-    // Verify script cannot escape root_path to write on host /tmp
     struct stat escape_st;
     assert(stat("/tmp/libapg_escape_test.txt", &escape_st) != 0);
 

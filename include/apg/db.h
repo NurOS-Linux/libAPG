@@ -62,8 +62,8 @@ extern "C"
      *
      * @param path Filesystem path to the database directory.
      * @return Heap-allocated handle, or NULL on failure or if the database is
-     *         already locked by another process.
-     *         Close with db_close() when done.
+     *         already locked by another process; apg_last_error() then
+     *         describes which. Close with db_close() when done.
      */
     APG_API struct db_handle *db_open(const char *path);
 
@@ -73,8 +73,8 @@ extern "C"
      * db_add() and db_remove() will return false on a read-only handle.
      *
      * @param path Filesystem path to the database directory.
-     * @return Heap-allocated handle, or NULL on failure.
-     *         Close with db_close() when done.
+     * @return Heap-allocated handle, or NULL on failure (see
+     *         apg_last_error()). Close with db_close() when done.
      */
     APG_API struct db_handle *db_open_readonly(const char *path);
 
@@ -99,9 +99,14 @@ extern "C"
     /**
      * @brief Add or update a package record in the database.
      *
+     * The record, its file list, and its file ownership entries are written
+     * in one LMDB transaction; if any part fails (for example because the
+     * map is full), nothing is written.
+     *
      * @param db  Database handle opened for writing.
      * @param pkg Package to record. The database stores a serialized copy.
-     * @return true on success, false on write failure or read-only handle.
+     * @return true on success, false on write failure or read-only handle;
+     *         apg_last_error() then describes the cause.
      */
     APG_API bool db_add(struct db_handle *db, struct package *pkg);
 
@@ -110,8 +115,9 @@ extern "C"
      *
      * @param db       Database handle opened for writing.
      * @param pkg_name Name of the package to remove.
-     * @return true on success, false if the package was not found or the handle
-     *         is read-only.
+     * @return true on success, false if the package was not found, the write
+     *         failed, or the handle is read-only; apg_last_error() describes
+     *         the cause.
      */
     APG_API bool db_remove(struct db_handle *db, const char *pkg_name);
 

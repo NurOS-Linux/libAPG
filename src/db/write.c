@@ -8,11 +8,13 @@
 #include <lmdb.h>
 #include <stdio.h>
 #include <unistd.h>
+#include <errno.h>
 
 #include "db_priv.h"
 #include "../../include/apg/package.h"
 #include "../../include/apg/json.h"
 #include "../../include/apg/journal.h"
+#include "../error_priv.h"
 
 static void
 delete_file_owner_entries(struct db_handle *db, MDB_txn *txn, const char *fdata,
@@ -63,8 +65,14 @@ serialize_files(const struct str_list *files)
 bool
 db_add(struct db_handle *db, struct package *pkg)
 {
-    if (!db || !pkg || !pkg->meta || db->readonly)
+    if (!db || !pkg || !pkg->meta)
         return false;
+    if (db->readonly)
+    {
+        apg_set_error("cannot record '%s': package database is read-only",
+                      pkg->meta->name);
+        return false;
+    }
 
     if (db->hooks.pre)
         db->hooks.pre(DB_OP_ADD, pkg->meta->name, db->hooks.userdata);
@@ -75,21 +83,26 @@ db_add(struct db_handle *db, struct package *pkg)
 
     MDB_txn *txn;
     MDB_dbi dbi;
-    bool ok = false;
 
-    if (mdb_txn_begin(db->env, NULL, 0, &txn) == MDB_SUCCESS)
+    int rc = mdb_txn_begin(db->env, NULL, 0, &txn);
+    if (rc == MDB_SUCCESS)
     {
-        if (mdb_dbi_open(txn, NULL, 0, &dbi) == MDB_SUCCESS)
+        rc = mdb_dbi_open(txn, NULL, 0, &dbi);
+        if (rc == MDB_SUCCESS)
         {
             char *json = package_to_json(pkg);
             if (json)
             {
                 MDB_val key = {strlen(pkg->meta->name), pkg->meta->name};
                 MDB_val data = {strlen(json), json};
-                ok = mdb_put(txn, dbi, &key, &data, 0) == MDB_SUCCESS;
+                rc = mdb_put(txn, dbi, &key, &data, 0);
                 free(json);
             }
-            if (ok && pkg->package_files.count > 0)
+            else
+            {
+                rc = ENOMEM;
+            }
+            if (rc == MDB_SUCCESS && pkg->package_files.count > 0)
             {
                 if (db->files_dbi_open)
                 {
@@ -99,11 +112,15 @@ db_add(struct db_handle *db, struct package *pkg)
                         MDB_val fkey = {strlen(pkg->meta->name),
                                         pkg->meta->name};
                         MDB_val fval = {strlen(fdata), fdata};
-                        mdb_put(txn, db->files_dbi, &fkey, &fval, 0);
+                        rc = mdb_put(txn, db->files_dbi, &fkey, &fval, 0);
                         free(fdata);
                     }
+                    else
+                    {
+                        rc = ENOMEM;
+                    }
                 }
-                if (db->file_owner_dbi_open)
+                if (rc == MDB_SUCCESS && db->file_owner_dbi_open)
                 {
                     MDB_val oval = {strlen(pkg->meta->name), pkg->meta->name};
                     for (int fi = 0; fi < pkg->package_files.count; fi++)
@@ -112,12 +129,14 @@ db_add(struct db_handle *db, struct package *pkg)
                         if (!fp)
                             continue;
                         MDB_val okey = {strlen(fp), (void *)fp};
-                        mdb_put(txn, db->file_owner_dbi, &okey, &oval, 0);
+                        rc = mdb_put(txn, db->file_owner_dbi, &okey, &oval, 0);
+                        if (rc != MDB_SUCCESS)
+                            break;
                     }
                 }
             }
-            if (ok)
-                mdb_txn_commit(txn);
+            if (rc == MDB_SUCCESS)
+                rc = mdb_txn_commit(txn);
             else
                 mdb_txn_abort(txn);
             mdb_dbi_close(db->env, dbi);
@@ -127,6 +146,11 @@ db_add(struct db_handle *db, struct package *pkg)
             mdb_txn_abort(txn);
         }
     }
+
+    bool ok = rc == MDB_SUCCESS;
+    if (!ok)
+        apg_set_error("cannot record '%s' in the package database: %s",
+                      pkg->meta->name, mdb_strerror(rc));
 
     pthread_mutex_unlock(&db->write_lock);
 
@@ -164,8 +188,14 @@ db_set_hold(struct db_handle *db, const char *pkg_name, bool held)
 bool
 db_remove(struct db_handle *db, const char *pkg_name)
 {
-    if (!db || !pkg_name || db->readonly)
+    if (!db || !pkg_name)
         return false;
+    if (db->readonly)
+    {
+        apg_set_error("cannot remove '%s': package database is read-only",
+                      pkg_name);
+        return false;
+    }
 
     char *version_for_journal = NULL;
     if (!db->suppress_journal)
@@ -183,15 +213,16 @@ db_remove(struct db_handle *db, const char *pkg_name)
 
     MDB_txn *txn;
     MDB_dbi dbi;
-    bool ok = false;
 
-    if (mdb_txn_begin(db->env, NULL, 0, &txn) == MDB_SUCCESS)
+    int rc = mdb_txn_begin(db->env, NULL, 0, &txn);
+    if (rc == MDB_SUCCESS)
     {
-        if (mdb_dbi_open(txn, NULL, 0, &dbi) == MDB_SUCCESS)
+        rc = mdb_dbi_open(txn, NULL, 0, &dbi);
+        if (rc == MDB_SUCCESS)
         {
             MDB_val key = {strlen(pkg_name), (void *)pkg_name};
-            ok = mdb_del(txn, dbi, &key, NULL) == MDB_SUCCESS;
-            if (ok && db->files_dbi_open)
+            rc = mdb_del(txn, dbi, &key, NULL);
+            if (rc == MDB_SUCCESS && db->files_dbi_open)
             {
                 MDB_val fdata;
                 if (mdb_get(txn, db->files_dbi, &key, &fdata) == MDB_SUCCESS)
@@ -199,8 +230,8 @@ db_remove(struct db_handle *db, const char *pkg_name)
                                               fdata.mv_size);
                 mdb_del(txn, db->files_dbi, &key, NULL);
             }
-            if (ok)
-                mdb_txn_commit(txn);
+            if (rc == MDB_SUCCESS)
+                rc = mdb_txn_commit(txn);
             else
                 mdb_txn_abort(txn);
             mdb_dbi_close(db->env, dbi);
@@ -210,6 +241,13 @@ db_remove(struct db_handle *db, const char *pkg_name)
             mdb_txn_abort(txn);
         }
     }
+
+    bool ok = rc == MDB_SUCCESS;
+    if (rc == MDB_NOTFOUND)
+        apg_set_error("'%s' is not recorded in the package database", pkg_name);
+    else if (!ok)
+        apg_set_error("cannot remove '%s' from the package database: %s",
+                      pkg_name, mdb_strerror(rc));
 
     pthread_mutex_unlock(&db->write_lock);
 
