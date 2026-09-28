@@ -102,4 +102,7 @@ struct apg_trans
     bool skip_dependents_check;
 
     bool dry_run;
+
+    trans_progress_fn progress_cb;
+    void *progress_userdata;
 };

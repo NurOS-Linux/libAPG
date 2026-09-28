@@ -84,6 +84,16 @@ trans_set_dry_run(struct apg_trans *trans, bool dry_run)
 }
 
 void
+trans_set_progress_cb(struct apg_trans *trans, trans_progress_fn cb,
+                      void *userdata)
+{
+    if (!trans)
+        return;
+    trans->progress_cb = cb;
+    trans->progress_userdata = userdata;
+}
+
+void
 trans_free(struct apg_trans *trans)
 {
     if (!trans)

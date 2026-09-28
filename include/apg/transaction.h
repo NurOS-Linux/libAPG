@@ -115,6 +115,18 @@ extern "C"
     struct apg_trans;
 
     /**
+     * @brief Callback invoked by trans_commit() before each plan step runs.
+     *
+     * @param step     Step about to be executed.
+     * @param index    Zero-based position of @p step in the plan.
+     * @param total    Number of steps in the plan.
+     * @param userdata Pointer passed to trans_set_progress_cb().
+     */
+    typedef void (*trans_progress_fn)(const struct trans_step *step,
+                                      size_t index, size_t total,
+                                      void *userdata);
+
+    /**
      * @brief Operation this step performs.
      */
     APG_API trans_op_t trans_step_op(const struct trans_step *step);
@@ -243,6 +255,20 @@ extern "C"
      * @param dry_run True to enable dry-run mode, false to disable it.
      */
     APG_API void trans_set_dry_run(struct apg_trans *trans, bool dry_run);
+
+    /**
+     * @brief Register a callback that reports commit progress.
+     *
+     * trans_commit() calls @p cb once before executing each step of the
+     * plan, in plan order, on the calling thread. It is also called in
+     * dry-run mode. Pass NULL to remove a previously set callback.
+     *
+     * @param trans    Transaction to configure.
+     * @param cb       Callback, or NULL.
+     * @param userdata Opaque pointer forwarded to @p cb.
+     */
+    APG_API void trans_set_progress_cb(struct apg_trans *trans,
+                                       trans_progress_fn cb, void *userdata);
 
     /**
      * @brief Create a new transaction backed by the given database.

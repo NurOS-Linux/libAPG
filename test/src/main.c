@@ -51,6 +51,7 @@ main(void)
     test_policy_skip_dependents_check_allows_blocked_remove();
     test_dry_run_install_reports_ok_without_side_effects();
     test_dry_run_still_reports_unsigned();
+    test_progress_cb_called_per_step();
     test_dry_run_does_not_count_towards_commit_limit();
     test_dry_run_remove_does_not_modify_db();
     test_candidate_resolved_when_needed_and_marked_non_explicit();

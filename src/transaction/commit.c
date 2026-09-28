@@ -213,6 +213,10 @@ trans_commit(struct apg_trans *trans, const char *root_path)
         struct trans_step *step = &trans->plan[i];
         apg_clear_error();
 
+        if (trans->progress_cb)
+            trans->progress_cb(step, i, trans->plan_count,
+                               trans->progress_userdata);
+
         if (step->op == TRANS_OP_INSTALL)
         {
             struct package *pkg = trans->plan_pkgs[i];

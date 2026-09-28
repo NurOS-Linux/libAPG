@@ -239,6 +239,65 @@ test_dry_run_install_reports_ok_without_side_effects(void)
     printf("test_dry_run_install_reports_ok_without_side_effects: PASS\n");
 }
 
+struct progress_log
+{
+    size_t calls;
+    size_t last_index;
+    size_t last_total;
+    char names[4][32];
+};
+
+static void
+record_progress(const struct trans_step *step, size_t index, size_t total,
+                void *userdata)
+{
+    struct progress_log *log = userdata;
+    if (log->calls < 4)
+        snprintf(log->names[log->calls], sizeof(log->names[0]), "%s",
+                 trans_step_pkg_name(step));
+    log->calls++;
+    log->last_index = index;
+    log->last_total = total;
+}
+
+void
+test_progress_cb_called_per_step(void)
+{
+    char db_path[PATH_MAX];
+    struct db_handle *db = open_tmp_db(db_path);
+    assert(db);
+
+    struct package *app = pkg_with_dependency("app", "libfoo");
+    struct package *lib = simple_pkg("libfoo");
+    struct apg_trans *trans = trans_new(db);
+    assert(trans_add_install(trans, app) == TRANS_OK);
+    assert(trans_add_install(trans, lib) == TRANS_OK);
+    assert(trans_prepare(trans) == TRANS_OK);
+    assert(trans_plan_count(trans) == 2);
+
+    struct progress_log log = {0};
+    trans_set_progress_cb(trans, record_progress, &log);
+    trans_set_dry_run(trans, true);
+
+    assert(trans_commit(trans, "/tmp") == TRANS_OK);
+    assert(log.calls == 2);
+    assert(log.last_index == 1);
+    assert(log.last_total == 2);
+    assert(strcmp(log.names[0], "libfoo") == 0);
+    assert(strcmp(log.names[1], "app") == 0);
+
+    trans_set_progress_cb(trans, NULL, NULL);
+    log.calls = 0;
+    assert(trans_commit(trans, "/tmp") == TRANS_OK);
+    assert(log.calls == 0);
+
+    trans_free(trans);
+    package_free(app);
+    package_free(lib);
+    close_tmp_db(db, db_path);
+    printf("test_progress_cb_called_per_step: PASS\n");
+}
+
 void
 test_dry_run_still_reports_unsigned(void)
 {
