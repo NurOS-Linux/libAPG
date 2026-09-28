@@ -2,12 +2,15 @@
 // SPDX-FileCopyrightText: 2026 Ruzen42
 // SPDX-FileCopyrightText: 2026 AnmiTaliDev <anmitalidev@nuros.org>
 
+#include <errno.h>
 #include <inttypes.h>
 #include <limits.h>
 #include <stdatomic.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include <sys/stat.h>
 #include <unistd.h>
 
 #include "../include/apg/package.h"
@@ -17,9 +20,31 @@
 #include "../include/apg/scripts.h"
 #include "../include/apg/archive.h"
 #include "../include/apg/json.h"
+#include "error_priv.h"
 
 static const char *tmp_path = APG_TMP_DIR "/";
 static _Atomic uint64_t g_extract_seq = 0;
+
+static bool
+make_dirs(char *path)
+{
+    for (char *p = path + 1;; p++)
+    {
+        if (*p != '/' && *p != '\0')
+            continue;
+        char saved = *p;
+        *p = '\0';
+        bool ok = mkdir(path, 0755) == 0 || errno == EEXIST;
+        if (!ok)
+            apg_set_error("cannot create temporary directory '%s': %s", path,
+                          strerror(errno));
+        *p = saved;
+        if (!ok)
+            return false;
+        if (saved == '\0')
+            return true;
+    }
+}
 
 static char *
 unique_tmp_dir(const char *root_path)
@@ -27,7 +52,6 @@ unique_tmp_dir(const char *root_path)
     char *base = concat_dirs(root_path, tmp_path);
     if (!base)
         return NULL;
-    create_dir(base);
 
     char leaf[64];
     (void)snprintf(leaf, sizeof(leaf), "pkg-%d-%" PRIu64, (int)getpid(),
@@ -35,8 +59,14 @@ unique_tmp_dir(const char *root_path)
 
     char *unique = concat_dirs(base, leaf);
     free(base);
-    if (unique)
-        create_dir(unique);
+    if (!unique)
+        return NULL;
+
+    if (!make_dirs(unique))
+    {
+        free(unique);
+        return NULL;
+    }
     return unique;
 }
 
@@ -121,6 +151,8 @@ install_package(struct package *pkg)
 bool
 install_package_in_root(struct package *pkg, const char *root_path)
 {
+    apg_clear_error();
+
     char *real_tmp = unique_tmp_dir(root_path);
     if (!real_tmp)
         return false;
@@ -180,6 +212,8 @@ install_package_in_root(struct package *pkg, const char *root_path)
 bool
 package_collect_files(struct package *pkg, const char *root_path)
 {
+    apg_clear_error();
+
     if (!pkg || !pkg->pkg_path)
         return false;
 
@@ -217,6 +251,8 @@ package_collect_files(struct package *pkg, const char *root_path)
 struct package *
 parse_package(const char *path, const char *root_path)
 {
+    apg_clear_error();
+
     struct package *pkg = package_new();
     if (!pkg)
         return NULL;
@@ -249,6 +285,7 @@ parse_package(const char *path, const char *root_path)
 
     if (!pkg->meta)
     {
+        apg_set_error("'%s' has a missing or invalid metadata.json", path);
         package_free(pkg);
         return NULL;
     }

@@ -61,6 +61,8 @@ main(void)
     test_rollback_install_removes_files();
     test_db_add_get_remove_roundtrip();
     test_run_script_root();
+    test_run_script_reports_exit_status();
+    test_install_data_dir_reports_write_error();
     test_parse_package_install_roundtrip();
     test_install_package_in_root_uses_isolated_temp_dirs();
 

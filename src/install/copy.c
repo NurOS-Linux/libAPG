@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 // SPDX-FileCopyrightText: 2026 AnmiTaliDev <anmitalidev@nuros.org>
 
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -11,21 +12,29 @@
 
 #include "../../include/apg/copy.h"
 #include "../../include/apg/util.h"
+#include "../error_priv.h"
 
 bool
 copy_file(const char *src, const char *dst)
 {
     struct stat st;
     if (stat(src, &st) != 0)
+    {
+        apg_set_error("cannot read '%s': %s", src, strerror(errno));
         return false;
+    }
 
     FILE *in = fopen(src, "rb");
     if (!in)
+    {
+        apg_set_error("cannot open '%s': %s", src, strerror(errno));
         return false;
+    }
 
     FILE *out = fopen(dst, "wb");
     if (!out)
     {
+        apg_set_error("cannot create '%s': %s", dst, strerror(errno));
         (void)fclose(in);
         return false;
     }
@@ -37,19 +46,30 @@ copy_file(const char *src, const char *dst)
     {
         if (fwrite(buf, 1, n, out) != n)
         {
+            apg_set_error("cannot write '%s': %s", dst, strerror(errno));
             ok = false;
             break;
         }
     }
-    if (ferror(in))
+    if (ok && ferror(in))
+    {
+        apg_set_error("cannot read '%s': %s", src, strerror(errno));
         ok = false;
+    }
 
     (void)fclose(in);
-    if (fclose(out) != 0)
+    if (fclose(out) != 0 && ok)
+    {
+        apg_set_error("cannot write '%s': %s", dst, strerror(errno));
         ok = false;
+    }
 
     if (ok && chmod(dst, st.st_mode & 07777) != 0)
+    {
+        apg_set_error("cannot set permissions on '%s': %s", dst,
+                      strerror(errno));
         ok = false;
+    }
 
     return ok;
 }
@@ -59,19 +79,33 @@ copy_dir(const char *src, const char *dst)
 {
     struct stat src_st;
     if (stat(src, &src_st) != 0)
+    {
+        apg_set_error("cannot read '%s': %s", src, strerror(errno));
         return false;
+    }
 
     struct stat dst_st;
     bool dst_existed = stat(dst, &dst_st) == 0;
 
-    create_dir(dst);
+    if (!dst_existed && mkdir(dst, 0755) != 0 && errno != EEXIST)
+    {
+        apg_set_error("cannot create directory '%s': %s", dst, strerror(errno));
+        return false;
+    }
 
     if (!dst_existed && chmod(dst, src_st.st_mode & 07777) != 0)
+    {
+        apg_set_error("cannot set permissions on '%s': %s", dst,
+                      strerror(errno));
         return false;
+    }
 
     DIR *dir = opendir(src);
     if (!dir)
+    {
+        apg_set_error("cannot open directory '%s': %s", src, strerror(errno));
         return false;
+    }
 
     struct dirent *entry;
     bool ok = true;
@@ -86,6 +120,7 @@ copy_dir(const char *src, const char *dst)
 
         if (!src_path || !dst_path)
         {
+            apg_set_error("out of memory while copying '%s'", src);
             free(src_path);
             free(dst_path);
             ok = false;
@@ -95,6 +130,7 @@ copy_dir(const char *src, const char *dst)
         struct stat st;
         if (lstat(src_path, &st) != 0)
         {
+            apg_set_error("cannot read '%s': %s", src_path, strerror(errno));
             free(src_path);
             free(dst_path);
             ok = false;
@@ -117,6 +153,8 @@ copy_dir(const char *src, const char *dst)
             ssize_t len = readlink(src_path, target, sizeof(target) - 1);
             if (len < 0)
             {
+                apg_set_error("cannot read link '%s': %s", src_path,
+                              strerror(errno));
                 free(src_path);
                 free(dst_path);
                 ok = false;
@@ -135,6 +173,8 @@ copy_dir(const char *src, const char *dst)
 
             if (symlink(target, dst_path) != 0)
             {
+                apg_set_error("cannot create link '%s': %s", dst_path,
+                              strerror(errno));
                 free(src_path);
                 free(dst_path);
                 ok = false;

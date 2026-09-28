@@ -57,6 +57,8 @@ void test_install_data_dir_missing_data_returns_false(void);
 void test_rollback_install_removes_files(void);
 void test_db_add_get_remove_roundtrip(void);
 void test_run_script_root(void);
+void test_run_script_reports_exit_status(void);
+void test_install_data_dir_reports_write_error(void);
 void test_parse_package_install_roundtrip(void);
 void test_install_package_in_root_uses_isolated_temp_dirs(void);
 

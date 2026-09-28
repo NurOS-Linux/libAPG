@@ -8,6 +8,7 @@
 #include <stdatomic.h>
 #include <stdint.h>
 #include <errno.h>
+#include <fcntl.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -23,6 +24,7 @@
 #include "../../include/apg/scripts.h"
 #include "../../include/apg/copy.h"
 #include "../../include/apg/util.h"
+#include "../error_priv.h"
 
 #ifndef PATH_MAX
 #define PATH_MAX 4096
@@ -44,7 +46,7 @@ normalize(const char *src, char *dst, size_t dst_size)
 static _Atomic uint64_t g_script_seq = 0;
 
 static bool
-exec_script(const char *path, const char *root_path)
+exec_script(const char *path, const char *name, const char *root_path)
 {
     bool do_chroot = (root_path != NULL && strcmp(root_path, "/") != 0 &&
                       *root_path != '\0');
@@ -117,6 +119,7 @@ exec_script(const char *path, const char *root_path)
     int pipefd[2];
     if (pipe(pipefd) < 0)
     {
+        apg_set_error("cannot start %s script: %s", name, strerror(errno));
         if (stage_full_path)
         {
             unlink(stage_full_path);
@@ -129,6 +132,7 @@ exec_script(const char *path, const char *root_path)
     pid_t pid = fork();
     if (pid < 0)
     {
+        apg_set_error("cannot start %s script: %s", name, strerror(errno));
         close(pipefd[0]);
         close(pipefd[1]);
         if (stage_full_path)
@@ -149,8 +153,8 @@ exec_script(const char *path, const char *root_path)
         {
             if (errno != EPERM && errno != EINVAL)
             {
-                uint8_t err = 1;
-                (void)write(pipefd[1], &err, 1);
+                int err = errno;
+                (void)write(pipefd[1], &err, sizeof(err));
                 close(pipefd[1]);
                 _exit(1);
             }
@@ -160,22 +164,24 @@ exec_script(const char *path, const char *root_path)
         {
             if (chroot(root_path) < 0 || chdir("/") < 0)
             {
-                uint8_t err = 1;
-                (void)write(pipefd[1], &err, 1);
+                int err = errno;
+                (void)write(pipefd[1], &err, sizeof(err));
                 close(pipefd[1]);
                 _exit(1);
             }
         }
 
-        close(pipefd[1]);
+        (void)fcntl(pipefd[1], F_SETFD, FD_CLOEXEC);
         execl("/bin/sh", "sh", exec_path, (char *)NULL);
-        perror("execl failed");
+        int err = errno;
+        (void)write(pipefd[1], &err, sizeof(err));
+        close(pipefd[1]);
         _exit(1);
     }
 
     close(pipefd[1]);
-    uint8_t err = 0;
-    ssize_t n = read(pipefd[0], &err, 1);
+    int child_err = 0;
+    ssize_t n = read(pipefd[0], &child_err, sizeof(child_err));
     close(pipefd[0]);
 
     bool success = false;
@@ -183,9 +189,17 @@ exec_script(const char *path, const char *root_path)
     if (n == 0 && waitpid(pid, &status, 0) == pid)
     {
         success = WIFEXITED(status) && WEXITSTATUS(status) == 0;
+        if (WIFEXITED(status) && !success)
+            apg_set_error("%s script exited with status %d", name,
+                          WEXITSTATUS(status));
+        else if (WIFSIGNALED(status))
+            apg_set_error("%s script was killed by signal %d (%s)", name,
+                          WTERMSIG(status), strsignal(WTERMSIG(status)));
     }
     else if (n > 0)
     {
+        apg_set_error("%s script could not be started: %s", name,
+                      strerror(child_err));
         waitpid(pid, NULL, 0);
     }
 
@@ -203,6 +217,7 @@ exec_script(const char *path, const char *root_path)
     int pipefd[2];
     if (pipe(pipefd) < 0)
     {
+        apg_set_error("cannot start %s script: %s", name, strerror(errno));
         if (stage_full_path)
         {
             unlink(stage_full_path);
@@ -215,6 +230,7 @@ exec_script(const char *path, const char *root_path)
     pid_t pid = fork();
     if (pid < 0)
     {
+        apg_set_error("cannot start %s script: %s", name, strerror(errno));
         close(pipefd[0]);
         close(pipefd[1]);
         if (stage_full_path)
@@ -234,21 +250,24 @@ exec_script(const char *path, const char *root_path)
         {
             if (chroot(root_path) < 0 || chdir("/") < 0)
             {
-                uint8_t err = 1;
-                (void)write(pipefd[1], &err, 1);
+                int err = errno;
+                (void)write(pipefd[1], &err, sizeof(err));
                 close(pipefd[1]);
                 _exit(1);
             }
         }
 
-        close(pipefd[1]);
+        (void)fcntl(pipefd[1], F_SETFD, FD_CLOEXEC);
         execl("/bin/sh", "sh", exec_path, (char *)NULL);
+        int err = errno;
+        (void)write(pipefd[1], &err, sizeof(err));
+        close(pipefd[1]);
         _exit(1);
     }
 
     close(pipefd[1]);
-    uint8_t err = 0;
-    ssize_t n = read(pipefd[0], &err, 1);
+    int child_err = 0;
+    ssize_t n = read(pipefd[0], &child_err, sizeof(child_err));
     close(pipefd[0]);
 
     bool success = false;
@@ -256,9 +275,17 @@ exec_script(const char *path, const char *root_path)
     if (n == 0 && waitpid(pid, &status, 0) == pid)
     {
         success = WIFEXITED(status) && WEXITSTATUS(status) == 0;
+        if (WIFEXITED(status) && !success)
+            apg_set_error("%s script exited with status %d", name,
+                          WEXITSTATUS(status));
+        else if (WIFSIGNALED(status))
+            apg_set_error("%s script was killed by signal %d (%s)", name,
+                          WTERMSIG(status), strsignal(WTERMSIG(status)));
     }
     else if (n > 0)
     {
+        apg_set_error("%s script could not be started: %s", name,
+                      strerror(child_err));
         waitpid(pid, NULL, 0);
     }
 
@@ -319,7 +346,7 @@ run_script(const char *pkg_dir, const char *name, const char *root_path)
         return true;
     }
 
-    bool ok = exec_script(found, root_path);
+    bool ok = exec_script(found, name, root_path);
     free(found);
     return ok;
 }

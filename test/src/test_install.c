@@ -2,6 +2,7 @@
 // SPDX-FileCopyrightText: 2026 AnmiTaliDev <anmitalidev@nuros.org>
 
 #include <assert.h>
+#include <errno.h>
 #include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -10,6 +11,7 @@
 #include <sys/stat.h>
 #include <dirent.h>
 
+#include <apg/error.h>
 #include <apg/install.h>
 #include <apg/db.h>
 #include <apg/package.h>
@@ -318,8 +320,8 @@ test_run_script_root(void)
     // Running script on a root without /bin/sh returns false (fail-closed)
     bool res = run_script(alt_pkg_dir, "pre-install", root);
     assert(res == false);
-
-    // Verify script cannot escape root_path to write on host /tmp
+    assert(apg_last_error());
+    assert(strstr(apg_last_error(), "pre-install script could not be started"));
     struct stat escape_st;
     assert(stat("/tmp/libapg_escape_test.txt", &escape_st) != 0);
 
@@ -336,6 +338,63 @@ test_run_script_root(void)
     free(pkg_dir);
     free(root);
     printf("test_run_script_root: PASS\n");
+}
+
+void
+test_run_script_reports_exit_status(void)
+{
+    char *pkg_dir = mktmp_dir("scriptfail");
+    char *scripts_dir = join_path(pkg_dir, "scripts");
+    mkdir_p(scripts_dir);
+
+    char *script_path = join_path(scripts_dir, "post-install");
+    write_file(script_path, "#!/bin/sh\nexit 3\n");
+    chmod(script_path, 0755);
+
+    assert(!run_script(pkg_dir, "post-install", "/"));
+    assert(apg_last_error());
+    assert(strcmp(apg_last_error(),
+                  "post-install script exited with status 3") == 0);
+
+    free(script_path);
+    free(scripts_dir);
+    rmtree(pkg_dir);
+    free(pkg_dir);
+    printf("test_run_script_reports_exit_status: PASS\n");
+}
+
+void
+test_install_data_dir_reports_write_error(void)
+{
+    if (geteuid() == 0)
+    {
+        printf("test_install_data_dir_reports_write_error: SKIP (root)\n");
+        return;
+    }
+
+    char *pkg_dir = mktmp_dir("pkgro");
+    char *root = mktmp_dir("rootro");
+
+    char *data_dir = join_path(pkg_dir, "data");
+    mkdir_p(data_dir);
+    char *src_file = join_path(data_dir, "file.txt");
+    write_file(src_file, "x");
+    chmod(root, 0500);
+
+    assert(!install_data_dir(pkg_dir, root));
+    const char *err = apg_last_error();
+    assert(err);
+    assert(strstr(err, "file.txt"));
+    assert(strstr(err, strerror(EACCES)));
+
+    chmod(root, 0700);
+    free(src_file);
+    free(data_dir);
+    rmtree(pkg_dir);
+    rmtree(root);
+    free(pkg_dir);
+    free(root);
+    printf("test_install_data_dir_reports_write_error: PASS\n");
 }
 
 static void

@@ -7,6 +7,7 @@
 #include "../../include/apg/install.h"
 #include "../../include/apg/copy.h"
 #include "../../include/apg/util.h"
+#include "../error_priv.h"
 
 bool
 install_data_dir(const char *pkg_dir, const char *root_path)
@@ -18,6 +19,7 @@ install_data_dir(const char *pkg_dir, const char *root_path)
     struct stat st;
     if (stat(data_src, &st) != 0 || !S_ISDIR(st.st_mode))
     {
+        apg_set_error("package has no data/ directory");
         free(data_src);
         return false;
     }
