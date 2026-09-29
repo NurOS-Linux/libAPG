@@ -412,6 +412,7 @@ trans_prepare(struct apg_trans *trans)
 
         struct package *installed_pkg = db_get(trans->db, name);
         bool is_held = installed_pkg && installed_pkg->held;
+        bool by_hand = !installed_pkg || installed_pkg->installed_by_hand;
         package_free(installed_pkg);
 
         if (is_held)
@@ -427,7 +428,7 @@ trans_prepare(struct apg_trans *trans)
 
         const char *version = pkg->meta->version;
         trans_error_t perr =
-            plan_push(trans, TRANS_OP_UPGRADE, name, version, true, pkg);
+            plan_push(trans, TRANS_OP_UPGRADE, name, version, by_hand, pkg);
         if (perr != TRANS_OK)
         {
             ret = perr;

@@ -16,6 +16,7 @@
 #include <apg/db.h>
 #include <apg/package.h>
 #include <apg/scripts.h>
+#include <apg/transaction.h>
 #include <apg/util.h>
 
 // concat_dirs() does not insert a separator between its arguments (despite
@@ -581,6 +582,60 @@ test_parse_package_install_roundtrip(void)
     free(pkg_src);
     free(root);
     printf("test_parse_package_install_roundtrip: PASS\n");
+}
+
+static void
+upgrade_and_check_by_hand(bool by_hand)
+{
+    char db_path[PATH_MAX];
+    struct db_handle *db = open_tmp_db(db_path);
+    assert(db);
+
+    struct package *old = package_new();
+    old->meta->name = strdup("dep-pkg");
+    old->meta->version = strdup("0.9.0");
+    old->installed_by_hand = by_hand;
+    assert(db_add(db, old));
+    package_free(old);
+
+    char *src = mktmp_dir("upg-src");
+    char *arch_dir = mktmp_dir("upg-arch");
+    char *archive = join_path(arch_dir, "dep.tar.gz");
+    build_test_package(src, archive, "dep-pkg", "usr/share/dep/f", "x");
+    char *root = mktmp_dir("upg-root");
+
+    struct package *pkg = parse_package(archive, root);
+    assert(pkg);
+    struct apg_trans *trans = trans_new(db);
+    assert(trans_add_upgrade(trans, pkg) == TRANS_OK);
+    assert(trans_prepare(trans) == TRANS_OK);
+    assert(trans_step_explicit(trans_plan_at(trans, 0)) == by_hand);
+    assert(trans_commit(trans, root) == TRANS_OK);
+    trans_free(trans);
+
+    struct package *after = db_get(db, "dep-pkg");
+    assert(after);
+    assert(strcmp(after->meta->version, "1.0.0") == 0);
+    assert(after->installed_by_hand == by_hand);
+    package_free(after);
+
+    package_free(pkg);
+    close_tmp_db(db, db_path);
+    free(archive);
+    rmtree(arch_dir);
+    rmtree(src);
+    rmtree(root);
+    free(arch_dir);
+    free(src);
+    free(root);
+}
+
+void
+test_upgrade_preserves_installed_by_hand(void)
+{
+    upgrade_and_check_by_hand(false);
+    upgrade_and_check_by_hand(true);
+    printf("test_upgrade_preserves_installed_by_hand: PASS\n");
 }
 
 void

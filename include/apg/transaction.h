@@ -335,7 +335,9 @@ extern "C"
      * @brief Queue a package for upgrade.
      *
      * The installed package with the same name as @p pkg is replaced in the
-     * database and on disk. Files removed between versions are not cleaned up —
+     * database and on disk. Whether it was installed explicitly or as a
+     * dependency is preserved; a package that is not installed yet is
+     * recorded as explicit. Files removed between versions are not cleaned up —
      * only the new version's files are written. The transaction borrows @p pkg;
      * the caller retains ownership.
      *
