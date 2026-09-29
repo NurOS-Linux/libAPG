@@ -288,6 +288,58 @@ test_db_add_get_remove_roundtrip(void)
 }
 
 void
+test_db_readonly_sees_package_files(void)
+{
+    char db_path[PATH_MAX];
+    struct db_handle *db = open_tmp_db(db_path);
+    assert(db);
+
+    char *root = mktmp_dir("verifyroot");
+    char *present = join_path(root, "present.txt");
+    write_file(present, "x");
+
+    struct package *pkg = package_new();
+    assert(pkg);
+    pkg->meta->name = strdup("files-pkg");
+    pkg->meta->version = strdup("1.0");
+    pkg->package_files.items = calloc(2, sizeof(char *));
+    pkg->package_files.items[0] = strdup("present.txt");
+    pkg->package_files.items[1] = strdup("missing.txt");
+    pkg->package_files.count = 2;
+    assert(db_add(db, pkg));
+    db_close(db);
+
+    struct db_handle *ro = db_open_readonly(db_path);
+    assert(ro);
+
+    struct package *fetched = db_get(ro, "files-pkg");
+    assert(fetched);
+    assert(fetched->package_files.count == 2);
+    package_free(fetched);
+
+    char *owner = db_owner(ro, "present.txt");
+    assert(owner && strcmp(owner, "files-pkg") == 0);
+    free(owner);
+
+    int issue_count = 0;
+    struct db_verify_issue *issues = db_verify(ro, root, &issue_count);
+    assert(issue_count == 1);
+    const struct db_verify_issue *issue =
+        db_verify_issue_at(issues, issue_count, 0);
+    assert(db_verify_issue_missing_count(issue) == 1);
+    assert(strcmp(db_verify_issue_missing_file_at(issue, 0), "missing.txt") ==
+           0);
+    db_verify_free(issues, issue_count);
+
+    package_free(pkg);
+    close_tmp_db(ro, db_path);
+    free(present);
+    rmtree(root);
+    free(root);
+    printf("test_db_readonly_sees_package_files: PASS\n");
+}
+
+void
 test_db_add_reports_map_full(void)
 {
     char db_path[PATH_MAX];

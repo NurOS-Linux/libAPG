@@ -136,7 +136,11 @@ db_open_readonly(const char *path)
         if (mdb_dbi_open(txn, "file_owner", 0, &db->file_owner_dbi) ==
             MDB_SUCCESS)
             db->file_owner_dbi_open = true;
-        mdb_txn_abort(txn);
+        if (mdb_txn_commit(txn) != MDB_SUCCESS)
+        {
+            db->files_dbi_open = false;
+            db->file_owner_dbi_open = false;
+        }
     }
     return db;
 }
