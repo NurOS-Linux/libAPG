@@ -458,6 +458,16 @@ trans_prepare(struct apg_trans *trans)
         {
             int dep_count = 0;
             char **deps = db_get_dependents(trans->db, name, &dep_count);
+            int kept = 0;
+            for (int d = 0; deps && d < dep_count; d++)
+            {
+                if (in_strarray((const char **)trans->remove_names,
+                                trans->remove_count, deps[d]))
+                    free(deps[d]);
+                else
+                    deps[kept++] = deps[d];
+            }
+            dep_count = kept;
             if (deps && dep_count > 0)
             {
                 if (!trans->blocked_removes)

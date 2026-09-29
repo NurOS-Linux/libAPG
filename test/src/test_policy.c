@@ -380,6 +380,47 @@ test_policy_remove_blocked_by_dependents_by_default(void)
 }
 
 void
+test_remove_with_dependents_removed_together(void)
+{
+    char db_path[PATH_MAX];
+    struct db_handle *db = open_tmp_db(db_path);
+    assert(db);
+
+    struct package *libfoo = simple_pkg("libfoo");
+    struct package *app = pkg_with_dependency("app", "libfoo");
+    struct package *tool = pkg_with_dependency("tool", "libfoo");
+    assert(db_add(db, libfoo));
+    assert(db_add(db, app));
+    assert(db_add(db, tool));
+
+    struct apg_trans *trans = trans_new(db);
+    assert(trans_add_remove(trans, "libfoo") == TRANS_OK);
+    assert(trans_add_remove(trans, "app") == TRANS_OK);
+
+    assert(trans_prepare(trans) == TRANS_ERR_HAS_DEPENDENTS);
+    assert(trans_blocked_remove_count(trans) == 1);
+    const struct trans_blocked_remove *blocked =
+        trans_blocked_remove_at(trans, 0);
+    assert(trans_blocked_remove_dependent_count(blocked) == 1);
+    assert(strcmp(trans_blocked_remove_dependent_at(blocked, 0), "tool") == 0);
+    trans_free(trans);
+
+    trans = trans_new(db);
+    assert(trans_add_remove(trans, "libfoo") == TRANS_OK);
+    assert(trans_add_remove(trans, "app") == TRANS_OK);
+    assert(trans_add_remove(trans, "tool") == TRANS_OK);
+    assert(trans_prepare(trans) == TRANS_OK);
+    assert(trans_plan_count(trans) == 3);
+    trans_free(trans);
+
+    package_free(libfoo);
+    package_free(app);
+    package_free(tool);
+    close_tmp_db(db, db_path);
+    printf("test_remove_with_dependents_removed_together: PASS\n");
+}
+
+void
 test_policy_skip_dependents_check_allows_blocked_remove(void)
 {
     char db_path[PATH_MAX];
