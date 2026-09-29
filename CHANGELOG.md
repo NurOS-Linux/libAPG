@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.6.1] - 2026-09-29
+
+### Fixed
+
+- `trans_prepare()` (`src/transaction/prepare.c`): a queued removal was blocked with `TRANS_ERR_HAS_DEPENDENTS` even when every dependent was queued for removal in the same transaction (e.g. removing a library together with the only package that needs it); dependents that are removed in the same transaction are now ignored, and `trans_blocked_remove_dependent_at()` lists only the dependents that remain installed
+
 ## [2.6.0] - 2026-09-28
 
 ### Added

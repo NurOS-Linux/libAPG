@@ -1,5 +1,5 @@
 project('libapg', 'c',
-  version: '2.6.0',
+  version: '2.6.1',
   default_options: [
     'libarchive:tests=disabled',
     'libarchive:progs=[]',
