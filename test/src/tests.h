@@ -62,7 +62,7 @@ void test_rollback_install_removes_files(void);
 void test_db_add_get_remove_roundtrip(void);
 void test_db_readonly_sees_package_files(void);
 void test_db_set_installed_by_hand_skips_journal(void);
-void test_db_add_reports_map_full(void);
+void test_db_add_grows_full_map(void);
 void test_db_open_reports_lock_and_missing_record(void);
 void test_run_script_root(void);
 void test_run_script_reports_exit_status(void);

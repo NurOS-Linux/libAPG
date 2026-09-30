@@ -387,7 +387,7 @@ test_db_set_installed_by_hand_skips_journal(void)
 }
 
 void
-test_db_add_reports_map_full(void)
+test_db_add_grows_full_map(void)
 {
     char db_path[PATH_MAX];
     struct db_handle *db = open_tmp_db(db_path);
@@ -408,18 +408,27 @@ test_db_add_reports_map_full(void)
         pkg->package_files.items[i] = strdup(path);
     }
 
-    assert(!db_add(db, pkg));
-    const char *err = apg_last_error();
-    assert(err);
-    assert(strstr(err, "huge-pkg"));
-    assert(strstr(err, "MDB_MAP_FULL"));
+    assert(db_add(db, pkg));
 
     struct package *fetched = db_get(db, "huge-pkg");
-    assert(fetched == NULL);
+    assert(fetched);
+    assert(fetched->package_files.count == (int)count);
+    package_free(fetched);
+
+    char *owner = db_owner(db, pkg->package_files.items[count - 1]);
+    assert(owner && strcmp(owner, "huge-pkg") == 0);
+    free(owner);
+
+    db_close(db);
+    db = db_open_readonly(db_path);
+    assert(db);
+    fetched = db_get(db, "huge-pkg");
+    assert(fetched && fetched->package_files.count == (int)count);
+    package_free(fetched);
 
     package_free(pkg);
     close_tmp_db(db, db_path);
-    printf("test_db_add_reports_map_full: PASS\n");
+    printf("test_db_add_grows_full_map: PASS\n");
 }
 
 void

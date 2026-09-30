@@ -16,6 +16,8 @@
 #include "../../include/apg/journal.h"
 #include "../error_priv.h"
 
+#define MAP_GROW_ATTEMPTS 8
+
 static void
 delete_file_owner_entries(struct db_handle *db, MDB_txn *txn,
                           const char *pkg_name)
@@ -82,25 +84,9 @@ serialize_files(const struct str_list *files)
     return buf;
 }
 
-bool
-db_add(struct db_handle *db, struct package *pkg)
+static int
+db_add_once(struct db_handle *db, struct package *pkg)
 {
-    if (!db || !pkg || !pkg->meta)
-        return false;
-    if (db->readonly)
-    {
-        apg_set_error("cannot record '%s': package database is read-only",
-                      pkg->meta->name);
-        return false;
-    }
-
-    if (db->hooks.pre)
-        db->hooks.pre(DB_OP_ADD, pkg->meta->name, db->hooks.userdata);
-
-    // Serialize concurrent writes from multiple threads within this process.
-    // Cross-process writes are serialized by LMDB's own file lock.
-    pthread_mutex_lock(&db->write_lock);
-
     MDB_txn *txn;
     MDB_dbi dbi;
 
@@ -167,6 +153,43 @@ db_add(struct db_handle *db, struct package *pkg)
             mdb_txn_abort(txn);
         }
     }
+
+    return rc;
+}
+
+static bool
+grow_map(struct db_handle *db)
+{
+    MDB_envinfo info;
+    if (mdb_env_info(db->env, &info) != MDB_SUCCESS)
+        return false;
+    return mdb_env_set_mapsize(db->env, info.me_mapsize * 2) == MDB_SUCCESS;
+}
+
+bool
+db_add(struct db_handle *db, struct package *pkg)
+{
+    if (!db || !pkg || !pkg->meta)
+        return false;
+    if (db->readonly)
+    {
+        apg_set_error("cannot record '%s': package database is read-only",
+                      pkg->meta->name);
+        return false;
+    }
+
+    if (db->hooks.pre)
+        db->hooks.pre(DB_OP_ADD, pkg->meta->name, db->hooks.userdata);
+
+    // Serialize concurrent writes from multiple threads within this process.
+    // Cross-process writes are serialized by LMDB's own file lock.
+    pthread_mutex_lock(&db->write_lock);
+
+    int rc = db_add_once(db, pkg);
+    for (int attempt = 0;
+         rc == MDB_MAP_FULL && attempt < MAP_GROW_ATTEMPTS && grow_map(db);
+         attempt++)
+        rc = db_add_once(db, pkg);
 
     bool ok = rc == MDB_SUCCESS;
     if (!ok)

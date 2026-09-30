@@ -100,8 +100,10 @@ extern "C"
      * @brief Add or update a package record in the database.
      *
      * The record, its file list, and its file ownership entries are written
-     * in one LMDB transaction; if any part fails (for example because the
-     * map is full), nothing is written.
+     * in one LMDB transaction; if any part fails, nothing is written. When
+     * the LMDB map is full, its size is doubled and the write retried, up to
+     * eight times; resizing requires that no other thread of the process
+     * holds a read transaction on the same database at that moment.
      *
      * @param db  Database handle opened for writing.
      * @param pkg Package to record. The database stores a serialized copy.
