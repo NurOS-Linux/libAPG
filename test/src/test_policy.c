@@ -420,6 +420,50 @@ test_remove_with_dependents_removed_together(void)
     printf("test_remove_with_dependents_removed_together: PASS\n");
 }
 
+static void
+assert_plan_order(struct apg_trans *trans, const char *const *expected,
+                  size_t count)
+{
+    assert(trans_plan_count(trans) == count);
+    for (size_t i = 0; i < count; i++)
+        assert(strcmp(trans_step_pkg_name(trans_plan_at(trans, i)),
+                      expected[i]) == 0);
+}
+
+void
+test_remove_orders_dependents_first(void)
+{
+    char db_path[PATH_MAX];
+    struct db_handle *db = open_tmp_db(db_path);
+    assert(db);
+
+    struct package *base = simple_pkg("base");
+    struct package *mid = pkg_with_dependency("mid", "base");
+    struct package *top = pkg_with_dependency("top", "mid");
+    struct package *other = simple_pkg("other");
+    assert(db_add(db, base));
+    assert(db_add(db, mid));
+    assert(db_add(db, top));
+    assert(db_add(db, other));
+
+    struct apg_trans *trans = trans_new(db);
+    assert(trans_add_remove(trans, "base") == TRANS_OK);
+    assert(trans_add_remove(trans, "other") == TRANS_OK);
+    assert(trans_add_remove(trans, "mid") == TRANS_OK);
+    assert(trans_add_remove(trans, "top") == TRANS_OK);
+    assert(trans_prepare(trans) == TRANS_OK);
+    const char *const expected[] = {"other", "top", "mid", "base"};
+    assert_plan_order(trans, expected, 4);
+    trans_free(trans);
+
+    package_free(base);
+    package_free(mid);
+    package_free(top);
+    package_free(other);
+    close_tmp_db(db, db_path);
+    printf("test_remove_orders_dependents_first: PASS\n");
+}
+
 void
 test_policy_skip_dependents_check_allows_blocked_remove(void)
 {

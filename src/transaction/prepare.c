@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 // SPDX-FileCopyrightText: 2026 AnmiTaliDev <anmitalidev@nuros.org>
 
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include <pthread.h>
@@ -193,6 +194,72 @@ conflict_push(struct apg_trans *trans, const char *pkg_name,
     return TRANS_OK;
 }
 
+static bool
+depends_on(const struct package *pkg, const struct package *target)
+{
+    if (!pkg || !target || !pkg->meta || !target->meta || !target->meta->name)
+        return false;
+    const struct dep_constraint_list *deps = &pkg->meta->dependencies;
+    for (int i = 0; i < deps->count; i++)
+    {
+        const char *dep = deps->items[i].name;
+        if (strcmp(dep, target->meta->name) == 0)
+            return true;
+        for (int p = 0; p < target->meta->provides.count; p++)
+            if (strcmp(dep, target->meta->provides.items[p]) == 0)
+                return true;
+    }
+    return false;
+}
+
+static trans_error_t
+push_removals_in_order(struct apg_trans *trans, const char **names,
+                       size_t count)
+{
+    if (count == 0)
+        return TRANS_OK;
+
+    struct package **pkgs = calloc(count, sizeof(*pkgs));
+    bool *done = calloc(count, sizeof(*done));
+    if (!pkgs || !done)
+    {
+        free(pkgs);
+        free(done);
+        return TRANS_ERR_NOMEM;
+    }
+    for (size_t i = 0; i < count; i++)
+        pkgs[i] = db_get(trans->db, names[i]);
+
+    trans_error_t err = TRANS_OK;
+    for (size_t emitted = 0; emitted < count && err == TRANS_OK; emitted++)
+    {
+        size_t pick = SIZE_MAX;
+        size_t fallback = SIZE_MAX;
+        for (size_t i = 0; i < count && pick == SIZE_MAX; i++)
+        {
+            if (done[i])
+                continue;
+            if (fallback == SIZE_MAX)
+                fallback = i;
+            bool needed = false;
+            for (size_t j = 0; j < count && !needed; j++)
+                needed = j != i && !done[j] && depends_on(pkgs[j], pkgs[i]);
+            if (!needed)
+                pick = i;
+        }
+        if (pick == SIZE_MAX)
+            pick = fallback;
+        done[pick] = true;
+        err = plan_push(trans, TRANS_OP_REMOVE, names[pick], NULL, true, NULL);
+    }
+
+    for (size_t i = 0; i < count; i++)
+        package_free(pkgs[i]);
+    free(pkgs);
+    free(done);
+    return err;
+}
+
 trans_error_t
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
 trans_prepare(struct apg_trans *trans)
@@ -243,6 +310,8 @@ trans_prepare(struct apg_trans *trans)
                          trans->provider_prefs[i].pkg_name);
 
     trans_error_t ret = TRANS_OK;
+    const char **removals = NULL;
+    size_t removal_count = 0;
 
     if (trans->install_count > 0 && trans->skip_dependency_check)
     {
@@ -436,6 +505,16 @@ trans_prepare(struct apg_trans *trans)
         }
     }
 
+    if (trans->remove_count > 0)
+    {
+        removals = calloc(trans->remove_count, sizeof(*removals));
+        if (!removals)
+        {
+            ret = TRANS_ERR_NOMEM;
+            goto cleanup;
+        }
+    }
+
     for (size_t i = 0; i < trans->remove_count; i++)
     {
         const char *name = trans->remove_names[i];
@@ -514,8 +593,12 @@ trans_prepare(struct apg_trans *trans)
             free(deps);
         }
 
+        removals[removal_count++] = name;
+    }
+
+    {
         trans_error_t perr =
-            plan_push(trans, TRANS_OP_REMOVE, name, NULL, true, NULL);
+            push_removals_in_order(trans, removals, removal_count);
         if (perr != TRANS_OK)
         {
             ret = perr;
@@ -598,6 +681,7 @@ trans_prepare(struct apg_trans *trans)
         trans->prepared = true;
 
 cleanup:
+    free(removals);
     dep_graph_free(g);
     free(installed_names);
     for (int i = 0; i < installed_count; i++)

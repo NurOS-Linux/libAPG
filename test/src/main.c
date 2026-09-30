@@ -49,6 +49,7 @@ main(void)
     test_policy_skip_dependency_check_allows_missing_dep();
     test_policy_remove_blocked_by_dependents_by_default();
     test_remove_with_dependents_removed_together();
+    test_remove_orders_dependents_first();
     test_policy_skip_dependents_check_allows_blocked_remove();
     test_dry_run_install_reports_ok_without_side_effects();
     test_dry_run_still_reports_unsigned();
