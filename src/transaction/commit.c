@@ -382,7 +382,7 @@ trans_commit(struct apg_trans *trans, const char *root_path)
 
             if (scripts_dir)
             {
-                if (!trans->dry_run)
+                if (!trans->dry_run && ok)
                     scripts_persist_remove(root_path, step->pkg_name);
                 free(scripts_dir);
             }
@@ -393,6 +393,17 @@ trans_commit(struct apg_trans *trans, const char *root_path)
                               step->pkg_version,
                               ok ? JOURNAL_STATUS_OK : JOURNAL_STATUS_FAILED,
                               uid, step->explicit);
+
+            if (!ok)
+            {
+                rollback_with_error(trans, committed_idx, committed_count,
+                                    root_path, step->pkg_name,
+                                    "removal failed");
+                free(committed_idx);
+                keyring_free(kr);
+                trans->db->suppress_journal = false;
+                return TRANS_ERR_REMOVE_FAILED;
+            }
         }
     }
 

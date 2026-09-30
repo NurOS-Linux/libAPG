@@ -29,6 +29,7 @@ class TransError(enum.IntEnum):
     FILE_CONFLICT = _lib.TRANS_ERR_FILE_CONFLICT
     HELD = _lib.TRANS_ERR_HELD
     DB = _lib.TRANS_ERR_DB
+    REMOVE_FAILED = _lib.TRANS_ERR_REMOVE_FAILED
 
 
 class TransStepView:

@@ -72,6 +72,7 @@ main(void)
     test_parse_package_install_roundtrip();
     test_install_package_in_root_uses_isolated_temp_dirs();
     test_upgrade_preserves_installed_by_hand();
+    test_failed_pre_remove_is_reported();
 
     test_unarchive_preserves_hardlinks();
     test_unarchive_rejects_path_traversal_hardlink();

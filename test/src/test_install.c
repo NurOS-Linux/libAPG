@@ -631,6 +631,67 @@ upgrade_and_check_by_hand(bool by_hand)
 }
 
 void
+test_failed_pre_remove_is_reported(void)
+{
+    char db_path[PATH_MAX];
+    struct db_handle *db = open_tmp_db(db_path);
+    assert(db);
+
+    char *src = mktmp_dir("rmfail-src");
+    char *arch_dir = mktmp_dir("rmfail-arch");
+    char *archive = join_path(arch_dir, "rmfail.tar.gz");
+    build_test_package(src, archive, "rmfail", "usr/share/rmfail/f", "x");
+    char *scripts = join_path(src, "scripts");
+    mkdir_p(scripts);
+    char *script = join_path(scripts, "pre-remove");
+    write_file(script, "#!/bin/sh\nexit 1\n");
+    chmod(script, 0755);
+    char cmd[PATH_MAX * 2];
+    snprintf(cmd, sizeof(cmd),
+             "tar -czf '%s' -C '%s' metadata.json data scripts", archive, src);
+    assert(system(cmd) == 0);
+
+    char *root = mktmp_dir("rmfail-root");
+    struct package *pkg = parse_package(archive, root);
+    assert(pkg);
+    struct apg_trans *trans = trans_new(db);
+    assert(trans_add_install(trans, pkg) == TRANS_OK);
+    assert(trans_prepare(trans) == TRANS_OK);
+    assert(trans_commit(trans, root) == TRANS_OK);
+    trans_free(trans);
+
+    trans = trans_new(db);
+    assert(trans_add_remove(trans, "rmfail") == TRANS_OK);
+    assert(trans_prepare(trans) == TRANS_OK);
+    assert(trans_commit(trans, root) == TRANS_ERR_REMOVE_FAILED);
+    assert(apg_last_error());
+    assert(strncmp(apg_last_error(), "rmfail: pre-remove script",
+                   strlen("rmfail: pre-remove script")) == 0);
+    trans_free(trans);
+
+    struct package *still = db_get(db, "rmfail");
+    assert(still);
+    package_free(still);
+    char *installed_file = join_path(root, "usr/share/rmfail/f");
+    struct stat st;
+    assert(stat(installed_file, &st) == 0);
+
+    package_free(pkg);
+    close_tmp_db(db, db_path);
+    free(installed_file);
+    free(script);
+    free(scripts);
+    free(archive);
+    rmtree(arch_dir);
+    rmtree(src);
+    rmtree(root);
+    free(arch_dir);
+    free(src);
+    free(root);
+    printf("test_failed_pre_remove_is_reported: PASS\n");
+}
+
+void
 test_upgrade_preserves_installed_by_hand(void)
 {
     upgrade_and_check_by_hand(false);
