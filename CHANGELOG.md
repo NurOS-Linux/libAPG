@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.7.0] - 2026-09-30
+
+### Added
+
+- `db_set_installed_by_hand()` (`include/apg/db.h`, `src/db/write.c`): mark an installed package as installed explicitly or as a dependency. Like `db_set_hold()`, it rewrites the record without writing a journal entry, so the change does not show up as an operation that rollback tooling would undo; a missing package or a read-only handle is reported via `apg_last_error()`. Added to the Python bindings as `Database.set_installed_by_hand()` and to the C++ bindings as `Db::set_installed_by_hand()`
+
+### Changed
+
+- `db_add()` (`src/db/write.c`): when a write fails with `MDB_MAP_FULL`, the LMDB map size is doubled and the write retried, up to eight times (about 2.5 GiB from the default 10 MiB `db_mapsize`), instead of failing once the configured map size is reached. Resizing requires that no other thread of the process holds a read transaction on the same database at that moment; other processes pick up the larger size the next time they open the database
+
 ## [2.6.2] - 2026-09-30
 
 ### Added
