@@ -691,6 +691,99 @@ test_failed_pre_remove_is_reported(void)
     printf("test_failed_pre_remove_is_reported: PASS\n");
 }
 
+static char *
+build_versioned_package(const char *base, const char *name, const char *version,
+                        const char *files)
+{
+    char cmd[PATH_MAX * 4];
+    snprintf(cmd, sizeof(cmd),
+             "set -e; d='%s/stage-%s-%s'; mkdir -p \"$d/data/usr/share/%s\"; "
+             "for f in %s; do echo %s > \"$d/data/usr/share/%s/$f\"; done; "
+             "printf '{\"name\":\"%s\",\"version\":\"%s\"}' "
+             "> \"$d/metadata.json\"; "
+             "tar -czf '%s/%s-%s.tar.gz' -C \"$d\" metadata.json data",
+             base, name, version, name, files, version, name, name, version,
+             base, name, version);
+    assert(system(cmd) == 0);
+    char path[PATH_MAX];
+    snprintf(path, sizeof(path), "%s/%s-%s.tar.gz", base, name, version);
+    return strdup(path);
+}
+
+static void
+commit_one(struct db_handle *db, struct package *pkg, bool upgrade,
+           const char *root)
+{
+    struct apg_trans *trans = trans_new(db);
+    assert((upgrade ? trans_add_upgrade(trans, pkg)
+                    : trans_add_install(trans, pkg)) == TRANS_OK);
+    assert(trans_prepare(trans) == TRANS_OK);
+    assert(trans_commit(trans, root) == TRANS_OK);
+    trans_free(trans);
+}
+
+static bool
+path_exists(const char *root, const char *rel)
+{
+    char full[PATH_MAX];
+    snprintf(full, sizeof(full), "%s%s", root, rel);
+    struct stat st;
+    return lstat(full, &st) == 0;
+}
+
+void
+test_upgrade_removes_dropped_files(void)
+{
+    char db_path[PATH_MAX];
+    struct db_handle *db = open_tmp_db(db_path);
+    assert(db);
+    char *base = mktmp_dir("dropped");
+    char *root = mktmp_dir("dropped-root");
+
+    char *v1_path = build_versioned_package(base, "multi", "1.0", "a b c");
+    char *v2_path = build_versioned_package(base, "multi", "2.0", "a");
+    struct package *v1 = parse_package(v1_path, root);
+    struct package *v2 = parse_package(v2_path, root);
+    assert(v1 && v2);
+
+    commit_one(db, v1, false, root);
+    assert(path_exists(root, "/usr/share/multi/b"));
+
+    struct package *other = package_new();
+    other->meta->name = strdup("other");
+    other->meta->version = strdup("1.0");
+    other->package_files.items = calloc(1, sizeof(char *));
+    other->package_files.items[0] = strdup("/usr/share/multi/c");
+    other->package_files.count = 1;
+    assert(db_add(db, other));
+    package_free(other);
+
+    commit_one(db, v2, true, root);
+
+    assert(path_exists(root, "/usr/share/multi/a"));
+    assert(!path_exists(root, "/usr/share/multi/b"));
+    assert(path_exists(root, "/usr/share/multi/c"));
+
+    char *owner = db_owner(db, "/usr/share/multi/a");
+    assert(owner && strcmp(owner, "multi") == 0);
+    free(owner);
+    assert(db_owner(db, "/usr/share/multi/b") == NULL);
+    owner = db_owner(db, "/usr/share/multi/c");
+    assert(owner && strcmp(owner, "other") == 0);
+    free(owner);
+
+    package_free(v1);
+    package_free(v2);
+    free(v1_path);
+    free(v2_path);
+    close_tmp_db(db, db_path);
+    rmtree(base);
+    rmtree(root);
+    free(base);
+    free(root);
+    printf("test_upgrade_removes_dropped_files: PASS\n");
+}
+
 void
 test_upgrade_preserves_installed_by_hand(void)
 {

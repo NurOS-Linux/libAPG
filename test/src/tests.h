@@ -69,6 +69,7 @@ void test_install_data_dir_reports_write_error(void);
 void test_parse_package_install_roundtrip(void);
 void test_install_package_in_root_uses_isolated_temp_dirs(void);
 void test_upgrade_preserves_installed_by_hand(void);
+void test_upgrade_removes_dropped_files(void);
 void test_failed_pre_remove_is_reported(void);
 
 void test_unarchive_preserves_hardlinks(void);

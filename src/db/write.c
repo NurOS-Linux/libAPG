@@ -17,12 +17,26 @@
 #include "../error_priv.h"
 
 static void
-delete_file_owner_entries(struct db_handle *db, MDB_txn *txn, const char *fdata,
-                          size_t flen)
+delete_file_owner_entries(struct db_handle *db, MDB_txn *txn,
+                          const char *pkg_name)
 {
-    if (!db->file_owner_dbi_open || !fdata || flen == 0)
+    if (!db->files_dbi_open || !db->file_owner_dbi_open)
         return;
-    const char *p = fdata, *end = fdata + flen;
+
+    MDB_val key = {strlen(pkg_name), (void *)pkg_name};
+    MDB_val fdata;
+    if (mdb_get(txn, db->files_dbi, &key, &fdata) != MDB_SUCCESS ||
+        fdata.mv_size == 0)
+        return;
+
+    char *copy = malloc(fdata.mv_size);
+    if (!copy)
+        return;
+    memcpy(copy, fdata.mv_data, fdata.mv_size);
+
+    size_t name_len = strlen(pkg_name);
+    const char *p = copy;
+    const char *end = copy + fdata.mv_size;
     while (p < end)
     {
         const char *nl = memchr(p, '\n', (size_t)(end - p));
@@ -31,10 +45,16 @@ delete_file_owner_entries(struct db_handle *db, MDB_txn *txn, const char *fdata,
         if (nl > p)
         {
             MDB_val okey = {(size_t)(nl - p), (void *)p};
-            mdb_del(txn, db->file_owner_dbi, &okey, NULL);
+            MDB_val owner;
+            if (mdb_get(txn, db->file_owner_dbi, &okey, &owner) ==
+                    MDB_SUCCESS &&
+                owner.mv_size == name_len &&
+                memcmp(owner.mv_data, pkg_name, name_len) == 0)
+                mdb_del(txn, db->file_owner_dbi, &okey, NULL);
         }
         p = nl + 1;
     }
+    free(copy);
 }
 
 static char *
@@ -104,6 +124,7 @@ db_add(struct db_handle *db, struct package *pkg)
             }
             if (rc == MDB_SUCCESS && pkg->package_files.count > 0)
             {
+                delete_file_owner_entries(db, txn, pkg->meta->name);
                 if (db->files_dbi_open)
                 {
                     char *fdata = serialize_files(&pkg->package_files);
@@ -224,10 +245,7 @@ db_remove(struct db_handle *db, const char *pkg_name)
             rc = mdb_del(txn, dbi, &key, NULL);
             if (rc == MDB_SUCCESS && db->files_dbi_open)
             {
-                MDB_val fdata;
-                if (mdb_get(txn, db->files_dbi, &key, &fdata) == MDB_SUCCESS)
-                    delete_file_owner_entries(db, txn, fdata.mv_data,
-                                              fdata.mv_size);
+                delete_file_owner_entries(db, txn, pkg_name);
                 mdb_del(txn, db->files_dbi, &key, NULL);
             }
             if (rc == MDB_SUCCESS)

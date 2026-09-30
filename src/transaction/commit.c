@@ -156,6 +156,47 @@ rollback_committed(struct apg_trans *trans, const size_t *committed_idx,
     }
 }
 
+static bool
+list_contains(const struct str_list *list, const char *item)
+{
+    for (int i = 0; i < list->count; i++)
+        if (list->items[i] && strcmp(list->items[i], item) == 0)
+            return true;
+    return false;
+}
+
+static void
+remove_dropped_files(struct apg_trans *trans, const struct package *pkg,
+                     const char *root_path)
+{
+    struct package *previous = db_get(trans->db, pkg->meta->name);
+    if (!previous)
+        return;
+
+    const struct str_list *old = &previous->package_files;
+    for (int i = 0; i < old->count; i++)
+    {
+        const char *path = old->items[i];
+        if (!path || list_contains(&pkg->package_files, path) ||
+            (previous->meta && list_contains(&previous->meta->conf, path)))
+            continue;
+
+        char *owner = db_owner(trans->db, path);
+        bool ours = owner && strcmp(owner, pkg->meta->name) == 0;
+        free(owner);
+        if (!ours)
+            continue;
+
+        char *full = concat_dirs(root_path, path);
+        if (full)
+        {
+            unlink(full);
+            free(full);
+        }
+    }
+    package_free(previous);
+}
+
 static void
 rollback_with_error(struct apg_trans *trans, const size_t *committed_idx,
                     size_t committed_count, const char *root_path,
@@ -331,6 +372,7 @@ trans_commit(struct apg_trans *trans, const char *root_path)
 
             if (!trans->dry_run)
             {
+                remove_dropped_files(trans, pkg, root_path);
                 pkg->installed_by_hand = step->explicit;
                 committed_idx[committed_count++] = i;
                 if (!db_add(trans->db, pkg))
