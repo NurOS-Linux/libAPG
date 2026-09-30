@@ -2,6 +2,28 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.6.2] - 2026-09-30
+
+### Added
+
+- `TRANS_ERR_REMOVE_FAILED` (`include/apg/transaction.h`): returned by `trans_commit()` when a package could not be removed, for example because its pre-remove script failed; `apg_last_error()` names the package and the cause. Added at the end of `trans_error_t`, so existing values are unchanged. Added to the Python bindings as `TransError.REMOVE_FAILED`
+
+### Changed
+
+- `trans_prepare()` (`src/transaction/prepare.c`): queued removals are planned so that a package is removed only after every queued package that depends on it (directly or through `provides`); independent removals keep their request order, and a dependency cycle falls back to request order
+- `trans_commit()` (`src/transaction/commit.c`, `src/transaction/backup.c`): before an upgrade step, the files of the installed version and its persisted scripts are copied into a temporary backup under the target root's `tmp_dir`, and the step is not started if the backup cannot be made. This needs free space for a copy of the replaced files while the transaction runs
+- `apg_make_dirs()` (`src/util.c`, `src/util_priv.h`): internal recursive directory creation shared by package extraction and upgrade backups; the error message now reads "cannot create directory" instead of "cannot create temporary directory"
+
+### Fixed
+
+- `db_open_readonly()` (`src/db/db.c`): the `files` and `file_owner` handles were opened in a read transaction that was then aborted, which closes them, so every read-only handle saw packages without a file list; `db_verify()` therefore skipped every package and always reported success, and `db_owner()` found nothing. The transaction is now committed and the handles stay open
+- `trans_prepare()` (`src/transaction/prepare.c`): every upgrade step was planned as explicit, so `trans_commit()` marked each upgraded package `installed_by_hand` and `db_get_orphans()` stopped reporting upgraded dependencies; the flag of the installed version is now preserved
+- `trans_commit()` (`src/transaction/commit.c`): a removal whose pre-remove script failed was journaled as failed but the commit still returned `TRANS_OK`, and the package's persisted scripts were deleted although the package stayed installed; the commit now rolls back and returns `TRANS_ERR_REMOVE_FAILED`, and scripts are only deleted after a successful removal
+- `trans_commit()` (`src/transaction/commit.c`): rolling back a failed transaction deleted the new files of already-upgraded packages and removed their database records, leaving neither the old nor the new version installed; upgraded steps, including the one that failed, are now restored from the backup: previous files, persisted scripts, and database record with its `installed_by_hand` and `held` flags
+- `trans_commit()` (`src/transaction/commit.c`): files shipped by the installed version but not by the new one stayed on disk after an upgrade; they are now removed if the package still owns them, except configuration files listed in the old version's `conf` entries
+- `db_add()` (`src/db/write.c`): replacing a record kept the `file_owner` entries of files the new file list no longer contains, so installing another package that ships such a path failed with a false file conflict; stale entries are now removed when the file list is rewritten
+- `db_add()`, `db_remove()` (`src/db/write.c`): `file_owner` entries were deleted while iterating a value returned by `mdb_get()`, which LMDB only guarantees until the next write in the same transaction; the file list is now copied first. An ownership entry is also only deleted if it still points to the package being replaced or removed
+
 ## [2.6.1] - 2026-09-29
 
 ### Fixed
