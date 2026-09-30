@@ -74,6 +74,7 @@ main(void)
     test_install_package_in_root_uses_isolated_temp_dirs();
     test_upgrade_preserves_installed_by_hand();
     test_upgrade_removes_dropped_files();
+    test_failed_transaction_restores_upgraded_package();
     test_failed_pre_remove_is_reported();
 
     test_unarchive_preserves_hardlinks();

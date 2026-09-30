@@ -46,6 +46,7 @@ libapg_sources = files(
   'src/transaction/transaction.c',
   'src/transaction/prepare.c',
   'src/transaction/commit.c',
+  'src/transaction/backup.c',
 )
 
 if host_machine.system() == 'linux'

@@ -784,6 +784,81 @@ test_upgrade_removes_dropped_files(void)
     printf("test_upgrade_removes_dropped_files: PASS\n");
 }
 
+static bool
+file_has(const char *root, const char *rel, const char *expected)
+{
+    char full[PATH_MAX];
+    snprintf(full, sizeof(full), "%s%s", root, rel);
+    return file_contains(full, expected);
+}
+
+void
+test_failed_transaction_restores_upgraded_package(void)
+{
+    char db_path[PATH_MAX];
+    struct db_handle *db = open_tmp_db(db_path);
+    assert(db);
+    char *base = mktmp_dir("restore");
+    char *root = mktmp_dir("restore-root");
+
+    char *v1_path = build_versioned_package(base, "multi", "1.0", "a b");
+    char *v2_path = build_versioned_package(base, "multi", "2.0", "a");
+    struct package *v1 = parse_package(v1_path, root);
+    struct package *v2 = parse_package(v2_path, root);
+    assert(v1 && v2);
+    v1->installed_by_hand = false;
+    commit_one(db, v1, false, root);
+    struct package *rec = db_get(db, "multi");
+    rec->installed_by_hand = false;
+    assert(db_add(db, rec));
+    package_free(rec);
+
+    struct package *broken = package_new();
+    broken->meta->name = strdup("broken");
+    broken->meta->version = strdup("2.0");
+    broken->pkg_path = strdup("/nonexistent/broken.apg");
+
+    struct apg_trans *trans = trans_new(db);
+    assert(trans_add_upgrade(trans, v2) == TRANS_OK);
+    assert(trans_add_upgrade(trans, broken) == TRANS_OK);
+    assert(trans_prepare(trans) == TRANS_OK);
+    assert(trans_commit(trans, root) == TRANS_ERR_INSTALL_FAILED);
+    trans_free(trans);
+
+    struct package *after = db_get(db, "multi");
+    assert(after);
+    assert(strcmp(after->meta->version, "1.0") == 0);
+    assert(!after->installed_by_hand);
+    assert(after->package_files.count == 2);
+    package_free(after);
+    assert(file_has(root, "/usr/share/multi/a", "1.0\n"));
+    assert(file_has(root, "/usr/share/multi/b", "1.0\n"));
+    char *owner = db_owner(db, "/usr/share/multi/b");
+    assert(owner && strcmp(owner, "multi") == 0);
+    free(owner);
+
+    char tmp_dir[PATH_MAX];
+    snprintf(tmp_dir, sizeof(tmp_dir), "%s%s", root, APG_TMP_DIR);
+    DIR *dir = opendir(tmp_dir);
+    struct dirent *entry;
+    while (dir && (entry = readdir(dir)) != NULL)
+        assert(strncmp(entry->d_name, "backup-", 7) != 0);
+    if (dir)
+        closedir(dir);
+
+    package_free(v1);
+    package_free(v2);
+    package_free(broken);
+    free(v1_path);
+    free(v2_path);
+    close_tmp_db(db, db_path);
+    rmtree(base);
+    rmtree(root);
+    free(base);
+    free(root);
+    printf("test_failed_transaction_restores_upgraded_package: PASS\n");
+}
+
 void
 test_upgrade_preserves_installed_by_hand(void)
 {

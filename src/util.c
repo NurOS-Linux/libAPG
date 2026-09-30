@@ -2,6 +2,7 @@
 // SPDX-FileCopyrightText: 2025 Ruzen42
 // SPDX-FileCopyrightText: 2026 AnmiTaliDev <anmitalidev@nuros.org>
 
+#include <errno.h>
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -10,6 +11,8 @@
 #include <unistd.h>
 
 #include "../include/apg/util.h"
+#include "error_priv.h"
+#include "util_priv.h"
 
 char *
 concat(const char *str1, const char *str2)
@@ -195,4 +198,25 @@ remove_dir_recursive(const char *path)
 
     closedir(dir);
     rmdir(path);
+}
+
+bool
+apg_make_dirs(char *path)
+{
+    for (char *p = path + 1;; p++)
+    {
+        if (*p != '/' && *p != '\0')
+            continue;
+        char saved = *p;
+        *p = '\0';
+        bool ok = mkdir(path, 0755) == 0 || errno == EEXIST;
+        if (!ok)
+            apg_set_error("cannot create directory '%s': %s", path,
+                          strerror(errno));
+        *p = saved;
+        if (!ok)
+            return false;
+        if (saved == '\0')
+            return true;
+    }
 }

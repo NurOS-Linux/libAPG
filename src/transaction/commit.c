@@ -8,6 +8,7 @@
 #include <unistd.h>
 
 #include "trans_priv.h"
+#include "backup_priv.h"
 #include "../db/db_priv.h"
 #include "../../include/apg/package.h"
 #include "../../include/apg/db.h"
@@ -126,13 +127,22 @@ free_confs(struct conf_backup *bk, int count)
 
 static void
 rollback_committed(struct apg_trans *trans, const size_t *committed_idx,
-                   size_t committed_count, const char *root_path)
+                   size_t committed_count, const struct upgrade_backup *backups,
+                   const char *root_path)
 {
     for (size_t j = committed_count; j-- > 0;)
     {
         size_t idx = committed_idx[j];
         struct trans_step *s = &trans->plan[idx];
         struct package *pkg = trans->plan_pkgs[idx];
+
+        if (backups && backups[idx].previous)
+        {
+            upgrade_backup_restore(trans->db, &backups[idx], pkg, root_path);
+            journal_write(trans->db->env, JOURNAL_ROLLBACK, s->pkg_name,
+                          s->pkg_version, JOURNAL_STATUS_OK, getuid(), false);
+            continue;
+        }
 
         if (pkg && root_path)
         {
@@ -199,15 +209,29 @@ remove_dropped_files(struct apg_trans *trans, const struct package *pkg,
 
 static void
 rollback_with_error(struct apg_trans *trans, const size_t *committed_idx,
-                    size_t committed_count, const char *root_path,
+                    size_t committed_count,
+                    const struct upgrade_backup *backups, const char *root_path,
                     const char *pkg_name, const char *fallback)
 {
     char detail[1024];
     const char *err = apg_last_error();
     (void)snprintf(detail, sizeof(detail), "%s: %s", pkg_name,
                    err ? err : fallback);
-    rollback_committed(trans, committed_idx, committed_count, root_path);
+    rollback_committed(trans, committed_idx, committed_count, backups,
+                       root_path);
     apg_set_error("%s", detail);
+}
+
+static void
+release_commit(struct apg_trans *trans, size_t *committed_idx,
+               struct upgrade_backup *backups, struct keyring *kr)
+{
+    free(committed_idx);
+    for (size_t i = 0; backups && i < trans->plan_count; i++)
+        upgrade_backup_discard(&backups[i]);
+    free(backups);
+    keyring_free(kr);
+    trans->db->suppress_journal = false;
 }
 
 trans_error_t
@@ -238,8 +262,13 @@ trans_commit(struct apg_trans *trans, const char *root_path)
         trans->plan_count > 0
             ? malloc(trans->plan_count * sizeof(*committed_idx))
             : NULL;
-    if (!committed_idx && trans->plan_count > 0)
+    struct upgrade_backup *backups =
+        trans->plan_count > 0 ? calloc(trans->plan_count, sizeof(*backups))
+                              : NULL;
+    if ((!committed_idx || !backups) && trans->plan_count > 0)
     {
+        free(committed_idx);
+        free(backups);
         keyring_free(kr);
         return TRANS_ERR_NOMEM;
     }
@@ -276,11 +305,9 @@ trans_commit(struct apg_trans *trans, const char *root_path)
                                       JOURNAL_STATUS_FAILED, uid,
                                       step->explicit);
                     rollback_with_error(trans, committed_idx, committed_count,
-                                        root_path, step->pkg_name,
+                                        backups, root_path, step->pkg_name,
                                         "signature could not be verified");
-                    free(committed_idx);
-                    keyring_free(kr);
-                    trans->db->suppress_journal = false;
+                    release_commit(trans, committed_idx, backups, kr);
                     return TRANS_ERR_UNSIGNED;
                 }
             }
@@ -291,11 +318,9 @@ trans_commit(struct apg_trans *trans, const char *root_path)
                               step->pkg_version, JOURNAL_STATUS_FAILED, uid,
                               step->explicit);
                 rollback_with_error(trans, committed_idx, committed_count,
-                                    root_path, step->pkg_name,
+                                    backups, root_path, step->pkg_name,
                                     "installation failed");
-                free(committed_idx);
-                keyring_free(kr);
-                trans->db->suppress_journal = false;
+                release_commit(trans, committed_idx, backups, kr);
                 return TRANS_ERR_INSTALL_FAILED;
             }
 
@@ -309,11 +334,9 @@ trans_commit(struct apg_trans *trans, const char *root_path)
                                   step->pkg_name, step->pkg_version,
                                   JOURNAL_STATUS_FAILED, uid, step->explicit);
                     rollback_with_error(trans, committed_idx, committed_count,
-                                        root_path, step->pkg_name,
+                                        backups, root_path, step->pkg_name,
                                         "cannot record package in database");
-                    free(committed_idx);
-                    keyring_free(kr);
-                    trans->db->suppress_journal = false;
+                    release_commit(trans, committed_idx, backups, kr);
                     return TRANS_ERR_DB;
                 }
                 journal_write(trans->db->env, JOURNAL_INSTALL, step->pkg_name,
@@ -339,13 +362,25 @@ trans_commit(struct apg_trans *trans, const char *root_path)
                                       JOURNAL_STATUS_FAILED, uid,
                                       step->explicit);
                     rollback_with_error(trans, committed_idx, committed_count,
-                                        root_path, step->pkg_name,
+                                        backups, root_path, step->pkg_name,
                                         "signature could not be verified");
-                    free(committed_idx);
-                    keyring_free(kr);
-                    trans->db->suppress_journal = false;
+                    release_commit(trans, committed_idx, backups, kr);
                     return TRANS_ERR_UNSIGNED;
                 }
+            }
+
+            if (!trans->dry_run &&
+                !upgrade_backup_create(trans->db, step->pkg_name, root_path,
+                                       &backups[i]))
+            {
+                journal_write(trans->db->env, JOURNAL_INSTALL, step->pkg_name,
+                              step->pkg_version, JOURNAL_STATUS_FAILED, uid,
+                              step->explicit);
+                rollback_with_error(trans, committed_idx, committed_count,
+                                    backups, root_path, step->pkg_name,
+                                    "cannot back up the installed version");
+                release_commit(trans, committed_idx, backups, kr);
+                return TRANS_ERR_INSTALL_FAILED;
             }
 
             int conf_count = 0;
@@ -358,12 +393,11 @@ trans_commit(struct apg_trans *trans, const char *root_path)
                 journal_write(trans->db->env, JOURNAL_INSTALL, step->pkg_name,
                               step->pkg_version, JOURNAL_STATUS_FAILED, uid,
                               step->explicit);
+                committed_idx[committed_count++] = i;
                 rollback_with_error(trans, committed_idx, committed_count,
-                                    root_path, step->pkg_name,
+                                    backups, root_path, step->pkg_name,
                                     "installation failed");
-                free(committed_idx);
-                keyring_free(kr);
-                trans->db->suppress_journal = false;
+                release_commit(trans, committed_idx, backups, kr);
                 return TRANS_ERR_INSTALL_FAILED;
             }
 
@@ -381,11 +415,9 @@ trans_commit(struct apg_trans *trans, const char *root_path)
                                   step->pkg_name, step->pkg_version,
                                   JOURNAL_STATUS_FAILED, uid, step->explicit);
                     rollback_with_error(trans, committed_idx, committed_count,
-                                        root_path, step->pkg_name,
+                                        backups, root_path, step->pkg_name,
                                         "cannot record package in database");
-                    free(committed_idx);
-                    keyring_free(kr);
-                    trans->db->suppress_journal = false;
+                    release_commit(trans, committed_idx, backups, kr);
                     return TRANS_ERR_DB;
                 }
                 journal_write(trans->db->env, JOURNAL_INSTALL, step->pkg_name,
@@ -439,19 +471,15 @@ trans_commit(struct apg_trans *trans, const char *root_path)
             if (!ok)
             {
                 rollback_with_error(trans, committed_idx, committed_count,
-                                    root_path, step->pkg_name,
+                                    backups, root_path, step->pkg_name,
                                     "removal failed");
-                free(committed_idx);
-                keyring_free(kr);
-                trans->db->suppress_journal = false;
+                release_commit(trans, committed_idx, backups, kr);
                 return TRANS_ERR_REMOVE_FAILED;
             }
         }
     }
 
-    free(committed_idx);
-    keyring_free(kr);
-    trans->db->suppress_journal = false;
+    release_commit(trans, committed_idx, backups, kr);
     if (!trans->dry_run)
         trans->committed = true;
     return TRANS_OK;

@@ -2,15 +2,12 @@
 // SPDX-FileCopyrightText: 2026 Ruzen42
 // SPDX-FileCopyrightText: 2026 AnmiTaliDev <anmitalidev@nuros.org>
 
-#include <errno.h>
 #include <inttypes.h>
 #include <limits.h>
 #include <stdatomic.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
-#include <sys/stat.h>
 #include <unistd.h>
 
 #include "../include/apg/package.h"
@@ -21,30 +18,10 @@
 #include "../include/apg/archive.h"
 #include "../include/apg/json.h"
 #include "error_priv.h"
+#include "util_priv.h"
 
 static const char *tmp_path = APG_TMP_DIR "/";
 static _Atomic uint64_t g_extract_seq = 0;
-
-static bool
-make_dirs(char *path)
-{
-    for (char *p = path + 1;; p++)
-    {
-        if (*p != '/' && *p != '\0')
-            continue;
-        char saved = *p;
-        *p = '\0';
-        bool ok = mkdir(path, 0755) == 0 || errno == EEXIST;
-        if (!ok)
-            apg_set_error("cannot create temporary directory '%s': %s", path,
-                          strerror(errno));
-        *p = saved;
-        if (!ok)
-            return false;
-        if (saved == '\0')
-            return true;
-    }
-}
 
 static char *
 unique_tmp_dir(const char *root_path)
@@ -62,7 +39,7 @@ unique_tmp_dir(const char *root_path)
     if (!unique)
         return NULL;
 
-    if (!make_dirs(unique))
+    if (!apg_make_dirs(unique))
     {
         free(unique);
         return NULL;
