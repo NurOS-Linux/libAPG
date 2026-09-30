@@ -207,6 +207,36 @@ db_set_hold(struct db_handle *db, const char *pkg_name, bool held)
 }
 
 bool
+db_set_installed_by_hand(struct db_handle *db, const char *pkg_name,
+                         bool by_hand)
+{
+    if (!db || !pkg_name)
+        return false;
+    if (db->readonly)
+    {
+        apg_set_error("cannot update '%s': package database is read-only",
+                      pkg_name);
+        return false;
+    }
+
+    struct package *pkg = db_get(db, pkg_name);
+    if (!pkg)
+    {
+        apg_set_error("'%s' is not recorded in the package database", pkg_name);
+        return false;
+    }
+
+    pkg->installed_by_hand = by_hand;
+
+    db->suppress_journal = true;
+    bool ok = db_add(db, pkg);
+    db->suppress_journal = false;
+
+    package_free(pkg);
+    return ok;
+}
+
+bool
 db_remove(struct db_handle *db, const char *pkg_name)
 {
     if (!db || !pkg_name)

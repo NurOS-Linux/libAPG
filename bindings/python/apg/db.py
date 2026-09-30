@@ -52,6 +52,11 @@ class Database:
     def set_hold(self, pkg_name, held):
         return bool(_lib.db_set_hold(self._ptr, pkg_name.encode(), held))
 
+    def set_installed_by_hand(self, pkg_name, by_hand):
+        return bool(
+            _lib.db_set_installed_by_hand(self._ptr, pkg_name.encode(), by_hand)
+        )
+
     def get(self, name):
         ptr = _lib.db_get(self._ptr, name.encode())
         if not ptr:

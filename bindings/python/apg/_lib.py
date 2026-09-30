@@ -198,6 +198,9 @@ db_close = _sig("db_close", None, [c_void_p])
 db_add = _sig("db_add", c_bool, [c_void_p, PackagePtr])
 db_remove = _sig("db_remove", c_bool, [c_void_p, c_char_p])
 db_set_hold = _sig("db_set_hold", c_bool, [c_void_p, c_char_p, c_bool])
+db_set_installed_by_hand = _sig(
+    "db_set_installed_by_hand", c_bool, [c_void_p, c_char_p, c_bool]
+)
 db_get = _sig("db_get", PackagePtr, [c_void_p, c_char_p])
 db_list = _sig(
     "db_list", ctypes.POINTER(PackagePtr), [c_void_p, ctypes.POINTER(c_int)]

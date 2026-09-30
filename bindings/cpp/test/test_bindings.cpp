@@ -15,7 +15,8 @@
 namespace
 {
 
-std::string make_tmp_dir(const char *prefix)
+std::string
+make_tmp_dir(const char *prefix)
 {
     std::string tmpl = std::string("/tmp/") + prefix + "-XXXXXX";
     std::vector<char> buf(tmpl.begin(), tmpl.end());
@@ -25,15 +26,16 @@ std::string make_tmp_dir(const char *prefix)
     return std::string(buf.data());
 }
 
-void remove_tmp_db(const std::string &path)
+void
+remove_tmp_db(const std::string &path)
 {
     unlink((path + "/data.mdb").c_str());
     unlink((path + "/lock.mdb").c_str());
     rmdir(path.c_str());
 }
 
-apg::Package make_simple_package(const std::string &name,
-                                  const std::string &version = "1.0")
+apg::Package
+make_simple_package(const std::string &name, const std::string &version = "1.0")
 {
     apg::Package pkg = apg::Package::create();
     struct package *raw = pkg.get();
@@ -44,7 +46,8 @@ apg::Package make_simple_package(const std::string &name,
     return pkg;
 }
 
-void test_version()
+void
+test_version()
 {
     assert(apg::ver_compare("1.0", "2.0") < 0);
     assert(apg::ver_satisfies("2.0", VER_OP_GE, "1.0"));
@@ -58,7 +61,8 @@ void test_version()
     printf("test_version: PASS\n");
 }
 
-void test_database_roundtrip()
+void
+test_database_roundtrip()
 {
     std::string db_path = make_tmp_dir("apgxx-db");
     apg::Database db = apg::Database::open(db_path);
@@ -72,6 +76,7 @@ void test_database_roundtrip()
     assert(fetched->metadata().version() == "1.0");
 
     assert(db.set_hold("cppxx-pkg", true));
+    assert(db.set_installed_by_hand("cppxx-pkg", false));
 
     apg::DbStats stats = db.stats();
     assert(stats.package_count >= 1);
@@ -83,7 +88,8 @@ void test_database_roundtrip()
     printf("test_database_roundtrip: PASS\n");
 }
 
-void test_dependency_graph()
+void
+test_dependency_graph()
 {
     apg::PackageMetadata base = apg::PackageMetadata::create();
     base.get()->name = strdup("base");
@@ -110,7 +116,8 @@ void test_dependency_graph()
     printf("test_dependency_graph: PASS\n");
 }
 
-void test_transaction_policy()
+void
+test_transaction_policy()
 {
     std::string db_path = make_tmp_dir("apgxx-trans-db");
     apg::Database db = apg::Database::open(db_path);
@@ -133,7 +140,8 @@ void test_transaction_policy()
 
 } // namespace
 
-int main()
+int
+main()
 {
     test_version();
     test_database_roundtrip();

@@ -27,8 +27,9 @@ struct DbVerifyIssue
 
 class Database
 {
-public:
-    static Database open(const std::string &path)
+  public:
+    static Database
+    open(const std::string &path)
     {
         struct db_handle *h = ::db_open(path.c_str());
         if (!h)
@@ -36,7 +37,8 @@ public:
         return Database(h);
     }
 
-    static Database open_readonly(const std::string &path)
+    static Database
+    open_readonly(const std::string &path)
     {
         struct db_handle *h = ::db_open_readonly(path.c_str());
         if (!h)
@@ -44,26 +46,44 @@ public:
         return Database(h);
     }
 
-    struct db_handle *get() const noexcept { return db_.get(); }
+    struct db_handle *
+    get() const noexcept
+    {
+        return db_.get();
+    }
 
-    void set_hooks(const struct db_hooks *hooks)
+    void
+    set_hooks(const struct db_hooks *hooks)
     {
         ::db_set_hooks(db_.get(), hooks);
     }
 
-    bool add(Package &pkg) { return ::db_add(db_.get(), pkg.get()); }
+    bool
+    add(Package &pkg)
+    {
+        return ::db_add(db_.get(), pkg.get());
+    }
 
-    bool remove(const std::string &pkg_name)
+    bool
+    remove(const std::string &pkg_name)
     {
         return ::db_remove(db_.get(), pkg_name.c_str());
     }
 
-    bool set_hold(const std::string &pkg_name, bool held)
+    bool
+    set_hold(const std::string &pkg_name, bool held)
     {
         return ::db_set_hold(db_.get(), pkg_name.c_str(), held);
     }
 
-    std::optional<Package> get(const std::string &name)
+    bool
+    set_installed_by_hand(const std::string &pkg_name, bool by_hand)
+    {
+        return ::db_set_installed_by_hand(db_.get(), pkg_name.c_str(), by_hand);
+    }
+
+    std::optional<Package>
+    get(const std::string &name)
     {
         struct package *p = ::db_get(db_.get(), name.c_str());
         if (!p)
@@ -71,14 +91,16 @@ public:
         return Package(p);
     }
 
-    std::vector<Package> list()
+    std::vector<Package>
+    list()
     {
         int count = 0;
         struct package **raw = ::db_list(db_.get(), &count);
         return take_package_array(raw, count);
     }
 
-    std::optional<std::string> owner(const std::string &path)
+    std::optional<std::string>
+    owner(const std::string &path)
     {
         char *s = ::db_owner(db_.get(), path.c_str());
         if (!s)
@@ -86,7 +108,8 @@ public:
         return detail::take_c_string(s);
     }
 
-    DbStats stats()
+    DbStats
+    stats()
     {
         DbStats out{};
         if (!::db_stats(db_.get(), &out))
@@ -94,28 +117,32 @@ public:
         return out;
     }
 
-    std::vector<std::string> get_orphans()
+    std::vector<std::string>
+    get_orphans()
     {
         int count = 0;
         char **raw = ::db_get_orphans(db_.get(), &count);
         return detail::take_c_string_array(raw, count);
     }
 
-    std::vector<Package> search(const std::string &query)
+    std::vector<Package>
+    search(const std::string &query)
     {
         int count = 0;
         struct package **raw = ::db_search(db_.get(), query.c_str(), &count);
         return take_package_array(raw, count);
     }
 
-    std::vector<std::string> get_dependents(const std::string &pkg_name)
+    std::vector<std::string>
+    get_dependents(const std::string &pkg_name)
     {
         int count = 0;
         char **raw = ::db_get_dependents(db_.get(), pkg_name.c_str(), &count);
         return detail::take_c_string_array(raw, count);
     }
 
-    std::vector<DbVerifyIssue> verify(const std::string &root_path)
+    std::vector<DbVerifyIssue>
+    verify(const std::string &root_path)
     {
         int count = 0;
         struct db_verify_issue *issues =
@@ -140,11 +167,13 @@ public:
         return result;
     }
 
-private:
-    explicit Database(struct db_handle *raw) : db_(raw, &db_close) {}
+  private:
+    explicit Database(struct db_handle *raw) : db_(raw, &db_close)
+    {
+    }
 
-    static std::vector<Package> take_package_array(struct package **raw,
-                                                    int count)
+    static std::vector<Package>
+    take_package_array(struct package **raw, int count)
     {
         std::vector<Package> result;
         if (!raw)

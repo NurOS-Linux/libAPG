@@ -48,6 +48,8 @@ def test_database_roundtrip(tmp_path):
     assert fetched.path == "/var/cache/apg/pathtest-1.0.apg"
 
     assert db.set_hold("pathtest", True)
+    assert db.set_installed_by_hand("pathtest", False)
+    assert db.get("pathtest").installed_by_hand is False
 
     pkg_count, _ = db.stats()
     assert pkg_count >= 1

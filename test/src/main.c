@@ -65,6 +65,7 @@ main(void)
     test_rollback_install_removes_files();
     test_db_add_get_remove_roundtrip();
     test_db_readonly_sees_package_files();
+    test_db_set_installed_by_hand_skips_journal();
     test_db_add_reports_map_full();
     test_db_open_reports_lock_and_missing_record();
     test_run_script_root();

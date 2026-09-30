@@ -13,6 +13,7 @@
 
 #include <apg/error.h>
 #include <apg/install.h>
+#include <apg/journal.h>
 #include <apg/db.h>
 #include <apg/package.h>
 #include <apg/scripts.h>
@@ -338,6 +339,51 @@ test_db_readonly_sees_package_files(void)
     rmtree(root);
     free(root);
     printf("test_db_readonly_sees_package_files: PASS\n");
+}
+
+static int
+journal_entry_count(const char *db_path)
+{
+    MDB_env *env = NULL;
+    assert(mdb_env_create(&env) == MDB_SUCCESS);
+    mdb_env_set_maxdbs(env, 4);
+    assert(mdb_env_open(env, db_path, MDB_RDONLY, 0664) == MDB_SUCCESS);
+    int count = 0;
+    struct journal_entry **entries = journal_read_all(env, &count);
+    journal_free_all(entries, count);
+    mdb_env_close(env);
+    return count;
+}
+
+void
+test_db_set_installed_by_hand_skips_journal(void)
+{
+    char db_path[PATH_MAX];
+    struct db_handle *db = open_tmp_db(db_path);
+    assert(db);
+
+    struct package *pkg = package_new();
+    pkg->meta->name = strdup("dep-flag");
+    pkg->meta->version = strdup("1.0");
+    pkg->installed_by_hand = false;
+    assert(db_add(db, pkg));
+    package_free(pkg);
+
+    assert(db_set_installed_by_hand(db, "dep-flag", true));
+    struct package *fetched = db_get(db, "dep-flag");
+    assert(fetched && fetched->installed_by_hand);
+    package_free(fetched);
+
+    assert(!db_set_installed_by_hand(db, "missing-pkg", true));
+    assert(apg_last_error() && strstr(apg_last_error(), "missing-pkg"));
+
+    db_close(db);
+    assert(journal_entry_count(db_path) == 1);
+
+    db = db_open(db_path);
+    assert(db);
+    close_tmp_db(db, db_path);
+    printf("test_db_set_installed_by_hand_skips_journal: PASS\n");
 }
 
 void

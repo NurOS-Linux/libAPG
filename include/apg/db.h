@@ -137,6 +137,25 @@ extern "C"
                              bool held);
 
     /**
+     * @brief Mark an installed package as installed explicitly or as a
+     * dependency.
+     *
+     * Explicitly installed packages are never reported by db_get_orphans().
+     * The flag is persisted in the database record; no journal entry is
+     * written, so the change does not appear as an operation that
+     * rollback tooling would undo.
+     *
+     * @param db       Database handle opened for writing.
+     * @param pkg_name Name of the installed package.
+     * @param by_hand  true for explicitly installed, false for a dependency.
+     * @return true on success, false if the package was not found, the write
+     *         failed, or the handle is read-only; apg_last_error() describes
+     *         the cause.
+     */
+    APG_API bool db_set_installed_by_hand(struct db_handle *db,
+                                          const char *pkg_name, bool by_hand);
+
+    /**
      * @brief Look up a package record by name.
      *
      * @param db   Database handle.
