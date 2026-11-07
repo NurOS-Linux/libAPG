@@ -75,4 +75,12 @@ if get_option('fuzzing').enabled()
     link_args: fuzzer_link_args,
     build_by_default: false,
   )
+
+  fuzz_unarchive = executable('fuzz-unarchive',
+    'fuzz_unarchive.c',
+    dependencies: libapg_dep,
+    c_args: fuzzer_c_args,
+    link_args: fuzzer_link_args,
+    build_by_default: false,
+  )
 endif
