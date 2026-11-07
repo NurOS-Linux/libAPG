@@ -10,3 +10,4 @@ Guides
    transactions
    install-scripts
    errors
+   testing
