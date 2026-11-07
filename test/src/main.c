@@ -115,6 +115,18 @@ main(void)
     test_collect_files_lists_relative_paths();
     test_remove_dir_recursive_does_not_follow_links();
 
-    printf("All 98 tests passed.\n");
+    test_json_parses_all_fields();
+    test_json_roundtrip_is_stable();
+    test_json_rejects_malformed_input();
+    test_json_respects_length_argument();
+    test_json_ignores_wrongly_typed_scalars();
+    test_json_string_lists_never_contain_null_items();
+    test_json_dependencies_never_contain_null_names();
+    test_json_defaults_when_serializing_empty_package();
+    test_json_unicode_and_escapes_survive_roundtrip();
+    test_json_metadata_from_file();
+    test_dep_constraint_string_roundtrip();
+
+    printf("All 109 tests passed.\n");
     return 0;
 }

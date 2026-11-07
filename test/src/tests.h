@@ -110,3 +110,15 @@ void test_copy_dir_stops_on_unreadable_file(void);
 void test_concat_dirs_normalizes_separators(void);
 void test_collect_files_lists_relative_paths(void);
 void test_remove_dir_recursive_does_not_follow_links(void);
+
+void test_json_parses_all_fields(void);
+void test_json_roundtrip_is_stable(void);
+void test_json_rejects_malformed_input(void);
+void test_json_respects_length_argument(void);
+void test_json_ignores_wrongly_typed_scalars(void);
+void test_json_string_lists_never_contain_null_items(void);
+void test_json_dependencies_never_contain_null_names(void);
+void test_json_defaults_when_serializing_empty_package(void);
+void test_json_unicode_and_escapes_survive_roundtrip(void);
+void test_json_metadata_from_file(void);
+void test_dep_constraint_string_roundtrip(void);
