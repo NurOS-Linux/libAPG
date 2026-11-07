@@ -7,3 +7,4 @@ Guides
    building
    database
    signing
+   transactions
