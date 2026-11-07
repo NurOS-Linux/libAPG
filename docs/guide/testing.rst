@@ -69,6 +69,12 @@ with libFuzzer, AddressSanitizer and UndefinedBehaviorSanitizer:
      - ``install_data_dir()``
    * - ``fuzz-transaction-prepare``
      - ``trans_prepare()``
+   * - ``fuzz-unarchive``
+     - ``parse_package()`` on arbitrary archive bytes. The run aborts if
+       extraction creates anything outside its own directory.
+   * - ``fuzz-keyring``
+     - ``keyring_load()``, ``keyring_verify()`` and ``keyring_add_key()`` with
+       keys, signature and package content taken from the input
 
 .. code-block:: sh
 
@@ -76,8 +82,9 @@ with libFuzzer, AddressSanitizer and UndefinedBehaviorSanitizer:
    meson compile -C build-fuzz fuzz/fuzz-package-json
    ./build-fuzz/fuzz/fuzz-package-json -max_total_time=60 fuzz/corpus/package-json
 
-Seed corpora are in ``fuzz/corpus/``. The CI smoke run covers
-``fuzz-package-json`` and ``fuzz-dep-constraint``.
+Seed corpora are in ``fuzz/corpus/``, one directory per target without the
+``fuzz-`` prefix. The CI smoke run builds every target and runs each for 30
+seconds.
 
 Bindings tests
 --------------
