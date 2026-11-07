@@ -12,4 +12,5 @@ transactions, package signing, and a persistent operation journal.
    :caption: Contents
 
    abi-policy
+   guide/index
    api/index
