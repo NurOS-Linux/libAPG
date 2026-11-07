@@ -116,8 +116,10 @@ db_add_once(struct db_handle *db, struct package *pkg)
                     char *fdata = serialize_files(&pkg->package_files);
                     if (fdata)
                     {
-                        MDB_val fkey = {strlen(pkg->meta->name),
-                                        pkg->meta->name};
+                        MDB_val fkey = {
+                            strlen(pkg->meta->name),
+                            pkg->meta->name,
+                        };
                         MDB_val fval = {strlen(fdata), fdata};
                         rc = mdb_put(txn, db->files_dbi, &fkey, &fval, 0);
                         free(fdata);
