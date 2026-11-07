@@ -127,6 +127,13 @@ main(void)
     test_json_metadata_from_file();
     test_dep_constraint_string_roundtrip();
 
-    printf("All 109 tests passed.\n");
+    test_keyring_load_handles_directory_contents();
+    test_keyring_verify_accepts_only_valid_signatures();
+    test_keyring_verify_large_and_empty_packages();
+    test_keyring_add_key_requires_endorsement();
+    test_keyring_add_key_with_any_filename_is_loadable();
+    test_sign_file_and_verify_roundtrip();
+
+    printf("All 115 tests passed.\n");
     return 0;
 }

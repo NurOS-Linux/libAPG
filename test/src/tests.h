@@ -122,3 +122,10 @@ void test_json_defaults_when_serializing_empty_package(void);
 void test_json_unicode_and_escapes_survive_roundtrip(void);
 void test_json_metadata_from_file(void);
 void test_dep_constraint_string_roundtrip(void);
+
+void test_keyring_load_handles_directory_contents(void);
+void test_keyring_verify_accepts_only_valid_signatures(void);
+void test_keyring_verify_large_and_empty_packages(void);
+void test_keyring_add_key_requires_endorsement(void);
+void test_keyring_add_key_with_any_filename_is_loadable(void);
+void test_sign_file_and_verify_roundtrip(void);
