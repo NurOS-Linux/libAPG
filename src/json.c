@@ -26,12 +26,21 @@ parse_str_array(yyjson_val *arr)
 
     size_t idx, max;
     yyjson_val *val;
+    int kept = 0;
     yyjson_arr_foreach(arr, idx, max, val)
     {
-        list.items[idx] =
-            yyjson_is_str(val) ? strdup(yyjson_get_str(val)) : NULL;
+        if (!yyjson_is_str(val))
+            continue;
+        char *copy = strdup(yyjson_get_str(val));
+        if (copy)
+            list.items[kept++] = copy;
     }
-    list.count = (int)count;
+    if (kept == 0)
+    {
+        free(list.items);
+        list.items = NULL;
+    }
+    list.count = kept;
     return list;
 }
 
@@ -52,13 +61,25 @@ parse_dep_array(yyjson_val *arr)
 
     size_t idx, max;
     yyjson_val *val;
+    int kept = 0;
     yyjson_arr_foreach(arr, idx, max, val)
     {
-        list.items[idx] = yyjson_is_str(val)
-                              ? dep_constraint_parse(yyjson_get_str(val))
-                              : (struct dep_constraint){NULL, VER_OP_ANY, NULL};
+        if (!yyjson_is_str(val))
+            continue;
+        struct dep_constraint dep = dep_constraint_parse(yyjson_get_str(val));
+        if (!dep.name)
+        {
+            dep_constraint_free(&dep);
+            continue;
+        }
+        list.items[kept++] = dep;
     }
-    list.count = (int)count;
+    if (kept == 0)
+    {
+        free(list.items);
+        list.items = NULL;
+    }
+    list.count = kept;
     return list;
 }
 
