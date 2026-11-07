@@ -14,6 +14,7 @@ API Reference
    sign
    archive
    install
+   util
    json
    config
    error
