@@ -10,6 +10,7 @@ API Reference
    transaction
    graph
    journal
+   audit
    sign
    archive
    install
