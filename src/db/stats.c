@@ -26,9 +26,18 @@ db_stats(struct db_handle *db, struct db_stats *out)
         return false;
     }
 
-    MDB_stat st;
-    if (mdb_stat(txn, dbi, &st) == MDB_SUCCESS)
-        out->package_count = (int)st.ms_entries;
+    MDB_cursor *pkg_cursor;
+    if (mdb_cursor_open(txn, dbi, &pkg_cursor) == MDB_SUCCESS)
+    {
+        MDB_val pkg_key, pkg_data;
+        while (mdb_cursor_get(pkg_cursor, &pkg_key, &pkg_data, MDB_NEXT) ==
+               MDB_SUCCESS)
+        {
+            if (pkg_data.mv_size > 0 && *(const char *)pkg_data.mv_data == '{')
+                out->package_count++;
+        }
+        mdb_cursor_close(pkg_cursor);
+    }
     mdb_dbi_close(db->env, dbi);
 
     if (db->files_dbi_open)
