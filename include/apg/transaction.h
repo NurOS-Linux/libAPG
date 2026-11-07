@@ -39,8 +39,7 @@ extern "C"
     {
         TRANS_OP_INSTALL, /**< Install a package. */
         TRANS_OP_REMOVE,  /**< Remove a package. */
-        TRANS_OP_UPGRADE, /**< Replace an installed package with a newer
-                             version. */
+        TRANS_OP_UPGRADE, /**< Replace with a newer version. */
     } trans_op_t;
 
     /**
@@ -66,9 +65,9 @@ extern "C"
         TRANS_ERR_FILE_CONFLICT,  /**< File already owned by another package. */
         TRANS_ERR_HELD,           /**< Operation blocked by a held package. */
         TRANS_ERR_DB, /**< The package database could not be updated. */
-        TRANS_ERR_REMOVE_FAILED, /**< A package could not be removed, for
-                                    example because its pre-remove script
-                                    failed. */
+        /** A package could not be removed, for example because its
+         * pre-remove script failed. */
+        TRANS_ERR_REMOVE_FAILED,
     } trans_error_t;
 
     /**

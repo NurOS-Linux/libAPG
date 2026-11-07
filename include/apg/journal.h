@@ -27,8 +27,7 @@ extern "C"
     {
         JOURNAL_INSTALL,  /**< A package was installed. */
         JOURNAL_REMOVE,   /**< A package was removed. */
-        JOURNAL_ROLLBACK, /**< A package was removed as part of a transaction
-                             rollback. */
+        JOURNAL_ROLLBACK, /**< Removal during a transaction rollback. */
     } journal_op_t;
 
     /**
