@@ -64,7 +64,7 @@ copy_file(const char *src, const char *dst)
         ok = false;
     }
 
-    if (ok && chmod(dst, st.st_mode & 07777) != 0)
+    if (ok && chmod(dst, st.st_mode & 07777U) != 0)
     {
         apg_set_error("cannot set permissions on '%s': %s", dst,
                       strerror(errno));
@@ -93,7 +93,7 @@ copy_dir(const char *src, const char *dst)
         return false;
     }
 
-    if (!dst_existed && chmod(dst, src_st.st_mode & 07777) != 0)
+    if (!dst_existed && chmod(dst, src_st.st_mode & 07777U) != 0)
     {
         apg_set_error("cannot set permissions on '%s': %s", dst,
                       strerror(errno));
