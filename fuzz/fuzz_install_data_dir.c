@@ -12,7 +12,7 @@
 
 #include <apg/install.h>
 #include <apg/copy.h>
-#include <util.h>
+#include <apg/util.h>
 
 #define FUZZ_MAX_ENTRIES 6
 #define FUZZ_NAME_POOL_SIZE 5
