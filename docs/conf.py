@@ -14,6 +14,8 @@ breathe_domain_by_extension = {"h": "c"}
 
 breathe_default_members = ("members", "undoc-members")
 
+c_id_attributes = ["APG_API"]
+
 html_theme = "furo"
 html_title = "libapg 2.7.0"
 
