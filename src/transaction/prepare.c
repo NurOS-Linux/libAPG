@@ -623,7 +623,9 @@ trans_prepare(struct apg_trans *trans)
             char *owner = db_owner(trans->db, path);
             if (!owner)
                 continue;
-            if (strcmp(owner, pkg->meta->name) == 0)
+            if (strcmp(owner, pkg->meta->name) == 0 ||
+                in_strarray((const char **)trans->remove_names,
+                            trans->remove_count, owner))
             {
                 free(owner);
                 continue;

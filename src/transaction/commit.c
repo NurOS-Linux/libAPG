@@ -207,6 +207,34 @@ remove_dropped_files(struct apg_trans *trans, const struct package *pkg,
     package_free(previous);
 }
 
+static struct str_list
+files_still_owned_by(struct db_handle *db, const struct package *pkg)
+{
+    struct str_list owned = {0};
+    const struct str_list *files = &pkg->package_files;
+    if (files->count <= 0)
+        return owned;
+
+    owned.items = calloc((size_t)files->count, sizeof(char *));
+    if (!owned.items)
+        return owned;
+
+    for (int i = 0; i < files->count; i++)
+    {
+        if (!files->items[i])
+            continue;
+        char *owner = db_owner(db, files->items[i]);
+        bool ours = owner && strcmp(owner, pkg->meta->name) == 0;
+        free(owner);
+        if (!ours)
+            continue;
+        char *copy = strdup(files->items[i]);
+        if (copy)
+            owned.items[owned.count++] = copy;
+    }
+    return owned;
+}
+
 static void
 rollback_with_error(struct apg_trans *trans, const size_t *committed_idx,
                     size_t committed_count,
@@ -433,16 +461,18 @@ trans_commit(struct apg_trans *trans, const char *root_path)
             bool pre_ok = trans->dry_run || !scripts_dir ||
                           run_script(scripts_dir, "pre-remove", root_path);
 
+            struct str_list doomed = {0};
+            if (!trans->dry_run && pre_ok && installed && installed->meta &&
+                installed->meta->name)
+                doomed = files_still_owned_by(trans->db, installed);
+
             bool ok = pre_ok &&
                       (trans->dry_run || db_remove(trans->db, step->pkg_name));
-            if (!trans->dry_run && ok && installed)
+            if (!trans->dry_run && ok)
             {
-                const struct str_list *files = &installed->package_files;
-                for (int j = 0; j < files->count; j++)
+                for (int j = 0; j < doomed.count; j++)
                 {
-                    if (!files->items[j])
-                        continue;
-                    char *fpath = concat_dirs(root_path, files->items[j]);
+                    char *fpath = concat_dirs(root_path, doomed.items[j]);
                     if (fpath)
                     {
                         unlink(fpath);
@@ -450,6 +480,7 @@ trans_commit(struct apg_trans *trans, const char *root_path)
                     }
                 }
             }
+            str_list_free(&doomed);
 
             if (!trans->dry_run && ok && scripts_dir)
                 run_script(scripts_dir, "post-remove", root_path);
