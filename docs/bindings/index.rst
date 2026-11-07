@@ -5,3 +5,4 @@ Language bindings
    :maxdepth: 1
 
    python
+   cpp
