@@ -94,6 +94,15 @@ main(void)
     test_sat_public_satisfiable();
     test_sat_public_unsatisfiable();
 
-    printf("All 63 tests passed.\n");
+    test_db_list_empty_and_populated();
+    test_db_search_matches_name_and_description();
+    test_db_stats_counts_packages_and_files();
+    test_db_dependents_direct_and_via_provides();
+    test_db_orphans_respect_dependencies_and_flags();
+    test_db_set_hold_persists_and_validates();
+    test_db_hooks_fire_on_add_and_remove();
+    test_db_owner_follows_add_and_remove();
+
+    printf("All 87 tests passed.\n");
     return 0;
 }

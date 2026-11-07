@@ -89,3 +89,12 @@ void test_trans_upgrade_in_place_keeps_installed_preference(void);
 
 void test_sat_public_satisfiable(void);
 void test_sat_public_unsatisfiable(void);
+
+void test_db_list_empty_and_populated(void);
+void test_db_search_matches_name_and_description(void);
+void test_db_stats_counts_packages_and_files(void);
+void test_db_dependents_direct_and_via_provides(void);
+void test_db_orphans_respect_dependencies_and_flags(void);
+void test_db_set_hold_persists_and_validates(void);
+void test_db_hooks_fire_on_add_and_remove(void);
+void test_db_owner_follows_add_and_remove(void);

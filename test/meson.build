@@ -8,6 +8,7 @@ apg_test = executable('apg-test',
   'src/test_archive.c',
   'src/test_accessors.c',
   'src/test_sat_public.c',
+  'src/test_db.c',
   dependencies: [libapg_dep, libarchive_dep],
   build_by_default: false,
 )
