@@ -20,7 +20,7 @@ Package management library for NurOS.
 | [lmdb](https://www.symas.com/lmdb) | Embedded key-value database |
 | [yyjson](https://github.com/ibireme/yyjson) | JSON library |
 | [libsodium](https://libsodium.org/) | Package signing |
-| [libseccomp](https://github.com/seccomp/libseccomp) *(optional, Linux only)* | Syscall filtering for install script sandbox |
+| [libseccomp](https://github.com/seccomp/libseccomp) *(optional, Linux only)* | Detected at configure time, not used by the current sources |
 
 ## Signing
 
@@ -28,13 +28,13 @@ Packages are signed and verified with **libsodium** (`sign_verify`, `sign_file`,
 
 ## Install-script sandbox
 
-`run_script()` isolates pre/post-install scripts using the strongest primitive available on the host:
+`run_script()` runs pre/post-install scripts as `/bin/sh <script>` in a child process.
 
-- **Linux** — `unshare()` with isolated network, mount, UTS, and IPC namespaces, plus optional `libseccomp` syscall filtering.
+- **Linux**: `unshare()` with user, network, mount, UTS, and IPC namespaces. If `unshare()` fails with `EPERM` or `EINVAL`, the script runs without them. Any other error fails the call.
 - **FreeBSD**: `chroot()` into the alternate install root, when one is given. Capsicum capability mode is not used here, since it forbids the kernel from resolving an interpreter path, which any `#!`-script exec requires.
-- **Other POSIX platforms** — no sandbox primitive is available; scripts run without isolation.
+- **Other POSIX platforms**: `chroot()` into the alternate install root, when one is given. No other isolation is applied.
 
-On Linux and FreeBSD, if the sandbox cannot be established the script is not executed (fail closed).
+On every platform, if `chroot()` to a given install root fails, the script is not executed.
 
 ## Building
 
