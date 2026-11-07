@@ -246,7 +246,8 @@ test_keyring_add_key_requires_endorsement(void)
     sign_stream(newcomer.sk, pkg, pkg_sig);
 
     unsigned char sig[crypto_sign_BYTES];
-    crypto_sign_detached(sig, NULL, newcomer.pk, sizeof(newcomer.pk), stranger.sk);
+    crypto_sign_detached(sig, NULL, newcomer.pk, sizeof(newcomer.pk),
+                         stranger.sk);
     write_bytes(bad_sig, sig, sizeof(sig));
     assert(!keyring_add_key(kdir, new_key, bad_sig, trusted));
 

@@ -33,9 +33,8 @@ test_db_list_empty_and_populated(void)
     const char *files[] = {"usr/bin/a", "usr/share/a/readme"};
     add_pkg(db, fs_make_package("a", "1.0", "first", NULL, 0, NULL, 0, files, 2,
                                 true));
-    add_pkg(db,
-            fs_make_package("b", "2.0", "second", NULL, 0, NULL, 0, NULL, 0,
-                            false));
+    add_pkg(db, fs_make_package("b", "2.0", "second", NULL, 0, NULL, 0, NULL, 0,
+                                false));
 
     list = db_list(db, &count);
     assert(list && count == 2);
@@ -194,8 +193,8 @@ test_db_orphans_respect_dependencies_and_flags(void)
     const char *prov_virt[] = {"virt"};
     add_pkg(db, fs_make_package("app", "1", NULL, dep_lib, 1, NULL, 0, NULL, 0,
                                 true));
-    add_pkg(db,
-            fs_make_package("lib", "1", NULL, NULL, 0, NULL, 0, NULL, 0, false));
+    add_pkg(db, fs_make_package("lib", "1", NULL, NULL, 0, NULL, 0, NULL, 0,
+                                false));
     add_pkg(db, fs_make_package("stray", "1", NULL, NULL, 0, NULL, 0, NULL, 0,
                                 false));
     add_pkg(db, fs_make_package("manual", "1", NULL, NULL, 0, NULL, 0, NULL, 0,
@@ -306,8 +305,8 @@ test_db_hooks_fire_on_add_and_remove(void)
     assert(db);
 
     struct hook_log log = {0};
-    struct db_hooks hooks = {.pre = hook_pre, .post = hook_post,
-                             .userdata = &log};
+    struct db_hooks hooks = {
+        .pre = hook_pre, .post = hook_post, .userdata = &log};
     db_set_hooks(db, &hooks);
 
     add_pkg(db, fs_make_package("hooked", "1", NULL, NULL, 0, NULL, 0, NULL, 0,

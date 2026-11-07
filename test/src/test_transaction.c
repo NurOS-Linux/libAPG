@@ -24,8 +24,8 @@ plain(const char *name, const char *version)
 static struct package *
 with_files(const char *name, const char **files, int count)
 {
-    struct package *p =
-        fs_make_package(name, "1.0", NULL, NULL, 0, NULL, 0, files, count, true);
+    struct package *p = fs_make_package(name, "1.0", NULL, NULL, 0, NULL, 0,
+                                        files, count, true);
     p->pkg_path = strdup("/nonexistent/test.pkg");
     return p;
 }
@@ -176,7 +176,8 @@ test_trans_many_file_conflicts_are_all_reported(void)
     struct db_handle *db = fs_open_db(path);
     assert(db);
 
-    const char *files[] = {"f0", "f1", "f2", "f3", "f4", "f5", "f6", "f7", "f8"};
+    const char *files[] = {"f0", "f1", "f2", "f3", "f4",
+                           "f5", "f6", "f7", "f8"};
     store(db, with_files("owner", files, 9));
 
     struct package *newcomer = with_files("newcomer", files, 9);

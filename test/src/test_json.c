@@ -199,8 +199,9 @@ test_json_unicode_and_escapes_survive_roundtrip(void)
     assert(pkg);
     pkg->meta->name = strdup("pkg");
     pkg->meta->version = strdup("1");
-    pkg->meta->description = strdup("tab\there \"q\" back\\slash \xd0\x9f\xd1\x80"
-                                    "\xd0\xb8\xd0\xb2\xd0\xb5\xd1\x82 \n end");
+    pkg->meta->description =
+        strdup("tab\there \"q\" back\\slash \xd0\x9f\xd1\x80"
+               "\xd0\xb8\xd0\xb2\xd0\xb5\xd1\x82 \n end");
 
     char *json = package_to_json(pkg);
     assert(json);
@@ -245,7 +246,7 @@ test_json_metadata_from_file(void)
 void
 test_dep_constraint_string_roundtrip(void)
 {
-    const char *inputs[] = {"pkg",          "pkg >= 1.0", "pkg <= 2",
+    const char *inputs[] = {"pkg",           "pkg >= 1.0", "pkg <= 2",
                             "pkg > 1:3.0-1", "pkg < 4",    "pkg == 1.2.3",
                             "pkg != 5"};
     for (size_t i = 0; i < sizeof(inputs) / sizeof(inputs[0]); i++)

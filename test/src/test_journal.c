@@ -266,8 +266,8 @@ test_journal_removing_missing_package_is_not_recorded_as_ok(void)
     {
         if (journal_entry_pkg_name(list[i]) &&
             strcmp(journal_entry_pkg_name(list[i]), "ghost") == 0)
-            assert(removed || journal_entry_status(list[i]) ==
-                                  JOURNAL_STATUS_FAILED);
+            assert(removed ||
+                   journal_entry_status(list[i]) == JOURNAL_STATUS_FAILED);
     }
 
     journal_free_all(list, count);
