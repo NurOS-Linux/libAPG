@@ -28,9 +28,10 @@ extern "C"
      * missing privileges), the call fails closed and returns false without
      * executing the script.
      *
-     * On Linux, the script runs in a child process with isolated network,
-     * mount, UTS, and IPC namespaces (@c unshare()). On FreeBSD, the script
-     * runs under Capsicum capability mode (@c cap_enter()).
+     * On Linux, the script runs in a child process that calls @c unshare()
+     * for user, network, mount, UTS, and IPC namespaces; if @c unshare()
+     * fails with @c EPERM or @c EINVAL, the script runs without them. On
+     * other systems no namespace isolation is applied.
      *
      * Common script names are @c pre-install, @c post-install, @c pre-remove,
      * and @c post-remove.
