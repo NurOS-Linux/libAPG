@@ -6,3 +6,4 @@ Guides
 
    building
    database
+   signing
