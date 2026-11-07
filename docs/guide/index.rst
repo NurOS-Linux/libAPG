@@ -8,3 +8,4 @@ Guides
    database
    signing
    transactions
+   install-scripts
