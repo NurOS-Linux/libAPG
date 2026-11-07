@@ -143,6 +143,19 @@ main(void)
     test_journal_db_operations_are_recorded();
     test_journal_removing_missing_package_is_not_recorded_as_ok();
 
-    printf("All 123 tests passed.\n");
+    test_trans_held_upgrade_is_reported();
+    test_trans_held_remove_is_reported_and_others_planned();
+    test_trans_released_hold_allows_operation();
+    test_trans_many_held_packages_are_all_reported();
+    test_trans_file_conflict_is_reported();
+    test_trans_many_file_conflicts_are_all_reported();
+    test_trans_own_files_do_not_conflict();
+    test_trans_removed_owner_frees_its_files();
+    test_trans_error_priority_held_before_file_conflict();
+    test_trans_accessors_handle_bad_arguments();
+    test_trans_commit_state_machine();
+    test_trans_remove_of_unknown_package_does_not_corrupt_db();
+
+    printf("All 135 tests passed.\n");
     return 0;
 }
