@@ -23,9 +23,9 @@ static size_t
 ptr_hash(const void *p)
 {
     uintptr_t v = (uintptr_t)p;
-    v ^= v >> 16;
+    v ^= v >> 16U;
     v *= 0x9e3779b97f4a7c15ULL;
-    v ^= v >> 32;
+    v ^= v >> 32U;
     return (size_t)v;
 }
 

@@ -256,9 +256,10 @@ solve_core(const struct sat_model *m, size_t decision_budget,
     for (size_t v = 0; v <= m->var_count; v++)
         antecedent[v] = SIZE_MAX;
 
-    struct sat_solve_ctx ctx = {m,      assign, antecedent,    decision_budget,
-                                0,      false,  false,         0,
-                                cancel, false,  reverse_order, prefer_false};
+    struct sat_solve_ctx ctx = {
+        m,      assign, antecedent,    decision_budget, 0, false, false, 0,
+        cancel, false,  reverse_order, prefer_false,
+    };
     size_t trail_len = 0;
     bool sat = dpll(&ctx, trail, &trail_len);
     free(trail);
@@ -379,8 +380,8 @@ sat_solve_parallel(const struct sat_model *m, size_t decision_budget,
     {
         args[i].m = m;
         args[i].budget = decision_budget;
-        args[i].reverse_order = (i & 1) != 0;
-        args[i].prefer_false = (i & 2) != 0;
+        args[i].reverse_order = ((unsigned)i & 1U) != 0;
+        args[i].prefer_false = ((unsigned)i & 2U) != 0;
         args[i].cancel = &cancel;
         args[i].result_lock = &result_lock;
         args[i].result_set = &result_set;
