@@ -98,3 +98,15 @@ void test_db_orphans_respect_dependencies_and_flags(void);
 void test_db_set_hold_persists_and_validates(void);
 void test_db_hooks_fire_on_add_and_remove(void);
 void test_db_owner_follows_add_and_remove(void);
+
+void test_copy_file_preserves_content_and_mode(void);
+void test_copy_file_large_file(void);
+void test_copy_file_reports_failures(void);
+void test_copy_dir_copies_tree_with_modes_and_links(void);
+void test_copy_dir_merges_into_existing_destination(void);
+void test_copy_dir_replaces_mismatched_entry_types(void);
+void test_copy_dir_reports_missing_source(void);
+void test_copy_dir_stops_on_unreadable_file(void);
+void test_concat_dirs_normalizes_separators(void);
+void test_collect_files_lists_relative_paths(void);
+void test_remove_dir_recursive_does_not_follow_links(void);

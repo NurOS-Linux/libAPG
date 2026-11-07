@@ -103,6 +103,18 @@ main(void)
     test_db_hooks_fire_on_add_and_remove();
     test_db_owner_follows_add_and_remove();
 
-    printf("All 87 tests passed.\n");
+    test_copy_file_preserves_content_and_mode();
+    test_copy_file_large_file();
+    test_copy_file_reports_failures();
+    test_copy_dir_copies_tree_with_modes_and_links();
+    test_copy_dir_merges_into_existing_destination();
+    test_copy_dir_replaces_mismatched_entry_types();
+    test_copy_dir_reports_missing_source();
+    test_copy_dir_stops_on_unreadable_file();
+    test_concat_dirs_normalizes_separators();
+    test_collect_files_lists_relative_paths();
+    test_remove_dir_recursive_does_not_follow_links();
+
+    printf("All 98 tests passed.\n");
     return 0;
 }
