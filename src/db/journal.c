@@ -30,28 +30,28 @@ static void
 pack_key(uint8_t out[12], time_t ts, uint32_t seq)
 {
     uint64_t t = (uint64_t)ts;
-    out[7] = t & 0xff;
-    t >>= 8;
-    out[6] = t & 0xff;
-    t >>= 8;
-    out[5] = t & 0xff;
-    t >>= 8;
-    out[4] = t & 0xff;
-    t >>= 8;
-    out[3] = t & 0xff;
-    t >>= 8;
-    out[2] = t & 0xff;
-    t >>= 8;
-    out[1] = t & 0xff;
-    t >>= 8;
-    out[0] = t & 0xff;
-    out[11] = seq & 0xff;
-    seq >>= 8;
-    out[10] = seq & 0xff;
-    seq >>= 8;
-    out[9] = seq & 0xff;
-    seq >>= 8;
-    out[8] = seq & 0xff;
+    out[7] = t & 0xffU;
+    t >>= 8U;
+    out[6] = t & 0xffU;
+    t >>= 8U;
+    out[5] = t & 0xffU;
+    t >>= 8U;
+    out[4] = t & 0xffU;
+    t >>= 8U;
+    out[3] = t & 0xffU;
+    t >>= 8U;
+    out[2] = t & 0xffU;
+    t >>= 8U;
+    out[1] = t & 0xffU;
+    t >>= 8U;
+    out[0] = t & 0xffU;
+    out[11] = seq & 0xffU;
+    seq >>= 8U;
+    out[10] = seq & 0xffU;
+    seq >>= 8U;
+    out[9] = seq & 0xffU;
+    seq >>= 8U;
+    out[8] = seq & 0xffU;
 }
 
 static time_t
@@ -59,7 +59,7 @@ unpack_ts(const uint8_t *key)
 {
     uint64_t t = 0;
     for (int i = 0; i < 8; i++)
-        t = (t << 8) | key[i];
+        t = (t << 8U) | (uint64_t)key[i];
     return (time_t)t;
 }
 
