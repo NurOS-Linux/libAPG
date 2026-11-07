@@ -134,17 +134,24 @@ jobs:
             --buildtype=debug \
             -Dfuzzing=enabled \
             -Db_lundef=false
-          meson compile -C build-fuzz fuzz/fuzz-package-json fuzz/fuzz-dep-constraint
+          meson compile -C build-fuzz \
+            fuzz/fuzz-package-json \
+            fuzz/fuzz-dep-constraint \
+            fuzz/fuzz-sat-model \
+            fuzz/fuzz-sat-model-vars \
+            fuzz/fuzz-candidate-set \
+            fuzz/fuzz-db \
+            fuzz/fuzz-install-data-dir \
+            fuzz/fuzz-transaction-prepare \
+            fuzz/fuzz-unarchive \
+            fuzz/fuzz-keyring
 
-      - name: Run fuzz-package-json
+      - name: Run fuzzers
         run: |
           export LD_PRELOAD="$(clang -print-runtime-dir)/libclang_rt.asan-x86_64.so"
-          ./build-fuzz/fuzz/fuzz-package-json -max_total_time=60 fuzz/corpus/package-json
-
-      - name: Run fuzz-dep-constraint
-        run: |
-          export LD_PRELOAD="$(clang -print-runtime-dir)/libclang_rt.asan-x86_64.so"
-          ./build-fuzz/fuzz/fuzz-dep-constraint -max_total_time=60 fuzz/corpus/dep-constraint
+          for target in package-json dep-constraint sat-model sat-model-vars candidate-set db install-data-dir transaction-prepare unarchive keyring; do
+            ./build-fuzz/fuzz/fuzz-$target -max_total_time=30 fuzz/corpus/$target
+          done
 
   abi-check:
     name: ABI regression check
