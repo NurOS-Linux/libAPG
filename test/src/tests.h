@@ -129,3 +129,12 @@ void test_keyring_verify_large_and_empty_packages(void);
 void test_keyring_add_key_requires_endorsement(void);
 void test_keyring_add_key_with_any_filename_is_loadable(void);
 void test_sign_file_and_verify_roundtrip(void);
+
+void test_journal_read_without_journal_is_empty(void);
+void test_journal_write_read_roundtrip(void);
+void test_journal_preserves_write_order(void);
+void test_journal_null_name_and_version_roundtrip(void);
+void test_journal_fields_with_separator_survive(void);
+void test_journal_long_names_are_not_silently_corrupted(void);
+void test_journal_db_operations_are_recorded(void);
+void test_journal_removing_missing_package_is_not_recorded_as_ok(void);
