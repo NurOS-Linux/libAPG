@@ -9,3 +9,4 @@ Guides
    signing
    transactions
    install-scripts
+   errors
