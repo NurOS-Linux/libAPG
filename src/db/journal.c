@@ -79,6 +79,63 @@ status_to_str(journal_status_t st)
     return st == JOURNAL_STATUS_OK ? "ok" : "failed";
 }
 
+static char *
+escape_field(const char *src)
+{
+    size_t len = 0;
+    for (const char *p = src; *p; p++)
+        len += (*p == '|' || *p == '%') ? 3 : 1;
+
+    char *out = malloc(len + 1);
+    if (!out)
+        return NULL;
+
+    char *w = out;
+    for (const char *p = src; *p; p++)
+    {
+        if (*p == '|')
+        {
+            memcpy(w, "%7C", 3);
+            w += 3;
+        }
+        else if (*p == '%')
+        {
+            memcpy(w, "%25", 3);
+            w += 3;
+        }
+        else
+        {
+            *w++ = *p;
+        }
+    }
+    *w = '\0';
+    return out;
+}
+
+static void
+unescape_field(char *s)
+{
+    char *w = s;
+    for (const char *r = s; *r; r++)
+    {
+        if (r[0] == '%' && r[1] == '7' && r[2] == 'C')
+        {
+            *w++ = '|';
+            r += 2;
+        }
+        else if (r[0] == '%' && r[1] == '2' && r[2] == '5')
+        {
+            *w++ = '%';
+            r += 2;
+        }
+        else
+        {
+            *w++ = *r;
+        }
+    }
+    *w = '\0';
+}
+
 bool
 journal_write(MDB_env *env, journal_op_t op, const char *pkg_name,
               const char *pkg_version, journal_status_t status, uid_t uid,
@@ -87,21 +144,43 @@ journal_write(MDB_env *env, journal_op_t op, const char *pkg_name,
     MDB_txn *txn;
     MDB_dbi dbi;
 
-    if (mdb_txn_begin(env, NULL, 0, &txn) != MDB_SUCCESS)
+    char *name_field = escape_field(pkg_name ? pkg_name : "-");
+    char *version_field = escape_field(pkg_version ? pkg_version : "-");
+    if (!name_field || !version_field)
+    {
+        free(name_field);
+        free(version_field);
         return false;
+    }
+
+    size_t val_cap = strlen(name_field) + strlen(version_field) + 64;
+    char *val = malloc(val_cap);
+    if (!val)
+    {
+        free(name_field);
+        free(version_field);
+        return false;
+    }
+    (void)snprintf(val, val_cap, "%s|%s|%s|%s|%u|%d", op_to_str(op), name_field,
+                   version_field, status_to_str(status), (unsigned)uid,
+                   explicit_op ? 1 : 0);
+    free(name_field);
+    free(version_field);
+
+    if (mdb_txn_begin(env, NULL, 0, &txn) != MDB_SUCCESS)
+    {
+        free(val);
+        return false;
+    }
     if (mdb_dbi_open(txn, "journal", MDB_CREATE, &dbi) != MDB_SUCCESS)
     {
         mdb_txn_abort(txn);
+        free(val);
         return false;
     }
 
     uint8_t raw_key[12];
     pack_key(raw_key, time(NULL), atomic_fetch_add(&seq_counter, 1));
-
-    char val[512];
-    (void)snprintf(val, sizeof(val), "%s|%s|%s|%s|%u|%d", op_to_str(op),
-                   pkg_name ? pkg_name : "-", pkg_version ? pkg_version : "-",
-                   status_to_str(status), (unsigned)uid, explicit_op ? 1 : 0);
 
     MDB_val k = {sizeof(raw_key), raw_key};
     MDB_val v = {strlen(val), val};
@@ -113,6 +192,7 @@ journal_write(MDB_env *env, journal_op_t op, const char *pkg_name,
         mdb_txn_abort(txn);
 
     mdb_dbi_close(env, dbi);
+    free(val);
     return ok;
 }
 
@@ -187,6 +267,8 @@ journal_read_all(MDB_env *env, int *count)
             e->op = JOURNAL_ROLLBACK;
         else
             e->op = JOURNAL_REMOVE;
+        unescape_field(fields[1]);
+        unescape_field(fields[2]);
         e->pkg_name = strcmp(fields[1], "-") == 0 ? NULL : strdup(fields[1]);
         e->pkg_version = strcmp(fields[2], "-") == 0 ? NULL : strdup(fields[2]);
         e->status = strcmp(fields[3], "ok") == 0 ? JOURNAL_STATUS_OK
