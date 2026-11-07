@@ -160,15 +160,12 @@ exec_script(const char *path, const char *name, const char *root_path)
             }
         }
 
-        if (do_chroot)
+        if (do_chroot && (chroot(root_path) < 0 || chdir("/") < 0))
         {
-            if (chroot(root_path) < 0 || chdir("/") < 0)
-            {
-                int err = errno;
-                (void)write(pipefd[1], &err, sizeof(err));
-                close(pipefd[1]);
-                _exit(1);
-            }
+            int err = errno;
+            (void)write(pipefd[1], &err, sizeof(err));
+            close(pipefd[1]);
+            _exit(1);
         }
 
         (void)fcntl(pipefd[1], F_SETFD, FD_CLOEXEC);
@@ -246,15 +243,12 @@ exec_script(const char *path, const char *name, const char *root_path)
     {
         close(pipefd[0]);
 
-        if (do_chroot)
+        if (do_chroot && (chroot(root_path) < 0 || chdir("/") < 0))
         {
-            if (chroot(root_path) < 0 || chdir("/") < 0)
-            {
-                int err = errno;
-                (void)write(pipefd[1], &err, sizeof(err));
-                close(pipefd[1]);
-                _exit(1);
-            }
+            int err = errno;
+            (void)write(pipefd[1], &err, sizeof(err));
+            close(pipefd[1]);
+            _exit(1);
         }
 
         (void)fcntl(pipefd[1], F_SETFD, FD_CLOEXEC);
