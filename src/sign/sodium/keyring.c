@@ -174,7 +174,8 @@ keyring_add_key(const char *keyring_dir, const char *new_key_path,
     base = base ? base + 1 : new_key_path;
 
     char dst[PATH_MAX];
-    (void)snprintf(dst, sizeof(dst), "%s/%s", keyring_dir, base);
+    (void)snprintf(dst, sizeof(dst), "%s/%s%s", keyring_dir, base,
+                   has_key_ext(base) ? "" : ".key");
 
     FILE *df = fopen(dst, "wb");
     if (!df)
