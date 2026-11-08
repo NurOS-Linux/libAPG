@@ -11,6 +11,7 @@
 #include "../include/apg/archive.h"
 #include "../include/apg/package.h"
 #include "../include/apg/util.h"
+#include "archive_priv.h"
 #include "error_priv.h"
 
 #define PATH_MAX 4096
@@ -155,6 +156,65 @@ extract_to_dir(const char *archive_path, const char *path_dest)
     archive_write_close(ext);
     archive_write_free(ext);
 
+    return ok;
+}
+
+static bool
+starts_with_dir(const char *path, const char *dir)
+{
+    while (path[0] == '.' && path[1] == '/')
+        path += 2;
+    size_t len = strlen(dir);
+    return strncmp(path, dir, len) == 0 && path[len] == '/';
+}
+
+bool
+apg_archive_measure(const char *archive_path, uint64_t *extracted,
+                    uint64_t *installed)
+{
+    struct archive *a = archive_read_new();
+    archive_read_support_filter_gzip(a);
+    archive_read_support_filter_xz(a);
+    archive_read_support_filter_zstd(a);
+    archive_read_support_format_tar(a);
+
+    if (archive_read_open_filename(a, archive_path, 10240) != ARCHIVE_OK)
+    {
+        set_error("failed to open archive '%s': %s", archive_path,
+                  archive_error_string(a));
+        archive_read_free(a);
+        return false;
+    }
+
+    uint64_t total = 0;
+    uint64_t kept = 0;
+    struct archive_entry *entry;
+    int r;
+    while ((r = archive_read_next_header(a, &entry)) == ARCHIVE_OK)
+    {
+        if (archive_entry_filetype(entry) != AE_IFREG ||
+            archive_entry_hardlink(entry))
+            continue;
+
+        uint64_t size = (uint64_t)archive_entry_size(entry);
+        uint64_t blocks =
+            (size + APG_SPACE_BLOCK - 1) / APG_SPACE_BLOCK * APG_SPACE_BLOCK;
+        total += blocks;
+
+        const char *name = archive_entry_pathname(entry);
+        if (name &&
+            (starts_with_dir(name, "data") || starts_with_dir(name, "scripts")))
+            kept += blocks;
+    }
+
+    bool ok = r == ARCHIVE_EOF;
+    if (!ok)
+        set_error("failed to read archive '%s': %s", archive_path,
+                  archive_error_string(a));
+    archive_read_free(a);
+
+    *extracted = total;
+    *installed = kept;
     return ok;
 }
 
