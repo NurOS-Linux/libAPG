@@ -298,6 +298,25 @@ extern "C"
                                                 int *count);
 
     /**
+     * @brief Find the installed packages that can satisfy a dependency on a
+     *        name.
+     *
+     * A package qualifies when its own name equals @p name or when @p name is
+     * one of its @c provides entries. This is the set a dependency on @p name
+     * could be resolved to, so for a virtual name it lists every installed
+     * implementation.
+     *
+     * @param db    Database handle.
+     * @param name  Package or virtual name.
+     * @param count Output parameter set to the number of packages found.
+     * @return Heap-allocated array of heap-allocated package name strings, or
+     * NULL if there are none or on failure. Caller must free() each element and
+     * the array itself.
+     */
+    APG_API char **db_get_providers(struct db_handle *db, const char *name,
+                                    int *count);
+
+    /**
      * @brief A single package integrity issue found by db_verify().
      *
      * Opaque; read fields with db_verify_issue_at(),
