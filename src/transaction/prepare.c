@@ -155,6 +155,7 @@ plan_push(struct apg_trans *trans, trans_op_t op, const char *name,
     step->pkg_name = strdup(name);
     step->pkg_version = version ? strdup(version) : NULL;
     step->explicit = explicit_req;
+    step->required_by = NULL;
     if (!step->pkg_name)
         return TRANS_ERR_NOMEM;
 
@@ -258,6 +259,30 @@ push_removals_in_order(struct apg_trans *trans, const char **names,
     free(pkgs);
     free(done);
     return err;
+}
+
+static trans_error_t
+assign_required_by(struct apg_trans *trans)
+{
+    for (size_t i = 0; i < trans->plan_count; i++)
+    {
+        struct trans_step *step = &trans->plan[i];
+        const struct package *target = trans->plan_pkgs[i];
+        if (step->op != TRANS_OP_INSTALL || step->explicit || !target)
+            continue;
+
+        for (size_t j = 0; j < trans->plan_count; j++)
+        {
+            if (j == i || trans->plan[j].op == TRANS_OP_REMOVE ||
+                !depends_on(trans->plan_pkgs[j], target))
+                continue;
+            step->required_by = strdup(trans->plan[j].pkg_name);
+            if (!step->required_by)
+                return TRANS_ERR_NOMEM;
+            break;
+        }
+    }
+    return TRANS_OK;
 }
 
 trans_error_t
@@ -668,6 +693,15 @@ trans_prepare(struct apg_trans *trans)
                 ret = TRANS_ERR_NOMEM;
                 goto cleanup;
             }
+        }
+    }
+
+    {
+        trans_error_t rerr = assign_required_by(trans);
+        if (rerr != TRANS_OK)
+        {
+            ret = rerr;
+            goto cleanup;
         }
     }
 

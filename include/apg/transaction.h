@@ -151,6 +151,23 @@ extern "C"
     APG_API bool trans_step_explicit(const struct trans_step *step);
 
     /**
+     * @brief Name of a package in the plan that depends on this step's
+     *        package.
+     *
+     * Set after trans_prepare() for install steps that were pulled in as
+     * dependencies (trans_step_explicit() is false): the first step of the
+     * plan, install or upgrade, whose package lists this one, by name or
+     * through @c provides, as a dependency. Following the result step by step
+     * leads from a dependency to a package the caller asked for. NULL for
+     * steps requested directly, for upgrades and removals, and when @p step
+     * is NULL.
+     *
+     * @param step Step returned by trans_plan_at().
+     * @return Package name owned by the transaction, or NULL.
+     */
+    APG_API const char *trans_step_required_by(const struct trans_step *step);
+
+    /**
      * @brief Name of the package being installed or removed.
      */
     APG_API const char *

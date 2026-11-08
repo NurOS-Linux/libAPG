@@ -11,6 +11,7 @@ struct trans_step
     char *pkg_name;
     char *pkg_version;
     bool explicit;
+    char *required_by;
 };
 
 struct trans_conflict

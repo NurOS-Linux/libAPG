@@ -120,6 +120,7 @@ trans_free(struct apg_trans *trans)
     {
         free(trans->plan[i].pkg_name);
         free(trans->plan[i].pkg_version);
+        free(trans->plan[i].required_by);
     }
     free(trans->plan);
     free(trans->plan_pkgs);
@@ -378,6 +379,12 @@ const char *
 trans_step_pkg_version(const struct trans_step *step)
 {
     return step->pkg_version;
+}
+
+const char *
+trans_step_required_by(const struct trans_step *step)
+{
+    return step ? step->required_by : NULL;
 }
 
 bool
