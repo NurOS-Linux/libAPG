@@ -159,6 +159,47 @@ extract_to_dir(const char *archive_path, const char *path_dest)
     return ok;
 }
 
+struct archive *
+apg_archive_open_read(const char *archive_path)
+{
+    struct archive *a = archive_read_new();
+    archive_read_support_filter_gzip(a);
+    archive_read_support_filter_xz(a);
+    archive_read_support_filter_zstd(a);
+    archive_read_support_format_tar(a);
+
+    if (archive_read_open_filename(a, archive_path, 10240) != ARCHIVE_OK)
+    {
+        apg_set_error("failed to open archive '%s': %s", archive_path,
+                      archive_error_string(a));
+        archive_read_free(a);
+        return NULL;
+    }
+    return a;
+}
+
+bool
+apg_archive_is_metadata(const char *name)
+{
+    while (name[0] == '.' && name[1] == '/')
+        name += 2;
+    return strcmp(name, "metadata.json") == 0;
+}
+
+const char *
+apg_archive_data_relative(const char *name)
+{
+    while (name[0] == '.' && name[1] == '/')
+        name += 2;
+    return strncmp(name, "data/", 5) == 0 ? name + 5 : NULL;
+}
+
+bool
+apg_archive_is_safe_relative(const char *path)
+{
+    return is_safe_relative_path(path);
+}
+
 static bool
 starts_with_dir(const char *path, const char *dir)
 {
@@ -172,19 +213,9 @@ bool
 apg_archive_measure(const char *archive_path, uint64_t *extracted,
                     uint64_t *installed)
 {
-    struct archive *a = archive_read_new();
-    archive_read_support_filter_gzip(a);
-    archive_read_support_filter_xz(a);
-    archive_read_support_filter_zstd(a);
-    archive_read_support_format_tar(a);
-
-    if (archive_read_open_filename(a, archive_path, 10240) != ARCHIVE_OK)
-    {
-        set_error("failed to open archive '%s': %s", archive_path,
-                  archive_error_string(a));
-        archive_read_free(a);
+    struct archive *a = apg_archive_open_read(archive_path);
+    if (!a)
         return false;
-    }
 
     uint64_t total = 0;
     uint64_t kept = 0;

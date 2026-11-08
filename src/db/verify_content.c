@@ -11,6 +11,7 @@
 #include <unistd.h>
 
 #include "db_priv.h"
+#include "../archive_priv.h"
 #include "../error_priv.h"
 #include "../../include/apg/json.h"
 #include "../../include/apg/package.h"
@@ -61,41 +62,6 @@ push_issue(struct content_ctx *ctx, db_content_kind_t kind, const char *rel)
     ctx->items[ctx->count].kind = kind;
     ctx->items[ctx->count].path = path;
     ctx->count++;
-}
-
-static bool
-is_safe_relative(const char *path)
-{
-    if (path[0] == '\0' || path[0] == '/')
-        return false;
-    const char *p = path;
-    while (*p)
-    {
-        const char *end = strchr(p, '/');
-        size_t len = end ? (size_t)(end - p) : strlen(p);
-        if (len == 2 && p[0] == '.' && p[1] == '.')
-            return false;
-        if (!end)
-            break;
-        p = end + 1;
-    }
-    return true;
-}
-
-static const char *
-data_relative(const char *name)
-{
-    while (name[0] == '.' && name[1] == '/')
-        name += 2;
-    return strncmp(name, "data/", 5) == 0 ? name + 5 : NULL;
-}
-
-static bool
-is_metadata(const char *name)
-{
-    while (name[0] == '.' && name[1] == '/')
-        name += 2;
-    return strcmp(name, "metadata.json") == 0;
 }
 
 static bool
@@ -262,16 +228,9 @@ db_verify_against_archive(struct db_handle *db, const char *pkg_name,
         return false;
     }
 
-    struct archive *a = archive_read_new();
-    archive_read_support_filter_gzip(a);
-    archive_read_support_filter_xz(a);
-    archive_read_support_filter_zstd(a);
-    archive_read_support_format_tar(a);
-    if (archive_read_open_filename(a, archive_path, 10240) != ARCHIVE_OK)
+    struct archive *a = apg_archive_open_read(archive_path);
+    if (!a)
     {
-        apg_set_error("failed to open archive '%s': %s", archive_path,
-                      archive_error_string(a));
-        archive_read_free(a);
         package_free(installed);
         return false;
     }
@@ -288,19 +247,19 @@ db_verify_against_archive(struct db_handle *db, const char *pkg_name,
         if (!name)
             continue;
 
-        if (is_metadata(name))
+        if (apg_archive_is_metadata(name))
         {
             ok = check_metadata_name(a, entry, pkg_name, archive_path);
             seen_metadata = ok;
             continue;
         }
 
-        const char *rel = data_relative(name);
+        const char *rel = apg_archive_data_relative(name);
         mode_t type = archive_entry_filetype(entry);
         if (!rel || !*rel || archive_entry_hardlink(entry) ||
             (type != AE_IFREG && type != AE_IFLNK))
             continue;
-        if (!is_safe_relative(rel))
+        if (!apg_archive_is_safe_relative(rel))
         {
             apg_set_error("'%s' contains an unsafe path '%s'", archive_path,
                           name);
