@@ -10,3 +10,19 @@ def verify(pkg_path, sig_path):
 
 def sign(pkg_path, sig_path):
     return bool(_lib.sign_file(pkg_path.encode(), sig_path.encode()))
+
+
+def verify_with_key(pkg_path, sig_path, public_key_path):
+    return bool(
+        _lib.sign_verify_with_key(
+            pkg_path.encode(), sig_path.encode(), public_key_path.encode()
+        )
+    )
+
+
+def sign_with_key(pkg_path, sig_path, secret_key_path):
+    return bool(
+        _lib.sign_file_with_key(
+            pkg_path.encode(), sig_path.encode(), secret_key_path.encode()
+        )
+    )

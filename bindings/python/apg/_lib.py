@@ -391,6 +391,12 @@ keyring_add_key = _sig(
 
 sign_verify = _sig("sign_verify", c_bool, [c_char_p, c_char_p, c_bool])
 sign_file = _sig("sign_file", c_bool, [c_char_p, c_char_p])
+sign_verify_with_key = _sig(
+    "sign_verify_with_key", c_bool, [c_char_p, c_char_p, c_char_p]
+)
+sign_file_with_key = _sig(
+    "sign_file_with_key", c_bool, [c_char_p, c_char_p, c_char_p]
+)
 
 unarchive_package = _sig("unarchive_package", c_bool, [PackagePtr])
 unarchive_package_in_root = _sig(

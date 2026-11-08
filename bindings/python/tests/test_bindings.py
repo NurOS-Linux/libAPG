@@ -1,6 +1,11 @@
 # SPDX-License-Identifier: GPL-3.0-only
 # SPDX-FileCopyrightText: 2026 AnmiTaliDev <anmitalidev@nuros.org>
 
+import ctypes
+import ctypes.util
+
+import pytest
+
 import apg
 
 
@@ -219,6 +224,48 @@ def test_audit_log(tmp_path):
     trans.close()
     pkg.close()
     db.close()
+
+
+def make_keypair():
+    name = ctypes.util.find_library("sodium")
+    if not name:
+        pytest.skip("libsodium not found")
+    sodium = ctypes.CDLL(name)
+    public = ctypes.create_string_buffer(32)
+    secret = ctypes.create_string_buffer(64)
+    assert sodium.sodium_init() >= 0
+    assert sodium.crypto_sign_keypair(public, secret) == 0
+    return public.raw, secret.raw
+
+
+def test_sign_with_explicit_keys(tmp_path):
+    public, secret = make_keypair()
+    other_public, _ = make_keypair()
+    (tmp_path / "public.key").write_bytes(public)
+    (tmp_path / "secret.key").write_bytes(secret)
+    (tmp_path / "other.key").write_bytes(other_public)
+
+    pkg = tmp_path / "pkg.bin"
+    sig = tmp_path / "pkg.sig"
+    pkg.write_bytes(b"payload")
+
+    assert apg.sign.sign_with_key(
+        str(pkg), str(sig), str(tmp_path / "secret.key")
+    )
+    assert apg.sign.verify_with_key(
+        str(pkg), str(sig), str(tmp_path / "public.key")
+    )
+    assert not apg.sign.verify_with_key(
+        str(pkg), str(sig), str(tmp_path / "other.key")
+    )
+
+    pkg.write_bytes(b"tampered")
+    assert not apg.sign.verify_with_key(
+        str(pkg), str(sig), str(tmp_path / "public.key")
+    )
+    assert not apg.sign.sign_with_key(
+        str(pkg), str(sig), str(tmp_path / "missing.key")
+    )
 
 
 def test_transitive_dependents_and_orphans(tmp_path):
