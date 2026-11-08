@@ -16,6 +16,14 @@ struct db_verify_issue
     int missing_count;
 };
 
+struct db_check_issue
+{
+    db_check_kind_t kind;
+    char *pkg_name;
+    char *path;
+    char *other;
+};
+
 struct str_vec
 {
     char **items;

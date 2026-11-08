@@ -367,6 +367,92 @@ extern "C"
     db_verify_issue_missing_file_at(const struct db_verify_issue *issue,
                                     int index);
 
+    /**
+     * @brief Kind of inconsistency reported by db_check().
+     */
+    typedef enum
+    {
+        DB_CHECK_CORRUPT_RECORD, /**< A package record cannot be parsed. */
+        DB_CHECK_NAME_MISMATCH, /**< Record key differs from the stored name. */
+        DB_CHECK_FILES_WITHOUT_PACKAGE, /**< File list without a record. */
+        DB_CHECK_FILE_NOT_OWNED, /**< Listed file has no ownership entry. */
+        DB_CHECK_FILE_OWNED_BY_OTHER, /**< Listed file owned by another one. */
+        DB_CHECK_OWNER_WITHOUT_PACKAGE, /**< Owner has no package record. */
+        DB_CHECK_OWNER_NOT_LISTED, /**< Owner's file list lacks the file. */
+    } db_check_kind_t;
+
+    /**
+     * @brief A single inconsistency found by db_check().
+     *
+     * Opaque; read fields with db_check_issue_at() and the
+     * db_check_issue_*() accessors.
+     */
+    struct db_check_issue;
+
+    /**
+     * @brief Check the internal consistency of the package database.
+     *
+     * Compares the package records, the per-package file lists and the file
+     * ownership entries with each other, inside one read snapshot. The
+     * database is not modified and no file system access is made. A database
+     * written only through libapg reports no issues.
+     *
+     * @param db    Database handle, read-only or read-write.
+     * @param count Output parameter set to the number of issues found. Set to
+     *              0 when the database is consistent.
+     * @return Heap-allocated array of issues, or NULL when none were found or
+     *         on allocation failure. Free with db_check_free().
+     */
+    APG_API struct db_check_issue *db_check(struct db_handle *db, int *count);
+
+    /**
+     * @brief Free the array returned by db_check().
+     *
+     * @param issues Array to free. May be NULL.
+     * @param count  Number of elements in @p issues.
+     */
+    APG_API void db_check_free(struct db_check_issue *issues, int count);
+
+    /**
+     * @brief Retrieve one entry of the array returned by db_check().
+     *
+     * @param issues Array returned by db_check().
+     * @param count  Element count, as returned by db_check().
+     * @param index  Index in [0, count).
+     * @return Pointer to the entry, or NULL if @p index is out of range.
+     */
+    APG_API const struct db_check_issue *
+    db_check_issue_at(const struct db_check_issue *issues, int count,
+                      int index);
+
+    /**
+     * @brief Kind of inconsistency.
+     */
+    APG_API db_check_kind_t
+    db_check_issue_kind(const struct db_check_issue *issue);
+
+    /**
+     * @brief Package the issue is about: the record key for record problems,
+     *        the package whose file list or ownership entry is affected
+     *        otherwise.
+     */
+    APG_API const char *
+    db_check_issue_pkg_name(const struct db_check_issue *issue);
+
+    /**
+     * @brief File path involved, or NULL for record-level issues.
+     */
+    APG_API const char *db_check_issue_path(const struct db_check_issue *issue);
+
+    /**
+     * @brief Second package involved, or NULL.
+     *
+     * The recorded owner for @ref DB_CHECK_FILE_OWNED_BY_OTHER and the name
+     * stored inside the record for @ref DB_CHECK_NAME_MISMATCH.
+     */
+    APG_API const char *
+    db_check_issue_other(const struct db_check_issue *issue);
+
 #ifdef __cplusplus
 }
 #endif
