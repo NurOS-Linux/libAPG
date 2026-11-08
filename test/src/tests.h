@@ -156,3 +156,7 @@ void test_trans_error_priority_held_before_file_conflict(void);
 void test_trans_accessors_handle_bad_arguments(void);
 void test_trans_commit_state_machine(void);
 void test_trans_remove_of_unknown_package_does_not_corrupt_db(void);
+
+void test_run_script_strict_matches_run_script_when_isolated(void);
+void test_run_script_strict_refuses_when_isolation_is_denied(void);
+void test_trans_require_sandbox_controls_script_isolation(void);

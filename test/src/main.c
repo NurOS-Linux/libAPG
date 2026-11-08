@@ -161,6 +161,10 @@ main(void)
     test_trans_commit_state_machine();
     test_trans_remove_of_unknown_package_does_not_corrupt_db();
 
-    printf("All 140 tests passed.\n");
+    test_run_script_strict_matches_run_script_when_isolated();
+    test_run_script_strict_refuses_when_isolation_is_denied();
+    test_trans_require_sandbox_controls_script_isolation();
+
+    printf("All 143 tests passed.\n");
     return 0;
 }
