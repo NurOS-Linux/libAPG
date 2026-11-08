@@ -83,6 +83,16 @@ and a package is removed only after every queued package that depends on it.
 Independent removals keep their request order. A dependency cycle among
 removals falls back to request order.
 
+``trans_step_required_by()`` tells why a dependency is in the plan. For an
+install step that was pulled in as a dependency (``trans_step_explicit()`` is
+false) it returns the name of the first step of the plan, install or upgrade,
+whose package lists it as a dependency, by name or through ``provides``.
+Following the answers from step to step leads to a package the caller asked
+for. It returns NULL for steps that were requested directly, for upgrades and
+for removals. It is computed from names only, so it does not show which version
+constraint caused the dependency, and with ``skip_dependency_check`` every step
+is explicit.
+
 Policy
 ------
 
