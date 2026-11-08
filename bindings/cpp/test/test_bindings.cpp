@@ -164,6 +164,39 @@ test_scripts_strict_and_sandbox_flag()
 }
 
 void
+test_archive_inspection()
+{
+    std::string dir = make_tmp_dir("apgxx-archive");
+    std::string cmd = "mkdir -p " + dir + "/data/usr/bin && echo x > " + dir +
+                      "/data/usr/bin/tool && echo '{\"name\": \"arch\", "
+                      "\"version\": \"2.0\"}' > " + dir +
+                      "/metadata.json && tar -czf " + dir + "/pkg.tar.gz -C " +
+                      dir + " metadata.json data";
+    assert(system(cmd.c_str()) == 0);
+
+    apg::PackageMetadata meta =
+        apg::PackageMetadata::from_archive(dir + "/pkg.tar.gz");
+    assert(std::string(meta.get()->name) == "arch");
+    auto files = apg::list_archive_files(dir + "/pkg.tar.gz");
+    assert(files.size() == 1 && files[0] == "/usr/bin/tool");
+
+    bool threw = false;
+    try
+    {
+        apg::list_archive_files(dir + "/missing.tar");
+    }
+    catch (const apg::Error &)
+    {
+        threw = true;
+    }
+    assert(threw);
+
+    std::string cleanup = "rm -r " + dir;
+    assert(system(cleanup.c_str()) == 0);
+    printf("test_archive_inspection: PASS\n");
+}
+
+void
 test_dependency_graph()
 {
     apg::PackageMetadata base = apg::PackageMetadata::create();
@@ -223,6 +256,7 @@ main()
     test_database_transitive_queries();
     test_sign_with_explicit_keys();
     test_scripts_strict_and_sandbox_flag();
+    test_archive_inspection();
     test_dependency_graph();
     test_transaction_policy();
     printf("All C++ binding tests passed.\n");

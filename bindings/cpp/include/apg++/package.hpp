@@ -105,6 +105,14 @@ public:
         return PackageMetadata(m);
     }
 
+    static PackageMetadata from_archive(const std::string &path)
+    {
+        struct package_metadata *m = ::package_read_metadata(path.c_str());
+        if (!m)
+            throw Error("package_read_metadata failed for '" + path + "'");
+        return PackageMetadata(m);
+    }
+
     static PackageMetadata from_json(const std::string &json)
     {
         struct package_metadata *m =
