@@ -109,6 +109,21 @@ A database written only through libapg reports nothing. One removed record
 can produce several issues, for example a file list and its ownership
 entries. The function does not repair anything.
 
+``db_verify_against_archive()`` compares the installed files of one package
+with its archive. For every regular file and symbolic link in the archive's
+``data/`` tree it checks the file under the install root: content byte for
+byte, link target, file type and permission bits. The differences come back as
+``DB_CONTENT_MISSING``, ``DB_CONTENT_MODIFIED``, ``DB_CONTENT_TYPE_CHANGED``
+or ``DB_CONTENT_MODE_CHANGED`` with the path. Directories and hard links are
+not compared, and files listed in the package's ``conf`` entries are skipped
+because users are expected to edit them. No hashes are stored in the
+database: the archive is the reference, so it must be the archive the package
+was installed from. The function fails, instead of reporting differences, when
+the package is not installed, when the archive's ``metadata.json`` names
+another package, or when the archive contains a path with ``..``. The return
+value says whether the comparison ran, so "no differences" and "error" are
+distinct.
+
 ``db_verify()`` checks that every file recorded for each package exists under
 a given root and reports the missing ones.
 
