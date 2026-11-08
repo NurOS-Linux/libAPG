@@ -164,3 +164,7 @@ void test_trans_require_sandbox_controls_script_isolation(void);
 void test_trans_estimate_space_for_installs(void);
 void test_trans_estimate_space_counts_upgrade_backups(void);
 void test_trans_estimate_space_edge_cases(void);
+
+void test_db_check_reports_nothing_for_consistent_database(void);
+void test_db_check_reports_ownership_inconsistencies(void);
+void test_db_check_reports_record_inconsistencies(void);

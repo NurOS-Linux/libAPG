@@ -169,6 +169,10 @@ main(void)
     test_trans_estimate_space_counts_upgrade_backups();
     test_trans_estimate_space_edge_cases();
 
-    printf("All 146 tests passed.\n");
+    test_db_check_reports_nothing_for_consistent_database();
+    test_db_check_reports_ownership_inconsistencies();
+    test_db_check_reports_record_inconsistencies();
+
+    printf("All 149 tests passed.\n");
     return 0;
 }

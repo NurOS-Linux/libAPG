@@ -16,6 +16,7 @@ apg_test = executable('apg-test',
   'src/test_transaction.c',
   'src/test_scripts.c',
   'src/test_space.c',
+  'src/test_check.c',
   dependencies: [libapg_dep, libarchive_dep, sodium_dep],
   build_by_default: false,
 )
