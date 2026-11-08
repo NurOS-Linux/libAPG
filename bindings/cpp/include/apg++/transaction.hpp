@@ -117,6 +117,11 @@ public:
 
     void clear_policy() { ::trans_set_policy(trans_.get(), nullptr); }
 
+    void set_require_sandbox(bool require_sandbox)
+    {
+        ::trans_set_require_sandbox(trans_.get(), require_sandbox);
+    }
+
     void prefer_provider(const std::string &name, const std::string &pkg_name)
     {
         ::trans_prefer_provider(trans_.get(), name.c_str(), pkg_name.c_str());

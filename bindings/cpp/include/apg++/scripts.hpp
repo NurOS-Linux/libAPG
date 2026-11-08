@@ -18,6 +18,14 @@ inline bool run_script(const std::string &pkg_dir, const std::string &name,
     return ::run_script(pkg_dir.c_str(), name.c_str(), root_path.c_str());
 }
 
+inline bool run_script_strict(const std::string &pkg_dir,
+                              const std::string &name,
+                              const std::string &root_path)
+{
+    return ::run_script_strict(pkg_dir.c_str(), name.c_str(),
+                               root_path.c_str());
+}
+
 inline std::string scripts_store_path(const std::string &root_path,
                                        const std::string &pkg_name)
 {

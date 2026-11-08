@@ -135,6 +135,20 @@ test_sign_with_explicit_keys()
 }
 
 void
+test_scripts_strict_and_sandbox_flag()
+{
+    assert(apg::run_script_strict("/nonexistent-apg-dir", "post-install", "/"));
+
+    std::string db_path = make_tmp_dir("apgxx-sandbox");
+    apg::Database db = apg::Database::open(db_path);
+    apg::Transaction trans(db);
+    trans.set_require_sandbox(true);
+    assert(trans.prepare() == TRANS_OK);
+    remove_tmp_db(db_path);
+    printf("test_scripts_strict_and_sandbox_flag: PASS\n");
+}
+
+void
 test_dependency_graph()
 {
     apg::PackageMetadata base = apg::PackageMetadata::create();
@@ -193,6 +207,7 @@ main()
     test_database_roundtrip();
     test_database_transitive_queries();
     test_sign_with_explicit_keys();
+    test_scripts_strict_and_sandbox_flag();
     test_dependency_graph();
     test_transaction_policy();
     printf("All C++ binding tests passed.\n");
