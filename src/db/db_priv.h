@@ -24,6 +24,12 @@ struct db_check_issue
     char *other;
 };
 
+struct db_content_issue
+{
+    db_content_kind_t kind;
+    char *path;
+};
+
 struct str_vec
 {
     char **items;

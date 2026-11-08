@@ -7,5 +7,5 @@
 # must not fail the check.
 
 [suppress_type]
-  name_regexp = ^(apg_trans|keyring|dep_graph|db_handle|trans_step|trans_conflict|trans_file_conflict|trans_held_pkg|trans_blocked_remove|db_verify_issue|db_check_issue|journal_entry)$
+  name_regexp = ^(apg_trans|keyring|dep_graph|db_handle|trans_step|trans_conflict|trans_file_conflict|trans_held_pkg|trans_blocked_remove|db_verify_issue|db_check_issue|db_content_issue|journal_entry)$
   type_kind = struct

@@ -34,6 +34,7 @@ libapg_sources = files(
   'src/db/stats.c',
   'src/db/verify.c',
   'src/db/check.c',
+  'src/db/verify_content.c',
   'src/json.c',
   'src/graph/graph.c',
   'src/graph/resolve.c',
