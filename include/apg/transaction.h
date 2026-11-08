@@ -22,6 +22,7 @@
 
 #include <stddef.h>
 #include <stdbool.h>
+#include <stdint.h>
 #include "config.h"
 #include "db.h"
 #include "export.h"
@@ -260,6 +261,38 @@ extern "C"
      */
     APG_API void trans_set_require_sandbox(struct apg_trans *trans,
                                            bool require_sandbox);
+
+    /**
+     * @brief Estimate the disk space a prepared transaction needs.
+     *
+     * Call after trans_prepare() succeeded and before trans_commit(). The
+     * estimate covers, for every install and upgrade step: the files of the
+     * package's @c data/ and @c scripts/ trees, measured from the archive at
+     * @c pkg_path; the temporary extraction of the largest archive; and, for
+     * upgrades, a backup of the installed version's files and persisted
+     * scripts. Sizes are rounded up to 4096-byte blocks per file. The
+     * estimate is conservative: files replaced by an upgrade are counted both
+     * as backup and as new files, removals are not credited, and the @c home/
+     * tree, which is installed outside @p root_path, is not counted.
+     *
+     * The temporary and backup area lies inside @p root_path. When it is on
+     * the same file system as @p root_path, the two parts are added and
+     * compared with the free space of that file system. Otherwise the pair
+     * with the smaller margin is reported.
+     *
+     * @param trans     Prepared transaction.
+     * @param root_path Root directory that trans_commit() will be given. It
+     *                  need not exist yet; the nearest existing parent is used.
+     * @param needed    Output: estimated bytes required.
+     * @param available Output: bytes available to unprivileged writers on the
+     *                  relevant file system.
+     * @return true if the estimate was computed, false if the transaction is
+     *         not prepared, an archive cannot be read, or an argument is NULL.
+     *         The caller compares @p *needed with @p *available.
+     */
+    APG_API bool trans_estimate_space(const struct apg_trans *trans,
+                                      const char *root_path, uint64_t *needed,
+                                      uint64_t *available);
 
     /**
      * @brief Toggle dry-run mode for a transaction.
