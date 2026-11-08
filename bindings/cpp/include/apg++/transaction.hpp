@@ -31,6 +31,11 @@ public:
     std::string pkg_name() const { return ::trans_step_pkg_name(ptr_); }
     std::string pkg_version() const { return ::trans_step_pkg_version(ptr_); }
     bool is_explicit() const { return ::trans_step_explicit(ptr_); }
+    std::string required_by() const
+    {
+        const char *name = ::trans_step_required_by(ptr_);
+        return name ? name : "";
+    }
 
 private:
     const struct trans_step *ptr_;
@@ -144,6 +149,11 @@ public:
     TransError add_install(Package &pkg)
     {
         return ::trans_add_install(trans_.get(), pkg.get());
+    }
+
+    TransError add_candidate(Package &pkg)
+    {
+        return ::trans_add_candidate(trans_.get(), pkg.get());
     }
 
     TransError add_remove(const std::string &pkg_name)

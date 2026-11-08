@@ -197,6 +197,35 @@ test_archive_inspection()
 }
 
 void
+test_step_required_by()
+{
+    std::string db_path = make_tmp_dir("apgxx-required-by");
+    apg::Database db = apg::Database::open(db_path);
+
+    apg::Package app = make_simple_package("req-app");
+    app.get()->meta->dependencies.count = 1;
+    app.get()->meta->dependencies.items = static_cast<struct dep_constraint *>(
+        malloc(sizeof(struct dep_constraint)));
+    app.get()->meta->dependencies.items[0] = dep_constraint_parse("req-lib");
+    apg::Package lib = make_simple_package("req-lib");
+
+    apg::Transaction trans(db);
+    assert(trans.add_install(app) == TRANS_OK);
+    assert(trans.add_candidate(lib) == TRANS_OK);
+    assert(trans.prepare() == TRANS_OK);
+    for (const auto &step : trans.plan())
+    {
+        if (step.pkg_name() == "req-lib")
+            assert(step.required_by() == "req-app");
+        else
+            assert(step.required_by().empty());
+    }
+
+    remove_tmp_db(db_path);
+    printf("test_step_required_by: PASS\n");
+}
+
+void
 test_dependency_graph()
 {
     apg::PackageMetadata base = apg::PackageMetadata::create();
@@ -257,6 +286,7 @@ main()
     test_sign_with_explicit_keys();
     test_scripts_strict_and_sandbox_flag();
     test_archive_inspection();
+    test_step_required_by();
     test_dependency_graph();
     test_transaction_policy();
     printf("All C++ binding tests passed.\n");
