@@ -177,3 +177,6 @@ void test_package_read_metadata_reads_archive(void);
 void test_package_read_metadata_reports_failures(void);
 void test_package_list_files_matches_install(void);
 void test_package_list_files_edge_cases(void);
+
+void test_trans_step_required_by_follows_dependency_chain(void);
+void test_trans_step_required_by_is_unset_for_other_steps(void);

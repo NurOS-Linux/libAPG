@@ -358,3 +358,126 @@ test_trans_remove_of_unknown_package_does_not_corrupt_db(void)
     fs_close_db(db, path);
     printf("test_trans_remove_of_unknown_package_does_not_corrupt_db: PASS\n");
 }
+
+static const struct trans_step *
+step_named(const struct apg_trans *trans, const char *name)
+{
+    for (size_t i = 0; i < trans_plan_count(trans); i++)
+    {
+        const struct trans_step *step = trans_plan_at(trans, i);
+        if (strcmp(trans_step_pkg_name(step), name) == 0)
+            return step;
+    }
+    return NULL;
+}
+
+static struct package *
+with_deps(const char *name, const char **deps, int count, const char **provides,
+          int provides_count)
+{
+    struct package *p =
+        fs_make_package(name, "1.0", NULL, deps, count, provides,
+                        provides_count, NULL, 0, true);
+    p->pkg_path = strdup("/nonexistent/test.pkg");
+    return p;
+}
+
+void
+test_trans_step_required_by_follows_dependency_chain(void)
+{
+    char path[PATH_MAX];
+    struct db_handle *db = fs_open_db(path);
+    assert(db);
+
+    const char *app_deps[] = {"lib"};
+    const char *lib_deps[] = {"core", "virt"};
+    const char *impl_provides[] = {"virt"};
+    struct package *app = with_deps("app", app_deps, 1, NULL, 0);
+    struct package *lib = with_deps("lib", lib_deps, 2, NULL, 0);
+    struct package *core = with_deps("core", NULL, 0, NULL, 0);
+    struct package *impl = with_deps("impl", NULL, 0, impl_provides, 1);
+    struct package *unused = with_deps("unused", NULL, 0, NULL, 0);
+
+    struct apg_trans *trans = trans_new(db);
+    assert(trans_add_install(trans, app) == TRANS_OK);
+    assert(trans_add_candidate(trans, lib) == TRANS_OK);
+    assert(trans_add_candidate(trans, core) == TRANS_OK);
+    assert(trans_add_candidate(trans, impl) == TRANS_OK);
+    assert(trans_add_candidate(trans, unused) == TRANS_OK);
+    assert(trans_prepare(trans) == TRANS_OK);
+    assert(trans_plan_count(trans) == 4);
+
+    assert(trans_step_required_by(step_named(trans, "app")) == NULL);
+    assert(strcmp(trans_step_required_by(step_named(trans, "lib")), "app") ==
+           0);
+    assert(strcmp(trans_step_required_by(step_named(trans, "core")), "lib") ==
+           0);
+    assert(strcmp(trans_step_required_by(step_named(trans, "impl")), "lib") ==
+           0);
+    assert(step_named(trans, "unused") == NULL);
+    assert(trans_step_required_by(NULL) == NULL);
+
+    trans_free(trans);
+    package_free(app);
+    package_free(lib);
+    package_free(core);
+    package_free(impl);
+    package_free(unused);
+    fs_close_db(db, path);
+    printf("test_trans_step_required_by_follows_dependency_chain: PASS\n");
+}
+
+void
+test_trans_step_required_by_is_unset_for_other_steps(void)
+{
+    char path[PATH_MAX];
+    struct db_handle *db = fs_open_db(path);
+    assert(db);
+
+    store(db, plain("installed", "1.0"));
+    store(db, plain("doomed", "1.0"));
+
+    const char *needs_core[] = {"core"};
+    struct package *upgraded = with_deps("installed", needs_core, 1, NULL, 0);
+    struct package *explicit_core = with_deps("core", NULL, 0, NULL, 0);
+
+    struct apg_trans *trans = trans_new(db);
+    assert(trans_add_upgrade(trans, upgraded) == TRANS_OK);
+    assert(trans_add_install(trans, explicit_core) == TRANS_OK);
+    assert(trans_add_remove(trans, "doomed") == TRANS_OK);
+    assert(trans_prepare(trans) == TRANS_OK);
+
+    assert(trans_step_required_by(step_named(trans, "installed")) == NULL);
+    assert(trans_step_required_by(step_named(trans, "core")) == NULL);
+    assert(trans_step_required_by(step_named(trans, "doomed")) == NULL);
+    trans_free(trans);
+
+    const char *shared_deps[] = {"core"};
+    struct package *first = with_deps("first", shared_deps, 1, NULL, 0);
+    struct package *second = with_deps("second", shared_deps, 1, NULL, 0);
+    struct package *core = with_deps("core", NULL, 0, NULL, 0);
+    trans = trans_new(db);
+    assert(trans_add_install(trans, first) == TRANS_OK);
+    assert(trans_add_install(trans, second) == TRANS_OK);
+    assert(trans_add_candidate(trans, core) == TRANS_OK);
+    assert(trans_prepare(trans) == TRANS_OK);
+    const char *by = trans_step_required_by(step_named(trans, "core"));
+    assert(by && (strcmp(by, "first") == 0 || strcmp(by, "second") == 0));
+    trans_free(trans);
+
+    install_policy skip = {.skip_dependency_check = true};
+    trans = trans_new(db);
+    trans_set_policy(trans, &skip);
+    assert(trans_add_install(trans, first) == TRANS_OK);
+    assert(trans_prepare(trans) == TRANS_OK);
+    assert(trans_step_required_by(step_named(trans, "first")) == NULL);
+    trans_free(trans);
+
+    package_free(upgraded);
+    package_free(explicit_core);
+    package_free(first);
+    package_free(second);
+    package_free(core);
+    fs_close_db(db, path);
+    printf("test_trans_step_required_by_is_unset_for_other_steps: PASS\n");
+}

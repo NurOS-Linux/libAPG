@@ -182,6 +182,9 @@ main(void)
     test_package_list_files_matches_install();
     test_package_list_files_edge_cases();
 
-    printf("All 156 tests passed.\n");
+    test_trans_step_required_by_follows_dependency_chain();
+    test_trans_step_required_by_is_unset_for_other_steps();
+
+    printf("All 158 tests passed.\n");
     return 0;
 }
