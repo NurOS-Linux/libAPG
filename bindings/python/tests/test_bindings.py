@@ -235,6 +235,35 @@ def test_verify_against_archive_errors(tmp_path):
     assert apg.DbContentKind.MODE_CHANGED == 3
 
 
+def build_archive(tmp_path):
+    import tarfile
+
+    meta = tmp_path / "metadata.json"
+    meta.write_text('{"name": "arch", "version": "2.0"}')
+    data = tmp_path / "data" / "usr" / "bin"
+    data.mkdir(parents=True)
+    (data / "tool").write_text("x")
+    archive = tmp_path / "pkg.tar.gz"
+    with tarfile.open(archive, "w:gz") as tar:
+        tar.add(meta, arcname="metadata.json")
+        tar.add(tmp_path / "data", arcname="data")
+    return str(archive)
+
+
+def test_archive_inspection(tmp_path):
+    archive = build_archive(tmp_path)
+
+    with apg.PackageMetadata.from_archive(archive) as meta:
+        assert meta.name == "arch"
+        assert meta.version == "2.0"
+    assert apg.archive.list_files(archive) == ["/usr/bin/tool"]
+
+    with pytest.raises(apg.ApgError):
+        apg.PackageMetadata.from_archive(str(tmp_path / "missing.tar"))
+    with pytest.raises(apg.ApgError):
+        apg.archive.list_files(str(tmp_path / "missing.tar"))
+
+
 def test_db_check(tmp_path):
     with apg.Database.open(str(tmp_path)) as db:
         pkg = make_pkg("checked")

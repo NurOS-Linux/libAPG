@@ -169,6 +169,13 @@ class PackageMetadata(PackageMetadataView):
         return cls(ptr)
 
     @classmethod
+    def from_archive(cls, path):
+        ptr = _lib.package_read_metadata(path.encode())
+        if not ptr:
+            raise ApgError(f"package_read_metadata failed for {path!r}")
+        return cls(ptr)
+
+    @classmethod
     def from_json(cls, data):
         if isinstance(data, str):
             data = data.encode()

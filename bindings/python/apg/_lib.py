@@ -188,6 +188,9 @@ package_from_json = _sig("package_from_json", PackagePtr, [c_char_p, c_size_t])
 package_metadata_from_file = _sig(
     "package_metadata_from_file", PackageMetadataPtr, [c_char_p]
 )
+package_read_metadata = _sig(
+    "package_read_metadata", PackageMetadataPtr, [c_char_p]
+)
 package_metadata_from_json = _sig(
     "package_metadata_from_json", PackageMetadataPtr, [c_char_p, c_size_t]
 )
@@ -436,6 +439,15 @@ sign_file_with_key = _sig(
     "sign_file_with_key", c_bool, [c_char_p, c_char_p, c_char_p]
 )
 
+package_list_files = _sig(
+    "package_list_files",
+    c_bool,
+    [
+        c_char_p,
+        ctypes.POINTER(ctypes.POINTER(c_void_p)),
+        ctypes.POINTER(c_int),
+    ],
+)
 unarchive_package = _sig("unarchive_package", c_bool, [PackagePtr])
 unarchive_package_in_root = _sig(
     "unarchive_package_in_root", c_bool, [PackagePtr, c_char_p]
