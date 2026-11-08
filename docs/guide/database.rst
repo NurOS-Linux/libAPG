@@ -79,6 +79,36 @@ the direct variant returns.
 ``db_search()`` matches a case-insensitive substring against the package name
 and description.
 
+``db_check()`` checks the database against itself, without touching the file
+system. It reads the package records, the file lists and the ownership entries
+in one snapshot and reports each inconsistency as an issue with a kind, the
+package, and where relevant the path and a second package:
+
+.. list-table::
+   :header-rows: 1
+
+   * - Kind
+     - Meaning
+   * - ``DB_CHECK_CORRUPT_RECORD``
+     - A package record cannot be parsed
+   * - ``DB_CHECK_NAME_MISMATCH``
+     - A record is stored under a key that differs from the name inside it
+   * - ``DB_CHECK_FILES_WITHOUT_PACKAGE``
+     - A file list exists for a package that has no record
+   * - ``DB_CHECK_FILE_NOT_OWNED``
+     - A listed file has no ownership entry
+   * - ``DB_CHECK_FILE_OWNED_BY_OTHER``
+     - A listed file is recorded as owned by a different package
+   * - ``DB_CHECK_OWNER_WITHOUT_PACKAGE``
+     - An ownership entry names a package that has no record
+   * - ``DB_CHECK_OWNER_NOT_LISTED``
+     - An ownership entry names an installed package whose file list lacks
+       the file
+
+A database written only through libapg reports nothing. One removed record
+can produce several issues, for example a file list and its ownership
+entries. The function does not repair anything.
+
 ``db_verify()`` checks that every file recorded for each package exists under
 a given root and reports the missing ones.
 

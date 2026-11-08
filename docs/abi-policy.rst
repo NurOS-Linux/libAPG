@@ -27,7 +27,8 @@ field:
 - :c:struct:`trans_step`, :c:struct:`trans_conflict`,
   :c:struct:`trans_file_conflict`, :c:struct:`trans_held_pkg`,
   :c:struct:`trans_blocked_remove` (``include/apg/transaction.h``)
-- :c:struct:`db_verify_issue` (``include/apg/db.h``)
+- :c:struct:`db_verify_issue`, :c:struct:`db_check_issue`
+  (``include/apg/db.h``)
 - :c:struct:`journal_entry` (``include/apg/journal.h``)
 
 Callers get them through a ``_count()``/``_at()`` pair
