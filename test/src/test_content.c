@@ -77,34 +77,6 @@ remove_archive(char *archive)
 }
 
 static void
-write_tar_entry(FILE *out, const char *name, const char *content)
-{
-    unsigned char header[512] = {0};
-    size_t size = strlen(content);
-    snprintf((char *)header, 100, "%s", name);
-    snprintf((char *)header + 100, 8, "%07o", 0644);
-    snprintf((char *)header + 108, 8, "%07o", 0);
-    snprintf((char *)header + 116, 8, "%07o", 0);
-    snprintf((char *)header + 124, 12, "%011o", (unsigned)size);
-    snprintf((char *)header + 136, 12, "%011o", 0);
-    memset(header + 148, ' ', 8);
-    header[156] = '0';
-    memcpy(header + 257, "ustar", 5);
-    memcpy(header + 263, "00", 2);
-
-    unsigned sum = 0;
-    for (size_t i = 0; i < sizeof(header); i++)
-        sum += header[i];
-    snprintf((char *)header + 148, 7, "%06o", sum);
-    header[155] = ' ';
-
-    fwrite(header, 1, sizeof(header), out);
-    fwrite(content, 1, size, out);
-    unsigned char pad[512] = {0};
-    fwrite(pad, 1, (512 - size % 512) % 512, out);
-}
-
-static void
 setup(struct fixture *fx)
 {
     fx->db = fs_open_db(fx->db_path);
@@ -280,9 +252,9 @@ test_verify_against_archive_rejects_bad_requests(void)
     char *evil = fs_join(fx.root, "evil.tar");
     FILE *tar = fopen(evil, "wb");
     assert(tar);
-    write_tar_entry(tar, "metadata.json",
-                    "{\"name\": \"content-pkg\", \"version\": \"1\"}");
-    write_tar_entry(tar, "data/../escape", "x");
+    fs_write_tar_entry(tar, "metadata.json",
+                       "{\"name\": \"content-pkg\", \"version\": \"1\"}");
+    fs_write_tar_entry(tar, "data/../escape", "x");
     char end[1024] = {0};
     fwrite(end, 1, sizeof(end), tar);
     fclose(tar);
