@@ -83,16 +83,6 @@ and a package is removed only after every queued package that depends on it.
 Independent removals keep their request order. A dependency cycle among
 removals falls back to request order.
 
-``trans_step_required_by()`` tells why a dependency is in the plan. For an
-install step that was pulled in as a dependency (``trans_step_explicit()`` is
-false) it returns the name of the first step of the plan, install or upgrade,
-whose package lists it as a dependency, by name or through ``provides``.
-Following the answers from step to step leads to a package the caller asked
-for. It returns NULL for steps that were requested directly, for upgrades and
-for removals. It is computed from names only, so it does not show which version
-constraint caused the dependency, and with ``skip_dependency_check`` every step
-is explicit.
-
 Policy
 ------
 
@@ -158,24 +148,6 @@ upgraded packages are restored from their backup, and database records are
 restored. The code returned is ``TRANS_ERR_INSTALL_FAILED``,
 ``TRANS_ERR_REMOVE_FAILED`` or ``TRANS_ERR_DB``, and ``apg_last_error()`` names
 the package and the cause.
-
-Commit hooks
-------------
-
-``trans_set_commit_hooks(trans, pre, post, userdata)`` registers two callbacks
-that run around ``trans_commit()``, for work that belongs to the whole
-transaction rather than to one step, such as refreshing a cache after a
-successful commit. ``pre`` runs once before the first step. ``post`` runs once
-at the end, after any rollback, and receives the result code that
-``trans_commit()`` returns.
-
-Hooks run only for a commit that actually starts: a call that fails with
-``TRANS_ERR_NOT_PREPARED`` or ``TRANS_ERR_ALREADY_COMMITTED`` does not call
-them, and neither does a dry run, which performs no actions. They are called on
-the calling thread and receive the transaction read-only, so they can read the
-plan. They must not change the transaction or commit it again. Either callback
-may be NULL, and passing NULL for both removes them. They are off by default.
-The progress callback, unlike the hooks, is also called in dry-run mode.
 
 Dry run
 -------

@@ -11,7 +11,6 @@ struct trans_step
     char *pkg_name;
     char *pkg_version;
     bool explicit;
-    char *required_by;
 };
 
 struct trans_conflict
@@ -107,8 +106,4 @@ struct apg_trans
 
     trans_progress_fn progress_cb;
     void *progress_userdata;
-
-    trans_pre_commit_fn pre_commit_cb;
-    trans_post_commit_fn post_commit_cb;
-    void *commit_hook_userdata;
 };

@@ -151,23 +151,6 @@ extern "C"
     APG_API bool trans_step_explicit(const struct trans_step *step);
 
     /**
-     * @brief Name of a package in the plan that depends on this step's
-     *        package.
-     *
-     * Set after trans_prepare() for install steps that were pulled in as
-     * dependencies (trans_step_explicit() is false): the first step of the
-     * plan, install or upgrade, whose package lists this one, by name or
-     * through @c provides, as a dependency. Following the result step by step
-     * leads from a dependency to a package the caller asked for. NULL for
-     * steps requested directly, for upgrades and removals, and when @p step
-     * is NULL.
-     *
-     * @param step Step returned by trans_plan_at().
-     * @return Package name owned by the transaction, or NULL.
-     */
-    APG_API const char *trans_step_required_by(const struct trans_step *step);
-
-    /**
      * @brief Name of the package being installed or removed.
      */
     APG_API const char *
@@ -326,50 +309,6 @@ extern "C"
      * @param dry_run True to enable dry-run mode, false to disable it.
      */
     APG_API void trans_set_dry_run(struct apg_trans *trans, bool dry_run);
-
-    /**
-     * @brief Callback invoked by trans_commit() before the first step runs.
-     *
-     * @param trans    The transaction being committed, for read-only access
-     *                 to the plan.
-     * @param userdata Pointer passed to trans_set_commit_hooks().
-     */
-    typedef void (*trans_pre_commit_fn)(const struct apg_trans *trans,
-                                        void *userdata);
-
-    /**
-     * @brief Callback invoked by trans_commit() after the last step, or after
-     *        a failed step has been rolled back.
-     *
-     * @param trans    The transaction that was committed.
-     * @param result   The value trans_commit() is about to return.
-     * @param userdata Pointer passed to trans_set_commit_hooks().
-     */
-    typedef void (*trans_post_commit_fn)(const struct apg_trans *trans,
-                                         trans_error_t result, void *userdata);
-
-    /**
-     * @brief Register callbacks that run around trans_commit().
-     *
-     * @p pre is called once when a commit starts, @p post once when it ends,
-     * with the result code, on the calling thread. They are called only for a
-     * commit that gets as far as running: not when trans_commit() rejects the
-     * call because the transaction is not prepared or was already committed,
-     * and not in dry-run mode, which performs no actions. The post hook is
-     * called after any rollback, whether the commit succeeded or not. The
-     * hooks must not call functions that change the transaction or commit it
-     * again. Either pointer may be NULL; passing NULL for both removes the
-     * hooks. Hooks are off by default.
-     *
-     * @param trans    Transaction to configure.
-     * @param pre      Called before the first step, or NULL.
-     * @param post     Called after the commit finished, or NULL.
-     * @param userdata Opaque pointer forwarded to both callbacks.
-     */
-    APG_API void trans_set_commit_hooks(struct apg_trans *trans,
-                                        trans_pre_commit_fn pre,
-                                        trans_post_commit_fn post,
-                                        void *userdata);
 
     /**
      * @brief Register a callback that reports commit progress.

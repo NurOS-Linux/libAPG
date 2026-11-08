@@ -263,9 +263,9 @@ release_commit(struct apg_trans *trans, size_t *committed_idx,
     trans->db->suppress_journal = false;
 }
 
-static trans_error_t
+trans_error_t
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
-commit_steps(struct apg_trans *trans, const char *root_path)
+trans_commit(struct apg_trans *trans, const char *root_path)
 {
     if (!trans || !root_path)
         return TRANS_ERR_NOMEM;
@@ -519,21 +519,4 @@ commit_steps(struct apg_trans *trans, const char *root_path)
     if (!trans->dry_run)
         trans->committed = true;
     return TRANS_OK;
-}
-
-trans_error_t
-trans_commit(struct apg_trans *trans, const char *root_path)
-{
-    if (!trans || !root_path || !trans->prepared || trans->committed)
-        return commit_steps(trans, root_path);
-
-    bool run_hooks = !trans->dry_run;
-    if (run_hooks && trans->pre_commit_cb)
-        trans->pre_commit_cb(trans, trans->commit_hook_userdata);
-
-    trans_error_t result = commit_steps(trans, root_path);
-
-    if (run_hooks && trans->post_commit_cb)
-        trans->post_commit_cb(trans, result, trans->commit_hook_userdata);
-    return result;
 }

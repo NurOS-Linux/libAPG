@@ -25,12 +25,6 @@ struct DbVerifyIssue
     std::vector<std::string> missing_files;
 };
 
-struct DbContentIssue
-{
-    db_content_kind_t kind;
-    std::string path;
-};
-
 struct DbCheckIssue
 {
     db_check_kind_t kind;
@@ -164,14 +158,6 @@ class Database
     }
 
     std::vector<std::string>
-    get_providers(const std::string &name)
-    {
-        int count = 0;
-        char **raw = ::db_get_providers(db_.get(), name.c_str(), &count);
-        return detail::take_c_string_array(raw, count);
-    }
-
-    std::vector<std::string>
     get_dependents_transitive(const std::string &pkg_name)
     {
         int count = 0;
@@ -203,32 +189,6 @@ class Database
             result.push_back(std::move(out));
         }
         ::db_verify_free(issues, count);
-        return result;
-    }
-
-    std::vector<DbContentIssue>
-    verify_against_archive(const std::string &pkg_name,
-                           const std::string &archive_path,
-                           const std::string &root_path)
-    {
-        struct db_content_issue *issues = nullptr;
-        int count = 0;
-        if (!::db_verify_against_archive(db_.get(), pkg_name.c_str(),
-                                         archive_path.c_str(),
-                                         root_path.c_str(), &issues, &count))
-            throw Error("cannot compare '" + pkg_name + "' with '" +
-                        archive_path + "'");
-
-        std::vector<DbContentIssue> result;
-        result.reserve(static_cast<std::size_t>(count));
-        for (int i = 0; i < count; ++i)
-        {
-            const struct db_content_issue *issue =
-                ::db_content_issue_at(issues, count, i);
-            result.push_back({::db_content_issue_kind(issue),
-                              ::db_content_issue_path(issue)});
-        }
-        ::db_content_free(issues, count);
         return result;
     }
 

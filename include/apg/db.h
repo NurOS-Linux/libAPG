@@ -298,25 +298,6 @@ extern "C"
                                                 int *count);
 
     /**
-     * @brief Find the installed packages that can satisfy a dependency on a
-     *        name.
-     *
-     * A package qualifies when its own name equals @p name or when @p name is
-     * one of its @c provides entries. This is the set a dependency on @p name
-     * could be resolved to, so for a virtual name it lists every installed
-     * implementation.
-     *
-     * @param db    Database handle.
-     * @param name  Package or virtual name.
-     * @param count Output parameter set to the number of packages found.
-     * @return Heap-allocated array of heap-allocated package name strings, or
-     * NULL if there are none or on failure. Caller must free() each element and
-     * the array itself.
-     */
-    APG_API char **db_get_providers(struct db_handle *db, const char *name,
-                                    int *count);
-
-    /**
      * @brief A single package integrity issue found by db_verify().
      *
      * Opaque; read fields with db_verify_issue_at(),
@@ -471,89 +452,6 @@ extern "C"
      */
     APG_API const char *
     db_check_issue_other(const struct db_check_issue *issue);
-
-    /**
-     * @brief Kind of difference reported by db_verify_against_archive().
-     */
-    typedef enum
-    {
-        DB_CONTENT_MISSING,      /**< The file or link does not exist. */
-        DB_CONTENT_MODIFIED,     /**< Content or link target differs. */
-        DB_CONTENT_TYPE_CHANGED, /**< Exists, but is a different file type. */
-        DB_CONTENT_MODE_CHANGED, /**< Content equal, permission bits differ. */
-    } db_content_kind_t;
-
-    /**
-     * @brief A single difference found by db_verify_against_archive().
-     *
-     * Opaque; read fields with db_content_issue_at(),
-     * db_content_issue_kind() and db_content_issue_path().
-     */
-    struct db_content_issue;
-
-    /**
-     * @brief Compare the installed files of a package with its archive.
-     *
-     * Reads the @c data/ tree of the archive at @p archive_path and compares
-     * every regular file and symbolic link with the file at the same path
-     * under @p root_path: file content byte for byte, link target, file type
-     * and permission bits. Directories, hard links and other entry types are
-     * not compared. Files listed in the @c conf entries of the installed
-     * package are skipped, since users are expected to edit them. Nothing is
-     * modified.
-     *
-     * The archive's @c metadata.json must name @p pkg_name, and the package
-     * must be recorded in the database; otherwise the call fails.
-     *
-     * @param db           Database handle.
-     * @param pkg_name     Name of the installed package.
-     * @param archive_path Path to the package archive to compare against.
-     * @param root_path    Filesystem root the package was installed into.
-     * @param issues       Output: array of differences, NULL when there are
-     *                     none. Free with db_content_free().
-     * @param count        Output: number of differences.
-     * @return true if the comparison was carried out (also when differences
-     *         were found), false on error, with apg_last_error() describing
-     *         it.
-     */
-    APG_API bool
-    db_verify_against_archive(struct db_handle *db, const char *pkg_name,
-                              const char *archive_path, const char *root_path,
-                              struct db_content_issue **issues, int *count);
-
-    /**
-     * @brief Free the array returned by db_verify_against_archive().
-     *
-     * @param issues Array to free. May be NULL.
-     * @param count  Number of elements in @p issues.
-     */
-    APG_API void db_content_free(struct db_content_issue *issues, int count);
-
-    /**
-     * @brief Retrieve one entry of the array returned by
-     *        db_verify_against_archive().
-     *
-     * @param issues Array returned by db_verify_against_archive().
-     * @param count  Element count, as returned with it.
-     * @param index  Index in [0, count).
-     * @return Pointer to the entry, or NULL if @p index is out of range.
-     */
-    APG_API const struct db_content_issue *
-    db_content_issue_at(const struct db_content_issue *issues, int count,
-                        int index);
-
-    /**
-     * @brief Kind of difference.
-     */
-    APG_API db_content_kind_t
-    db_content_issue_kind(const struct db_content_issue *issue);
-
-    /**
-     * @brief Path of the file, starting with @c /, relative to the install
-     *        root.
-     */
-    APG_API const char *
-    db_content_issue_path(const struct db_content_issue *issue);
 
 #ifdef __cplusplus
 }

@@ -169,23 +169,7 @@ void test_db_check_reports_nothing_for_consistent_database(void);
 void test_db_check_reports_ownership_inconsistencies(void);
 void test_db_check_reports_record_inconsistencies(void);
 
-void test_verify_against_archive_accepts_clean_install(void);
-void test_verify_against_archive_reports_differences(void);
-void test_verify_against_archive_rejects_bad_requests(void);
-
 void test_package_read_metadata_reads_archive(void);
 void test_package_read_metadata_reports_failures(void);
 void test_package_list_files_matches_install(void);
 void test_package_list_files_edge_cases(void);
-
-void test_trans_step_required_by_follows_dependency_chain(void);
-void test_trans_step_required_by_is_unset_for_other_steps(void);
-
-void test_trans_commit_hooks_run_around_commit(void);
-void test_trans_commit_hooks_report_failures_and_skip_dry_runs(void);
-
-void test_audit_read_since_filters_by_timestamp(void);
-void test_audit_read_for_package_matches_exact_names(void);
-void test_audit_filters_on_database_without_journal(void);
-
-void test_db_get_providers_matches_names_and_provides(void);

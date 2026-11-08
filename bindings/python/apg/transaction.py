@@ -52,10 +52,6 @@ class TransStepView:
     def is_explicit(self):
         return bool(_lib.trans_step_explicit(self._ptr))
 
-    @property
-    def required_by(self):
-        return decode(_lib.trans_step_required_by(self._ptr))
-
 
 class TransConflictView:
     def __init__(self, ptr):
@@ -146,20 +142,6 @@ class Transaction:
         if not ok:
             return None
         return needed.value, available.value
-
-    def set_commit_hooks(self, pre=None, post=None):
-        pre_cb = (
-            _lib.PRE_COMMIT_FN(lambda _t, _u: pre())
-            if pre
-            else _lib.PRE_COMMIT_FN()
-        )
-        post_cb = (
-            _lib.POST_COMMIT_FN(lambda _t, result, _u: post(TransError(result)))
-            if post
-            else _lib.POST_COMMIT_FN()
-        )
-        self._commit_hooks = (pre_cb, post_cb)
-        _lib.trans_set_commit_hooks(self._ptr, pre_cb, post_cb, None)
 
     def set_require_sandbox(self, require_sandbox):
         _lib.trans_set_require_sandbox(self._ptr, bool(require_sandbox))

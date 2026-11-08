@@ -84,17 +84,6 @@ trans_set_require_sandbox(struct apg_trans *trans, bool require_sandbox)
 }
 
 void
-trans_set_commit_hooks(struct apg_trans *trans, trans_pre_commit_fn pre,
-                       trans_post_commit_fn post, void *userdata)
-{
-    if (!trans)
-        return;
-    trans->pre_commit_cb = pre;
-    trans->post_commit_cb = post;
-    trans->commit_hook_userdata = userdata;
-}
-
-void
 trans_set_dry_run(struct apg_trans *trans, bool dry_run)
 {
     if (!trans)
@@ -131,7 +120,6 @@ trans_free(struct apg_trans *trans)
     {
         free(trans->plan[i].pkg_name);
         free(trans->plan[i].pkg_version);
-        free(trans->plan[i].required_by);
     }
     free(trans->plan);
     free(trans->plan_pkgs);
@@ -390,12 +378,6 @@ const char *
 trans_step_pkg_version(const struct trans_step *step)
 {
     return step->pkg_version;
-}
-
-const char *
-trans_step_required_by(const struct trans_step *step)
-{
-    return step ? step->required_by : NULL;
 }
 
 bool

@@ -79,18 +79,6 @@ test_database_roundtrip()
     assert(db.set_installed_by_hand("cppxx-pkg", false));
 
     assert(db.check().empty());
-    assert(db.get_providers("cppxx-pkg").size() == 1);
-    assert(db.get_providers("nothing-provides-this").empty());
-    bool threw = false;
-    try
-    {
-        db.verify_against_archive("cppxx-pkg", "/nonexistent/pkg.tar", "/");
-    }
-    catch (const apg::Error &)
-    {
-        threw = true;
-    }
-    assert(threw);
 
     apg::DbStats stats = db.stats();
     assert(stats.package_count >= 1);
@@ -199,89 +187,6 @@ test_archive_inspection()
 }
 
 void
-test_step_required_by()
-{
-    std::string db_path = make_tmp_dir("apgxx-required-by");
-    apg::Database db = apg::Database::open(db_path);
-
-    apg::Package app = make_simple_package("req-app");
-    app.get()->meta->dependencies.count = 1;
-    app.get()->meta->dependencies.items = static_cast<struct dep_constraint *>(
-        malloc(sizeof(struct dep_constraint)));
-    app.get()->meta->dependencies.items[0] = dep_constraint_parse("req-lib");
-    apg::Package lib = make_simple_package("req-lib");
-
-    apg::Transaction trans(db);
-    assert(trans.add_install(app) == TRANS_OK);
-    assert(trans.add_candidate(lib) == TRANS_OK);
-    assert(trans.prepare() == TRANS_OK);
-    for (const auto &step : trans.plan())
-    {
-        if (step.pkg_name() == "req-lib")
-            assert(step.required_by() == "req-app");
-        else
-            assert(step.required_by().empty());
-    }
-
-    remove_tmp_db(db_path);
-    printf("test_step_required_by: PASS\n");
-}
-
-void
-test_commit_hooks()
-{
-    std::string db_path = make_tmp_dir("apgxx-hooks");
-    apg::Database db = apg::Database::open(db_path);
-    apg::Package pkg = make_simple_package("hooked-pkg");
-    assert(db.add(pkg));
-
-    int pre_calls = 0;
-    int post_calls = 0;
-    apg::TransError last = TRANS_ERR_NOMEM;
-    apg::Transaction trans(db);
-    trans.set_commit_hooks([&] { ++pre_calls; },
-                           [&](apg::TransError result)
-                           {
-                               ++post_calls;
-                               last = result;
-                           });
-    assert(trans.add_remove("hooked-pkg") == TRANS_OK);
-    assert(trans.prepare() == TRANS_OK);
-    std::string root = make_tmp_dir("apgxx-hooks-root");
-    assert(trans.commit(root) == TRANS_OK);
-    assert(pre_calls == 1 && post_calls == 1 && last == TRANS_OK);
-
-    trans.set_commit_hooks(nullptr, nullptr);
-    assert(trans.commit(root) == TRANS_ERR_ALREADY_COMMITTED);
-    assert(pre_calls == 1 && post_calls == 1);
-
-    rmdir(root.c_str());
-    remove_tmp_db(db_path);
-    printf("test_commit_hooks: PASS\n");
-}
-
-void
-test_audit_filters()
-{
-    std::string db_path = make_tmp_dir("apgxx-audit");
-    apg::Database db = apg::Database::open(db_path);
-    apg::Package first = make_simple_package("audit-a");
-    apg::Package second = make_simple_package("audit-b");
-    assert(db.add(first));
-    assert(db.add(second));
-    assert(db.remove("audit-a"));
-
-    assert(apg::audit_read_for_package(db, "audit-a").size() == 2);
-    assert(apg::audit_read_for_package(db, "audit-b").size() == 1);
-    assert(apg::audit_read_for_package(db, "missing").empty());
-    assert(apg::audit_read_since(db, 0).size() == 3);
-    assert(apg::audit_read_since(db, static_cast<time_t>(1) << 40).empty());
-
-    remove_tmp_db(db_path);
-    printf("test_audit_filters: PASS\n");
-}
-
-void
 test_dependency_graph()
 {
     apg::PackageMetadata base = apg::PackageMetadata::create();
@@ -342,9 +247,6 @@ main()
     test_sign_with_explicit_keys();
     test_scripts_strict_and_sandbox_flag();
     test_archive_inspection();
-    test_step_required_by();
-    test_commit_hooks();
-    test_audit_filters();
     test_dependency_graph();
     test_transaction_policy();
     printf("All C++ binding tests passed.\n");

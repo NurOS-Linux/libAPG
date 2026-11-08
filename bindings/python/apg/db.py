@@ -22,22 +22,6 @@ class DbVerifyIssue:
         )
 
 
-class DbContentKind(enum.IntEnum):
-    MISSING = 0
-    MODIFIED = 1
-    TYPE_CHANGED = 2
-    MODE_CHANGED = 3
-
-
-class DbContentIssue:
-    def __init__(self, kind, path):
-        self.kind = kind
-        self.path = path
-
-    def __repr__(self):
-        return f"DbContentIssue(kind={self.kind.name}, path={self.path!r})"
-
-
 class DbCheckKind(enum.IntEnum):
     CORRUPT_RECORD = 0
     NAME_MISMATCH = 1
@@ -161,15 +145,6 @@ class Database:
             return []
         return take_str_array(raw, count.value)
 
-    def get_providers(self, name):
-        count = _lib.c_int(0)
-        raw = _lib.db_get_providers(
-            self._ptr, name.encode(), ctypes.byref(count)
-        )
-        if not raw:
-            return []
-        return take_str_array(raw, count.value)
-
     def get_dependents_transitive(self, pkg_name):
         count = _lib.c_int(0)
         raw = _lib.db_get_dependents_transitive(
@@ -195,33 +170,6 @@ class Database:
             ]
             result.append(DbVerifyIssue(pkg_name, missing))
         _lib.db_verify_free(issues, count.value)
-        return result
-
-    def verify_against_archive(self, pkg_name, archive_path, root_path):
-        issues = _lib.c_void_p()
-        count = _lib.c_int(0)
-        ok = _lib.db_verify_against_archive(
-            self._ptr,
-            pkg_name.encode(),
-            archive_path.encode(),
-            root_path.encode(),
-            ctypes.byref(issues),
-            ctypes.byref(count),
-        )
-        if not ok:
-            raise ApgError(
-                f"cannot compare {pkg_name!r} with {archive_path!r}"
-            )
-        result = []
-        for i in range(count.value):
-            issue = _lib.db_content_issue_at(issues, count.value, i)
-            result.append(
-                DbContentIssue(
-                    DbContentKind(_lib.db_content_issue_kind(issue)),
-                    decode(_lib.db_content_issue_path(issue)),
-                )
-            )
-        _lib.db_content_free(issues, count.value)
         return result
 
     def check(self):

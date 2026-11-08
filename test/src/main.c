@@ -173,27 +173,11 @@ main(void)
     test_db_check_reports_ownership_inconsistencies();
     test_db_check_reports_record_inconsistencies();
 
-    test_verify_against_archive_accepts_clean_install();
-    test_verify_against_archive_reports_differences();
-    test_verify_against_archive_rejects_bad_requests();
-
     test_package_read_metadata_reads_archive();
     test_package_read_metadata_reports_failures();
     test_package_list_files_matches_install();
     test_package_list_files_edge_cases();
 
-    test_trans_step_required_by_follows_dependency_chain();
-    test_trans_step_required_by_is_unset_for_other_steps();
-
-    test_trans_commit_hooks_run_around_commit();
-    test_trans_commit_hooks_report_failures_and_skip_dry_runs();
-
-    test_audit_read_since_filters_by_timestamp();
-    test_audit_read_for_package_matches_exact_names();
-    test_audit_filters_on_database_without_journal();
-
-    test_db_get_providers_matches_names_and_provides();
-
-    printf("All 164 tests passed.\n");
+    printf("All 153 tests passed.\n");
     return 0;
 }

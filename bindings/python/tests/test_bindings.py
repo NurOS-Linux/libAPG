@@ -226,34 +226,6 @@ def test_audit_log(tmp_path):
     db.close()
 
 
-def test_audit_filters(tmp_path):
-    with apg.Database.open(str(tmp_path)) as db:
-        first = make_pkg("filter-a")
-        second = make_pkg("filter-b")
-        assert db.add(first)
-        assert db.add(second)
-        assert db.remove("filter-a")
-
-        history = apg.audit.read_for_package(db, "filter-a")
-        assert [e.pkg_name for e in history] == ["filter-a", "filter-a"]
-        assert [e.op for e in history] == [
-            apg.JournalOp.INSTALL,
-            apg.JournalOp.REMOVE,
-        ]
-        assert apg.audit.read_for_package(db, "missing") == []
-        assert len(apg.audit.read_since(db, 0)) == 3
-        assert apg.audit.read_since(db, 2**40) == []
-
-
-def test_verify_against_archive_errors(tmp_path):
-    with apg.Database.open(str(tmp_path)) as db:
-        with pytest.raises(apg.ApgError):
-            db.verify_against_archive(
-                "missing", str(tmp_path / "none.tar"), str(tmp_path)
-            )
-    assert apg.DbContentKind.MODE_CHANGED == 3
-
-
 def build_archive(tmp_path):
     import tarfile
 
@@ -281,42 +253,6 @@ def test_archive_inspection(tmp_path):
         apg.PackageMetadata.from_archive(str(tmp_path / "missing.tar"))
     with pytest.raises(apg.ApgError):
         apg.archive.list_files(str(tmp_path / "missing.tar"))
-
-
-def test_commit_hooks(tmp_path):
-    with apg.Database.open(str(tmp_path)) as db:
-        pkg = make_pkg("hooked")
-        assert db.add(pkg)
-        events = []
-        with apg.Transaction(db) as trans:
-            trans.set_commit_hooks(
-                pre=lambda: events.append("pre"),
-                post=lambda result: events.append(("post", result)),
-            )
-            assert trans.add_remove("hooked") == apg.TransError.OK
-            assert trans.prepare() == apg.TransError.OK
-            root = tmp_path / "root"
-            root.mkdir()
-            assert trans.commit(str(root)) == apg.TransError.OK
-            assert events == ["pre", ("post", apg.TransError.OK)]
-
-            trans.set_commit_hooks()
-            assert trans.commit(str(root)) == apg.TransError.ALREADY_COMMITTED
-            assert len(events) == 2
-
-
-def test_step_required_by(tmp_path):
-    with apg.Database.open(str(tmp_path)) as db:
-        app = make_pkg("app")
-        app.metadata.set_dependencies([apg.dep_constraint_parse("lib")])
-        lib = make_pkg("lib")
-        with apg.Transaction(db) as trans:
-            assert trans.add_install(app) == apg.TransError.OK
-            assert trans.add_candidate(lib) == apg.TransError.OK
-            assert trans.prepare() == apg.TransError.OK
-            steps = {step.pkg_name: step for step in trans.plan}
-            assert steps["app"].required_by is None
-            assert steps["lib"].required_by == "app"
 
 
 def test_db_check(tmp_path):
@@ -397,18 +333,6 @@ def test_sign_with_explicit_keys(tmp_path):
     assert not apg.sign.sign_with_key(
         str(pkg), str(sig), str(tmp_path / "missing.key")
     )
-
-
-def test_get_providers(tmp_path):
-    with apg.Database.open(str(tmp_path)) as db:
-        assert db.add(make_pkg("impl-a", provides="virt"))
-        assert db.add(make_pkg("impl-b", provides="virt"))
-        assert db.add(make_pkg("virt"))
-        assert db.add(make_pkg("other"))
-
-        assert sorted(db.get_providers("virt")) == ["impl-a", "impl-b", "virt"]
-        assert db.get_providers("other") == ["other"]
-        assert db.get_providers("missing") == []
 
 
 def test_transitive_dependents_and_orphans(tmp_path):

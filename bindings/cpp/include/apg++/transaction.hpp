@@ -11,7 +11,6 @@
 #include <apg/transaction.h>
 
 #include <cstdint>
-#include <functional>
 #include <memory>
 #include <optional>
 #include <string>
@@ -32,11 +31,6 @@ public:
     std::string pkg_name() const { return ::trans_step_pkg_name(ptr_); }
     std::string pkg_version() const { return ::trans_step_pkg_version(ptr_); }
     bool is_explicit() const { return ::trans_step_explicit(ptr_); }
-    std::string required_by() const
-    {
-        const char *name = ::trans_step_required_by(ptr_);
-        return name ? name : "";
-    }
 
 private:
     const struct trans_step *ptr_;
@@ -126,24 +120,6 @@ public:
 
     void clear_policy() { ::trans_set_policy(trans_.get(), nullptr); }
 
-    void set_commit_hooks(std::function<void()> pre,
-                          std::function<void(TransError)> post)
-    {
-        if (!pre && !post)
-        {
-            ::trans_set_commit_hooks(trans_.get(), nullptr, nullptr, nullptr);
-            hooks_.reset();
-            return;
-        }
-        auto hooks = std::make_unique<CommitHooks>();
-        hooks->pre = std::move(pre);
-        hooks->post = std::move(post);
-        ::trans_set_commit_hooks(trans_.get(), hooks->pre ? &run_pre : nullptr,
-                                 hooks->post ? &run_post : nullptr,
-                                 hooks.get());
-        hooks_ = std::move(hooks);
-    }
-
     std::optional<std::pair<uint64_t, uint64_t>>
     estimate_space(const std::string &root_path) const
     {
@@ -226,23 +202,6 @@ public:
     }
 
 private:
-    struct CommitHooks
-    {
-        std::function<void()> pre;
-        std::function<void(TransError)> post;
-    };
-
-    static void run_pre(const struct apg_trans *, void *userdata)
-    {
-        static_cast<CommitHooks *>(userdata)->pre();
-    }
-
-    static void run_post(const struct apg_trans *, trans_error_t result,
-                         void *userdata)
-    {
-        static_cast<CommitHooks *>(userdata)->post(result);
-    }
-
     static struct apg_trans *make(Database &db) { return ::trans_new(db.get()); }
 
     template <typename View, typename CountType, typename Fn>
@@ -257,7 +216,6 @@ private:
     }
 
     std::unique_ptr<struct apg_trans, void (*)(struct apg_trans *)> trans_;
-    std::unique_ptr<CommitHooks> hooks_;
 };
 
 } // namespace apg

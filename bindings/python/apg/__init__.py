@@ -3,14 +3,7 @@
 
 from . import archive, audit, copy, install, keyring, scripts, sign
 from .config import InstallPolicy
-from .db import (
-    Database,
-    DbCheckIssue,
-    DbCheckKind,
-    DbContentIssue,
-    DbContentKind,
-    DbVerifyIssue,
-)
+from .db import Database, DbCheckIssue, DbCheckKind, DbVerifyIssue
 from .error import ApgError
 from .graph import DependencyGraph
 from .journal import JournalEntry, JournalOp, JournalStatus
@@ -33,8 +26,6 @@ __all__ = [
     "Database",
     "DbCheckIssue",
     "DbCheckKind",
-    "DbContentIssue",
-    "DbContentKind",
     "DbVerifyIssue",
     "DependencyGraph",
     "JournalEntry",

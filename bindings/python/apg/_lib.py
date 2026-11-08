@@ -147,12 +147,6 @@ c_int = ctypes.c_int
 c_bool = ctypes.c_bool
 
 
-PRE_COMMIT_FN = ctypes.CFUNCTYPE(None, ctypes.c_void_p, ctypes.c_void_p)
-POST_COMMIT_FN = ctypes.CFUNCTYPE(
-    None, ctypes.c_void_p, ctypes.c_int, ctypes.c_void_p
-)
-
-
 def _sig(name, restype, argtypes):
     fn = getattr(lib, name)
     fn.restype = restype
@@ -221,11 +215,6 @@ db_get_orphans = _sig(
     ctypes.POINTER(c_void_p),
     [c_void_p, ctypes.POINTER(c_int)],
 )
-db_get_providers = _sig(
-    "db_get_providers",
-    ctypes.POINTER(c_void_p),
-    [c_void_p, c_char_p, ctypes.POINTER(c_int)],
-)
 db_get_orphans_transitive = _sig(
     "db_get_orphans_transitive",
     ctypes.POINTER(c_void_p),
@@ -250,24 +239,6 @@ db_verify = _sig(
     "db_verify", c_void_p, [c_void_p, c_char_p, ctypes.POINTER(c_int)]
 )
 db_verify_free = _sig("db_verify_free", None, [c_void_p, c_int])
-db_verify_against_archive = _sig(
-    "db_verify_against_archive",
-    c_bool,
-    [
-        c_void_p,
-        c_char_p,
-        c_char_p,
-        c_char_p,
-        ctypes.POINTER(c_void_p),
-        ctypes.POINTER(c_int),
-    ],
-)
-db_content_free = _sig("db_content_free", None, [c_void_p, c_int])
-db_content_issue_at = _sig(
-    "db_content_issue_at", c_void_p, [c_void_p, c_int, c_int]
-)
-db_content_issue_kind = _sig("db_content_issue_kind", c_int, [c_void_p])
-db_content_issue_path = _sig("db_content_issue_path", c_char_p, [c_void_p])
 db_check = _sig("db_check", c_void_p, [c_void_p, ctypes.POINTER(c_int)])
 db_check_free = _sig("db_check_free", None, [c_void_p, c_int])
 db_check_issue_at = _sig("db_check_issue_at", c_void_p, [c_void_p, c_int, c_int])
@@ -334,7 +305,6 @@ trans_step_op = _sig("trans_step_op", c_int, [c_void_p])
 trans_step_pkg_name = _sig("trans_step_pkg_name", c_char_p, [c_void_p])
 trans_step_pkg_version = _sig("trans_step_pkg_version", c_char_p, [c_void_p])
 trans_step_explicit = _sig("trans_step_explicit", c_bool, [c_void_p])
-trans_step_required_by = _sig("trans_step_required_by", c_char_p, [c_void_p])
 
 trans_conflict_pkg_name = _sig("trans_conflict_pkg_name", c_char_p, [c_void_p])
 trans_conflict_conflicts_with = _sig(
@@ -376,11 +346,6 @@ trans_estimate_space = _sig(
         ctypes.POINTER(ctypes.c_uint64),
         ctypes.POINTER(ctypes.c_uint64),
     ],
-)
-trans_set_commit_hooks = _sig(
-    "trans_set_commit_hooks",
-    None,
-    [c_void_p, PRE_COMMIT_FN, POST_COMMIT_FN, c_void_p],
 )
 trans_set_policy = _sig(
     "trans_set_policy", None, [c_void_p, ctypes.POINTER(InstallPolicy)]
@@ -433,16 +398,6 @@ journal_entry_status = _sig("journal_entry_status", c_int, [c_void_p])
 journal_entry_uid = _sig("journal_entry_uid", ctypes.c_uint, [c_void_p])
 journal_entry_explicit = _sig("journal_entry_explicit", c_bool, [c_void_p])
 
-audit_read_since = _sig(
-    "audit_read_since",
-    ctypes.POINTER(c_void_p),
-    [c_void_p, ctypes.c_long, ctypes.POINTER(c_int)],
-)
-audit_read_for_package = _sig(
-    "audit_read_for_package",
-    ctypes.POINTER(c_void_p),
-    [c_void_p, c_char_p, ctypes.POINTER(c_int)],
-)
 audit_read_all = _sig(
     "audit_read_all",
     ctypes.POINTER(c_void_p),
