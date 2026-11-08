@@ -226,6 +226,39 @@ test_step_required_by()
 }
 
 void
+test_commit_hooks()
+{
+    std::string db_path = make_tmp_dir("apgxx-hooks");
+    apg::Database db = apg::Database::open(db_path);
+    apg::Package pkg = make_simple_package("hooked-pkg");
+    assert(db.add(pkg));
+
+    int pre_calls = 0;
+    int post_calls = 0;
+    apg::TransError last = TRANS_ERR_NOMEM;
+    apg::Transaction trans(db);
+    trans.set_commit_hooks([&] { ++pre_calls; },
+                           [&](apg::TransError result)
+                           {
+                               ++post_calls;
+                               last = result;
+                           });
+    assert(trans.add_remove("hooked-pkg") == TRANS_OK);
+    assert(trans.prepare() == TRANS_OK);
+    std::string root = make_tmp_dir("apgxx-hooks-root");
+    assert(trans.commit(root) == TRANS_OK);
+    assert(pre_calls == 1 && post_calls == 1 && last == TRANS_OK);
+
+    trans.set_commit_hooks(nullptr, nullptr);
+    assert(trans.commit(root) == TRANS_ERR_ALREADY_COMMITTED);
+    assert(pre_calls == 1 && post_calls == 1);
+
+    rmdir(root.c_str());
+    remove_tmp_db(db_path);
+    printf("test_commit_hooks: PASS\n");
+}
+
+void
 test_dependency_graph()
 {
     apg::PackageMetadata base = apg::PackageMetadata::create();
@@ -287,6 +320,7 @@ main()
     test_scripts_strict_and_sandbox_flag();
     test_archive_inspection();
     test_step_required_by();
+    test_commit_hooks();
     test_dependency_graph();
     test_transaction_policy();
     printf("All C++ binding tests passed.\n");
