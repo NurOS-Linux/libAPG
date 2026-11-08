@@ -79,6 +79,16 @@ test_database_roundtrip()
     assert(db.set_installed_by_hand("cppxx-pkg", false));
 
     assert(db.check().empty());
+    bool threw = false;
+    try
+    {
+        db.verify_against_archive("cppxx-pkg", "/nonexistent/pkg.tar", "/");
+    }
+    catch (const apg::Error &)
+    {
+        threw = true;
+    }
+    assert(threw);
 
     apg::DbStats stats = db.stats();
     assert(stats.package_count >= 1);
