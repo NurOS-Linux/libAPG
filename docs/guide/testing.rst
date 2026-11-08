@@ -22,7 +22,8 @@ Signing tests
 -------------
 
 ``sign_file()`` and ``sign_verify()`` read fixed key files from the
-``keys_dir`` build option. ``test_sign_file_and_verify_roundtrip`` writes its
+``keys_dir`` build option. ``sign_file_with_key()`` and
+``sign_verify_with_key()`` take key paths and are tested without it. ``test_sign_file_and_verify_roundtrip`` writes its
 own ``public.key`` and ``secret.key`` there and removes them afterwards. It
 skips itself when the directory is not writable or when either file already
 exists, so real keys are never overwritten. To run it, configure the build

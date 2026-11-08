@@ -14,6 +14,12 @@ pair. They read ``secret.key`` and ``public.key`` from the ``keys_dir`` build
 option (``/etc/apg/keys`` by default). ``sign_verify()`` accepts a signature
 made with the matching secret key only. The ``allow_rsa`` argument is ignored.
 
+``sign_file_with_key()`` and ``sign_verify_with_key()`` do the same with key
+files given by path, so they do not depend on the ``keys_dir`` build option.
+The signature format is identical: a file made by ``sign_file_with_key()``
+verifies with ``sign_verify()`` and ``keyring_verify()`` when the matching
+public key is installed. NULL arguments make them return false.
+
 ``keyring_load()`` and ``keyring_verify()`` (``keyring.h``) work with a
 directory of trusted public keys. Every file whose name ends in ``.key`` and
 that holds at least 32 bytes contributes one key (the first 32 bytes). Other
