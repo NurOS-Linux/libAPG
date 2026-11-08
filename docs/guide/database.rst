@@ -68,6 +68,14 @@ and that no installed package depends on, directly or through ``provides``.
 The check is not transitive: a chain of automatically installed packages
 reports only its top.
 
+``db_get_dependents_transitive()`` and ``db_get_orphans_transitive()`` follow
+dependency chains. The first lists every package that depends on a name
+directly or through other packages. The second treats packages marked
+``installed_by_hand`` as roots and returns everything not reachable from them,
+including chains and cycles of automatically installed packages. The held flag
+is ignored, as in ``db_get_orphans()``. The result of each contains everything
+the direct variant returns.
+
 ``db_search()`` matches a case-insensitive substring against the package name
 and description.
 
