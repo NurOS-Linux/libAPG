@@ -79,6 +79,8 @@ test_database_roundtrip()
     assert(db.set_installed_by_hand("cppxx-pkg", false));
 
     assert(db.check().empty());
+    assert(db.get_providers("cppxx-pkg").size() == 1);
+    assert(db.get_providers("nothing-provides-this").empty());
     bool threw = false;
     try
     {

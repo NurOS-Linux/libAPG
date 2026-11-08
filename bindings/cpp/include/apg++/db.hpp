@@ -164,6 +164,14 @@ class Database
     }
 
     std::vector<std::string>
+    get_providers(const std::string &name)
+    {
+        int count = 0;
+        char **raw = ::db_get_providers(db_.get(), name.c_str(), &count);
+        return detail::take_c_string_array(raw, count);
+    }
+
+    std::vector<std::string>
     get_dependents_transitive(const std::string &pkg_name)
     {
         int count = 0;
