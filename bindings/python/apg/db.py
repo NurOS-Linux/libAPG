@@ -161,6 +161,15 @@ class Database:
             return []
         return take_str_array(raw, count.value)
 
+    def get_providers(self, name):
+        count = _lib.c_int(0)
+        raw = _lib.db_get_providers(
+            self._ptr, name.encode(), ctypes.byref(count)
+        )
+        if not raw:
+            return []
+        return take_str_array(raw, count.value)
+
     def get_dependents_transitive(self, pkg_name):
         count = _lib.c_int(0)
         raw = _lib.db_get_dependents_transitive(

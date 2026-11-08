@@ -399,6 +399,18 @@ def test_sign_with_explicit_keys(tmp_path):
     )
 
 
+def test_get_providers(tmp_path):
+    with apg.Database.open(str(tmp_path)) as db:
+        assert db.add(make_pkg("impl-a", provides="virt"))
+        assert db.add(make_pkg("impl-b", provides="virt"))
+        assert db.add(make_pkg("virt"))
+        assert db.add(make_pkg("other"))
+
+        assert sorted(db.get_providers("virt")) == ["impl-a", "impl-b", "virt"]
+        assert db.get_providers("other") == ["other"]
+        assert db.get_providers("missing") == []
+
+
 def test_transitive_dependents_and_orphans(tmp_path):
     with apg.Database.open(str(tmp_path)) as db:
         core = make_pkg("core")
