@@ -161,7 +161,7 @@ rollback_committed(struct apg_trans *trans, const size_t *committed_idx,
             }
         }
 
-        db_remove(trans->db, s->pkg_name);
+        apg_db_remove(trans->db, s->pkg_name, DB_JOURNAL_NONE, false, NULL);
         journal_write(trans->db->env, JOURNAL_ROLLBACK, s->pkg_name,
                       s->pkg_version, JOURNAL_STATUS_OK, getuid(), false);
     }
@@ -260,7 +260,6 @@ release_commit(struct apg_trans *trans, size_t *committed_idx,
         upgrade_backup_discard(&backups[i]);
     free(backups);
     keyring_free(kr);
-    trans->db->suppress_journal = false;
 }
 
 trans_error_t
@@ -304,8 +303,6 @@ trans_commit(struct apg_trans *trans, const char *root_path)
 
     size_t committed_count = 0;
     uid_t uid = getuid();
-
-    trans->db->suppress_journal = true;
 
     for (size_t i = 0; i < trans->plan_count; i++)
     {
@@ -358,7 +355,8 @@ trans_commit(struct apg_trans *trans, const char *root_path)
             {
                 pkg->installed_by_hand = step->explicit;
                 committed_idx[committed_count++] = i;
-                if (!db_add(trans->db, pkg))
+                if (!apg_db_add(trans->db, pkg, DB_JOURNAL_SUCCESS,
+                                step->explicit))
                 {
                     journal_write(trans->db->env, JOURNAL_INSTALL,
                                   step->pkg_name, step->pkg_version,
@@ -369,9 +367,6 @@ trans_commit(struct apg_trans *trans, const char *root_path)
                     release_commit(trans, committed_idx, backups, kr);
                     return TRANS_ERR_DB;
                 }
-                journal_write(trans->db->env, JOURNAL_INSTALL, step->pkg_name,
-                              step->pkg_version, JOURNAL_STATUS_OK, uid,
-                              step->explicit);
             }
         }
         else if (step->op == TRANS_OP_UPGRADE)
@@ -440,7 +435,8 @@ trans_commit(struct apg_trans *trans, const char *root_path)
                 remove_dropped_files(trans, pkg, root_path);
                 pkg->installed_by_hand = step->explicit;
                 committed_idx[committed_count++] = i;
-                if (!db_add(trans->db, pkg))
+                if (!apg_db_add(trans->db, pkg, DB_JOURNAL_SUCCESS,
+                                step->explicit))
                 {
                     journal_write(trans->db->env, JOURNAL_INSTALL,
                                   step->pkg_name, step->pkg_version,
@@ -451,9 +447,6 @@ trans_commit(struct apg_trans *trans, const char *root_path)
                     release_commit(trans, committed_idx, backups, kr);
                     return TRANS_ERR_DB;
                 }
-                journal_write(trans->db->env, JOURNAL_INSTALL, step->pkg_name,
-                              step->pkg_version, JOURNAL_STATUS_OK, uid,
-                              step->explicit);
             }
         }
         else
@@ -470,8 +463,11 @@ trans_commit(struct apg_trans *trans, const char *root_path)
                 installed->meta->name)
                 doomed = files_still_owned_by(trans->db, installed);
 
-            bool ok = pre_ok &&
-                      (trans->dry_run || db_remove(trans->db, step->pkg_name));
+            bool ok =
+                pre_ok &&
+                (trans->dry_run ||
+                 apg_db_remove(trans->db, step->pkg_name, DB_JOURNAL_SUCCESS,
+                               step->explicit, step->pkg_version));
             if (!trans->dry_run && ok)
             {
                 for (int j = 0; j < doomed.count; j++)
@@ -498,11 +494,10 @@ trans_commit(struct apg_trans *trans, const char *root_path)
             }
 
             package_free(installed);
-            if (!trans->dry_run)
+            if (!trans->dry_run && !ok)
                 journal_write(trans->db->env, JOURNAL_REMOVE, step->pkg_name,
-                              step->pkg_version,
-                              ok ? JOURNAL_STATUS_OK : JOURNAL_STATUS_FAILED,
-                              uid, step->explicit);
+                              step->pkg_version, JOURNAL_STATUS_FAILED, uid,
+                              step->explicit);
 
             if (!ok)
             {

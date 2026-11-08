@@ -13,6 +13,7 @@
 #include <unistd.h>
 
 #include "backup_priv.h"
+#include "../db/db_priv.h"
 #include "../../include/apg/copy.h"
 #include "../../include/apg/scripts.h"
 #include "../../include/apg/util.h"
@@ -176,7 +177,7 @@ upgrade_backup_restore(struct db_handle *db,
         free(store);
     }
 
-    (void)db_add(db, backup->previous);
+    (void)apg_db_add(db, backup->previous, DB_JOURNAL_NONE, false);
 }
 
 void

@@ -85,7 +85,8 @@ serialize_files(const struct str_list *files)
 }
 
 static int
-db_add_once(struct db_handle *db, struct package *pkg)
+db_add_once(struct db_handle *db, struct package *pkg, bool journal,
+            bool explicit_op)
 {
     MDB_txn *txn;
     MDB_dbi dbi;
@@ -144,6 +145,10 @@ db_add_once(struct db_handle *db, struct package *pkg)
                     }
                 }
             }
+            if (rc == MDB_SUCCESS && journal)
+                rc = apg_journal_put(txn, JOURNAL_INSTALL, pkg->meta->name,
+                                     pkg->meta->version, JOURNAL_STATUS_OK,
+                                     getuid(), explicit_op);
             if (rc == MDB_SUCCESS)
                 rc = mdb_txn_commit(txn);
             else
@@ -169,7 +174,8 @@ grow_map(struct db_handle *db)
 }
 
 bool
-db_add(struct db_handle *db, struct package *pkg)
+apg_db_add(struct db_handle *db, struct package *pkg, enum db_journal_mode mode,
+           bool explicit_op)
 {
     if (!db || !pkg || !pkg->meta)
         return false;
@@ -187,11 +193,12 @@ db_add(struct db_handle *db, struct package *pkg)
     // Cross-process writes are serialized by LMDB's own file lock.
     pthread_mutex_lock(&db->write_lock);
 
-    int rc = db_add_once(db, pkg);
+    bool journal = mode != DB_JOURNAL_NONE;
+    int rc = db_add_once(db, pkg, journal, explicit_op);
     for (int attempt = 0;
          rc == MDB_MAP_FULL && attempt < MAP_GROW_ATTEMPTS && grow_map(db);
          attempt++)
-        rc = db_add_once(db, pkg);
+        rc = db_add_once(db, pkg, journal, explicit_op);
 
     bool ok = rc == MDB_SUCCESS;
     if (!ok)
@@ -200,15 +207,21 @@ db_add(struct db_handle *db, struct package *pkg)
 
     pthread_mutex_unlock(&db->write_lock);
 
-    if (!db->suppress_journal)
-        journal_write(
-            db->env, JOURNAL_INSTALL, pkg->meta->name, pkg->meta->version,
-            ok ? JOURNAL_STATUS_OK : JOURNAL_STATUS_FAILED, getuid(), true);
+    if (!ok && mode == DB_JOURNAL_ALWAYS)
+        journal_write(db->env, JOURNAL_INSTALL, pkg->meta->name,
+                      pkg->meta->version, JOURNAL_STATUS_FAILED, getuid(),
+                      explicit_op);
 
     if (db->hooks.post)
         db->hooks.post(DB_OP_ADD, pkg->meta->name, db->hooks.userdata);
 
     return ok;
+}
+
+bool
+db_add(struct db_handle *db, struct package *pkg)
+{
+    return apg_db_add(db, pkg, DB_JOURNAL_ALWAYS, true);
 }
 
 bool
@@ -223,9 +236,7 @@ db_set_hold(struct db_handle *db, const char *pkg_name, bool held)
 
     pkg->held = held;
 
-    db->suppress_journal = true;
-    bool ok = db_add(db, pkg);
-    db->suppress_journal = false;
+    bool ok = apg_db_add(db, pkg, DB_JOURNAL_NONE, false);
 
     package_free(pkg);
     return ok;
@@ -253,16 +264,16 @@ db_set_installed_by_hand(struct db_handle *db, const char *pkg_name,
 
     pkg->installed_by_hand = by_hand;
 
-    db->suppress_journal = true;
-    bool ok = db_add(db, pkg);
-    db->suppress_journal = false;
+    bool ok = apg_db_add(db, pkg, DB_JOURNAL_NONE, false);
 
     package_free(pkg);
     return ok;
 }
 
 bool
-db_remove(struct db_handle *db, const char *pkg_name)
+apg_db_remove(struct db_handle *db, const char *pkg_name,
+              enum db_journal_mode mode, bool explicit_op,
+              const char *journal_version)
 {
     if (!db || !pkg_name)
         return false;
@@ -271,15 +282,6 @@ db_remove(struct db_handle *db, const char *pkg_name)
         apg_set_error("cannot remove '%s': package database is read-only",
                       pkg_name);
         return false;
-    }
-
-    char *version_for_journal = NULL;
-    if (!db->suppress_journal)
-    {
-        struct package *existing = db_get(db, pkg_name);
-        if (existing && existing->meta && existing->meta->version)
-            version_for_journal = strdup(existing->meta->version);
-        package_free(existing);
     }
 
     if (db->hooks.pre)
@@ -303,6 +305,10 @@ db_remove(struct db_handle *db, const char *pkg_name)
                 delete_file_owner_entries(db, txn, pkg_name);
                 mdb_del(txn, db->files_dbi, &key, NULL);
             }
+            if (rc == MDB_SUCCESS && mode != DB_JOURNAL_NONE)
+                rc = apg_journal_put(txn, JOURNAL_REMOVE, pkg_name,
+                                     journal_version, JOURNAL_STATUS_OK,
+                                     getuid(), explicit_op);
             if (rc == MDB_SUCCESS)
                 rc = mdb_txn_commit(txn);
             else
@@ -324,14 +330,32 @@ db_remove(struct db_handle *db, const char *pkg_name)
 
     pthread_mutex_unlock(&db->write_lock);
 
-    if (!db->suppress_journal)
-        journal_write(db->env, JOURNAL_REMOVE, pkg_name, version_for_journal,
-                      ok ? JOURNAL_STATUS_OK : JOURNAL_STATUS_FAILED, getuid(),
-                      true);
-    free(version_for_journal);
+    if (!ok && mode == DB_JOURNAL_ALWAYS)
+        journal_write(db->env, JOURNAL_REMOVE, pkg_name, journal_version,
+                      JOURNAL_STATUS_FAILED, getuid(), explicit_op);
 
     if (db->hooks.post)
         db->hooks.post(DB_OP_REMOVE, pkg_name, db->hooks.userdata);
 
+    return ok;
+}
+
+bool
+db_remove(struct db_handle *db, const char *pkg_name)
+{
+    if (!db || !pkg_name)
+        return false;
+
+    char *version = NULL;
+    if (!db->readonly)
+    {
+        struct package *existing = db_get(db, pkg_name);
+        if (existing && existing->meta && existing->meta->version)
+            version = strdup(existing->meta->version);
+        package_free(existing);
+    }
+
+    bool ok = apg_db_remove(db, pkg_name, DB_JOURNAL_ALWAYS, true, version);
+    free(version);
     return ok;
 }

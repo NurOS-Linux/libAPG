@@ -7,6 +7,7 @@
 #include <pthread.h>
 #include <stdbool.h>
 #include "../../include/apg/db.h"
+#include "../../include/apg/journal.h"
 #include "../../include/apg/package.h"
 
 struct db_verify_issue
@@ -33,6 +34,22 @@ struct str_vec
 
 bool str_vec_push(struct str_vec *v, const char *str);
 
+enum db_journal_mode
+{
+    DB_JOURNAL_NONE,
+    DB_JOURNAL_SUCCESS,
+    DB_JOURNAL_ALWAYS,
+};
+
+int apg_journal_put(MDB_txn *txn, journal_op_t op, const char *pkg_name,
+                    const char *pkg_version, journal_status_t status, uid_t uid,
+                    bool explicit_op);
+bool apg_db_add(struct db_handle *db, struct package *pkg,
+                enum db_journal_mode mode, bool explicit_op);
+bool apg_db_remove(struct db_handle *db, const char *pkg_name,
+                   enum db_journal_mode mode, bool explicit_op,
+                   const char *journal_version);
+
 struct db_handle
 {
     MDB_env *env;
@@ -43,7 +60,5 @@ struct db_handle
     bool readonly;
     pthread_mutex_t write_lock;
     struct db_hooks hooks;
-    bool suppress_journal; /**< When true, db_add/db_remove skip journal_write.
-                                Used by trans_commit which journals manually. */
     int lock_fd; /**< fd holding flock on db.lock; -1 when not locked. */
 };

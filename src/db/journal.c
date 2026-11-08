@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 // SPDX-FileCopyrightText: 2026 AnmiTaliDev <anmitalidev@nuros.org>
 
+#include <errno.h>
 #include <time.h>
 #include <stdio.h>
 #include <stdint.h>
@@ -9,6 +10,7 @@
 #include <stdatomic.h>
 #include <lmdb.h>
 
+#include "db_priv.h"
 #include "../../include/apg/journal.h"
 
 struct journal_entry
@@ -136,21 +138,18 @@ unescape_field(char *s)
     *w = '\0';
 }
 
-bool
-journal_write(MDB_env *env, journal_op_t op, const char *pkg_name,
-              const char *pkg_version, journal_status_t status, uid_t uid,
-              bool explicit_op)
+int
+apg_journal_put(MDB_txn *txn, journal_op_t op, const char *pkg_name,
+                const char *pkg_version, journal_status_t status, uid_t uid,
+                bool explicit_op)
 {
-    MDB_txn *txn;
-    MDB_dbi dbi;
-
     char *name_field = escape_field(pkg_name ? pkg_name : "-");
     char *version_field = escape_field(pkg_version ? pkg_version : "-");
     if (!name_field || !version_field)
     {
         free(name_field);
         free(version_field);
-        return false;
+        return ENOMEM;
     }
 
     size_t val_cap = strlen(name_field) + strlen(version_field) + 64;
@@ -159,7 +158,7 @@ journal_write(MDB_env *env, journal_op_t op, const char *pkg_name,
     {
         free(name_field);
         free(version_field);
-        return false;
+        return ENOMEM;
     }
     (void)snprintf(val, val_cap, "%s|%s|%s|%s|%u|%d", op_to_str(op), name_field,
                    version_field, status_to_str(status), (unsigned)uid,
@@ -167,16 +166,12 @@ journal_write(MDB_env *env, journal_op_t op, const char *pkg_name,
     free(name_field);
     free(version_field);
 
-    if (mdb_txn_begin(env, NULL, 0, &txn) != MDB_SUCCESS)
+    MDB_dbi dbi;
+    int rc = mdb_dbi_open(txn, "journal", MDB_CREATE, &dbi);
+    if (rc != MDB_SUCCESS)
     {
         free(val);
-        return false;
-    }
-    if (mdb_dbi_open(txn, "journal", MDB_CREATE, &dbi) != MDB_SUCCESS)
-    {
-        mdb_txn_abort(txn);
-        free(val);
-        return false;
+        return rc;
     }
 
     uint8_t raw_key[12];
@@ -185,15 +180,29 @@ journal_write(MDB_env *env, journal_op_t op, const char *pkg_name,
     MDB_val k = {sizeof(raw_key), raw_key};
     MDB_val v = {strlen(val), val};
 
-    bool ok = mdb_put(txn, dbi, &k, &v, 0) == MDB_SUCCESS;
-    if (ok)
-        mdb_txn_commit(txn);
-    else
-        mdb_txn_abort(txn);
-
-    mdb_dbi_close(env, dbi);
+    rc = mdb_put(txn, dbi, &k, &v, 0);
     free(val);
-    return ok;
+    return rc;
+}
+
+bool
+journal_write(MDB_env *env, journal_op_t op, const char *pkg_name,
+              const char *pkg_version, journal_status_t status, uid_t uid,
+              bool explicit_op)
+{
+    MDB_txn *txn;
+    if (mdb_txn_begin(env, NULL, 0, &txn) != MDB_SUCCESS)
+        return false;
+
+    if (apg_journal_put(txn, op, pkg_name, pkg_version, status, uid,
+                        explicit_op) != MDB_SUCCESS)
+    {
+        mdb_txn_abort(txn);
+        return false;
+    }
+
+    mdb_txn_commit(txn);
+    return true;
 }
 
 struct journal_entry **
