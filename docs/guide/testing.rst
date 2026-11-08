@@ -35,6 +35,13 @@ with a ``keys_dir`` that the current user can write:
    mkdir build-keys
    meson test -C build
 
+Script isolation tests
+----------------------
+
+The strict script tests force a refused ``unshare()`` by installing a
+seccomp filter in a child process, so they do not depend on whether the host
+allows user namespaces. They are skipped on systems other than Linux.
+
 Sanitizers
 ----------
 

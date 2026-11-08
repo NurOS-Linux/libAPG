@@ -58,3 +58,24 @@ FreeBSD and other POSIX systems
 Scripts therefore must not be treated as sandboxed when the host does not
 allow ``unshare()``, and a package that is not trusted should be rejected
 before installation by requiring signatures (see :doc:`signing`).
+
+Requiring isolation
+-------------------
+
+``run_script_strict()`` behaves like ``run_script()`` except that a failed
+``unshare()`` is never ignored: the script is not executed, the call returns
+false, and ``apg_last_error()`` reports that the script was not run because it
+could not be isolated. This covers the ``EPERM`` and ``EINVAL`` cases that
+``run_script()`` skips. A missing script is still not an error. On systems
+other than Linux no namespace isolation exists, so a script that is present is
+never run in strict mode.
+
+``trans_set_require_sandbox(trans, true)`` applies the same rule to every
+script that ``trans_commit()`` runs. A step whose script cannot be isolated
+fails with ``TRANS_ERR_INSTALL_FAILED`` or ``TRANS_ERR_REMOVE_FAILED`` and the
+transaction is rolled back like any other failed step. The default is off, so
+existing callers keep the behavior described above.
+
+Strict mode only controls the namespaces. The ``chroot()`` into the target
+root is applied in both modes, and the script runs with ``/bin/sh`` from
+inside that root, so the root must contain a shell.
