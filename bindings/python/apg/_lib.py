@@ -324,6 +324,9 @@ trans_blocked_remove_dependent_at = _sig(
     "trans_blocked_remove_dependent_at", c_char_p, [c_void_p, c_int]
 )
 
+trans_set_require_sandbox = _sig(
+    "trans_set_require_sandbox", None, [c_void_p, c_bool]
+)
 trans_set_policy = _sig(
     "trans_set_policy", None, [c_void_p, ctypes.POINTER(InstallPolicy)]
 )
@@ -409,6 +412,9 @@ rollback_install = _sig("rollback_install", None, [c_char_p, c_char_p])
 copy_dir = _sig("copy_dir", c_bool, [c_char_p, c_char_p])
 
 run_script = _sig("run_script", c_bool, [c_char_p, c_char_p, c_char_p])
+run_script_strict = _sig(
+    "run_script_strict", c_bool, [c_char_p, c_char_p, c_char_p]
+)
 scripts_store_path = _sig(
     "scripts_store_path", c_void_p, [c_char_p, c_char_p]
 )

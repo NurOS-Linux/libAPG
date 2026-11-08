@@ -15,6 +15,16 @@ def run_script(pkg_dir, name, root_path):
     )
 
 
+def run_script_strict(pkg_dir, name, root_path):
+    return bool(
+        _lib.run_script_strict(
+            pkg_dir.encode(),
+            name.encode(),
+            root_path.encode() if root_path else None,
+        )
+    )
+
+
 def store_path(root_path, pkg_name):
     return take_str(_lib.scripts_store_path(root_path.encode(), pkg_name.encode()))
 

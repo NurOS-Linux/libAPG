@@ -130,6 +130,9 @@ class Transaction:
     def clear_policy(self):
         _lib.trans_set_policy(self._ptr, None)
 
+    def set_require_sandbox(self, require_sandbox):
+        _lib.trans_set_require_sandbox(self._ptr, bool(require_sandbox))
+
     def prefer_provider(self, name, pkg_name):
         _lib.trans_prefer_provider(
             self._ptr, name.encode(), pkg_name.encode()
