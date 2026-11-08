@@ -9,6 +9,7 @@
 
 #include "trans_priv.h"
 #include "backup_priv.h"
+#include "../script_priv.h"
 #include "../db/db_priv.h"
 #include "../../include/apg/package.h"
 #include "../../include/apg/db.h"
@@ -340,7 +341,8 @@ trans_commit(struct apg_trans *trans, const char *root_path)
                 }
             }
 
-            if (!trans->dry_run && !install_package_in_root(pkg, root_path))
+            if (!trans->dry_run && !apg_install_package_in_root(
+                                       pkg, root_path, trans->require_sandbox))
             {
                 journal_write(trans->db->env, JOURNAL_INSTALL, step->pkg_name,
                               step->pkg_version, JOURNAL_STATUS_FAILED, uid,
@@ -415,7 +417,8 @@ trans_commit(struct apg_trans *trans, const char *root_path)
             struct conf_backup *conf_bk =
                 trans->dry_run ? NULL : save_confs(pkg, root_path, &conf_count);
 
-            if (!trans->dry_run && !install_package_in_root(pkg, root_path))
+            if (!trans->dry_run && !apg_install_package_in_root(
+                                       pkg, root_path, trans->require_sandbox))
             {
                 free_confs(conf_bk, conf_count);
                 journal_write(trans->db->env, JOURNAL_INSTALL, step->pkg_name,
@@ -459,7 +462,8 @@ trans_commit(struct apg_trans *trans, const char *root_path)
 
             char *scripts_dir = scripts_store_path(root_path, step->pkg_name);
             bool pre_ok = trans->dry_run || !scripts_dir ||
-                          run_script(scripts_dir, "pre-remove", root_path);
+                          apg_run_script(scripts_dir, "pre-remove", root_path,
+                                         trans->require_sandbox);
 
             struct str_list doomed = {0};
             if (!trans->dry_run && pre_ok && installed && installed->meta &&
@@ -483,7 +487,8 @@ trans_commit(struct apg_trans *trans, const char *root_path)
             str_list_free(&doomed);
 
             if (!trans->dry_run && ok && scripts_dir)
-                run_script(scripts_dir, "post-remove", root_path);
+                apg_run_script(scripts_dir, "post-remove", root_path,
+                               trans->require_sandbox);
 
             if (scripts_dir)
             {

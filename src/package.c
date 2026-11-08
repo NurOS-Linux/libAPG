@@ -19,6 +19,7 @@
 #include "../include/apg/json.h"
 #include "error_priv.h"
 #include "util_priv.h"
+#include "script_priv.h"
 
 static const char *tmp_path = APG_TMP_DIR "/";
 static _Atomic uint64_t g_extract_seq = 0;
@@ -128,6 +129,13 @@ install_package(struct package *pkg)
 bool
 install_package_in_root(struct package *pkg, const char *root_path)
 {
+    return apg_install_package_in_root(pkg, root_path, false);
+}
+
+bool
+apg_install_package_in_root(struct package *pkg, const char *root_path,
+                            bool strict)
+{
     apg_clear_error();
 
     char *real_tmp = unique_tmp_dir(root_path);
@@ -141,7 +149,7 @@ install_package_in_root(struct package *pkg, const char *root_path)
         return false;
     }
 
-    if (!run_script(real_tmp, "pre-install", root_path))
+    if (!apg_run_script(real_tmp, "pre-install", root_path, strict))
     {
         remove_dir_recursive(real_tmp);
         free(real_tmp);
@@ -171,7 +179,7 @@ install_package_in_root(struct package *pkg, const char *root_path)
 
     install_home_dir(real_tmp);
 
-    if (!run_script(real_tmp, "post-install", root_path))
+    if (!apg_run_script(real_tmp, "post-install", root_path, strict))
     {
         rollback_install(real_tmp, root_path);
         remove_dir_recursive(real_tmp);

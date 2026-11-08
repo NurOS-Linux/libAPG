@@ -243,6 +243,25 @@ extern "C"
                                        const char *name, const char *pkg_name);
 
     /**
+     * @brief Require namespace isolation for every package script run by
+     *        trans_commit().
+     *
+     * When enabled, pre-install, post-install, pre-remove and post-remove
+     * scripts are run as by run_script_strict(): a script that cannot be
+     * isolated is not executed and the step fails with
+     * @ref TRANS_ERR_INSTALL_FAILED or @ref TRANS_ERR_REMOVE_FAILED, after
+     * which the transaction is rolled back as for any other failure. Packages
+     * without scripts are not affected. Disabled by default, in which case
+     * scripts run as with run_script().
+     *
+     * @param trans           Transaction to configure.
+     * @param require_sandbox True to require isolation, false to restore the
+     *                        default.
+     */
+    APG_API void trans_set_require_sandbox(struct apg_trans *trans,
+                                           bool require_sandbox);
+
+    /**
      * @brief Toggle dry-run mode for a transaction.
      *
      * Must be called before trans_commit(). In dry-run mode, trans_commit()
