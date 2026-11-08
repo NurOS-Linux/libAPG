@@ -165,6 +165,10 @@ main(void)
     test_run_script_strict_refuses_when_isolation_is_denied();
     test_trans_require_sandbox_controls_script_isolation();
 
-    printf("All 143 tests passed.\n");
+    test_trans_estimate_space_for_installs();
+    test_trans_estimate_space_counts_upgrade_backups();
+    test_trans_estimate_space_edge_cases();
+
+    printf("All 146 tests passed.\n");
     return 0;
 }

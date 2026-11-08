@@ -160,3 +160,7 @@ void test_trans_remove_of_unknown_package_does_not_corrupt_db(void);
 void test_run_script_strict_matches_run_script_when_isolated(void);
 void test_run_script_strict_refuses_when_isolation_is_denied(void);
 void test_trans_require_sandbox_controls_script_isolation(void);
+
+void test_trans_estimate_space_for_installs(void);
+void test_trans_estimate_space_counts_upgrade_backups(void);
+void test_trans_estimate_space_edge_cases(void);
