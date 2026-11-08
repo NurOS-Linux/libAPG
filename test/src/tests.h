@@ -187,3 +187,5 @@ void test_trans_commit_hooks_report_failures_and_skip_dry_runs(void);
 void test_audit_read_since_filters_by_timestamp(void);
 void test_audit_read_for_package_matches_exact_names(void);
 void test_audit_filters_on_database_without_journal(void);
+
+void test_db_get_providers_matches_names_and_provides(void);

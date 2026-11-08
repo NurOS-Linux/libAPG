@@ -543,3 +543,50 @@ test_db_orphans_transitive_handles_cycles_and_provides(void)
     printf("test_db_orphans_transitive_handles_cycles_and_provides: "
            "PASS\n");
 }
+
+void
+test_db_get_providers_matches_names_and_provides(void)
+{
+    char path[PATH_MAX];
+    struct db_handle *db = fs_open_db(path);
+    assert(db);
+
+    const char *postfix_provides[] = {"mail-server", "smtp"};
+    const char *exim_provides[] = {"mail-server"};
+    add_pkg(db, fs_make_package("postfix", "1", NULL, NULL, 0, postfix_provides,
+                                2, NULL, 0, true));
+    add_pkg(db, fs_make_package("exim", "1", NULL, NULL, 0, exim_provides, 1,
+                                NULL, 0, true));
+    add_pkg(db, fs_make_package("mail-server", "1", NULL, NULL, 0, NULL, 0,
+                                NULL, 0, true));
+    add_pkg(db, fs_make_package("nginx", "1", NULL, NULL, 0, NULL, 0, NULL, 0,
+                                true));
+
+    int count = 0;
+    char **res = db_get_providers(db, "mail-server", &count);
+    assert(count == 3);
+    assert(fs_has_name(res, count, "postfix"));
+    assert(fs_has_name(res, count, "exim"));
+    assert(fs_has_name(res, count, "mail-server"));
+    fs_free_names(res, count);
+
+    res = db_get_providers(db, "smtp", &count);
+    assert(count == 1 && strcmp(res[0], "postfix") == 0);
+    fs_free_names(res, count);
+
+    res = db_get_providers(db, "nginx", &count);
+    assert(count == 1 && strcmp(res[0], "nginx") == 0);
+    fs_free_names(res, count);
+
+    res = db_get_providers(db, "mail", &count);
+    assert(res == NULL && count == 0);
+    res = db_get_providers(db, "unknown", &count);
+    assert(res == NULL && count == 0);
+    res = db_get_providers(db, NULL, &count);
+    assert(res == NULL && count == 0);
+    res = db_get_providers(NULL, "smtp", &count);
+    assert(res == NULL && count == 0);
+
+    fs_close_db(db, path);
+    printf("test_db_get_providers_matches_names_and_provides: PASS\n");
+}

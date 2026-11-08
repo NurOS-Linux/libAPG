@@ -192,6 +192,8 @@ main(void)
     test_audit_read_for_package_matches_exact_names();
     test_audit_filters_on_database_without_journal();
 
-    printf("All 163 tests passed.\n");
+    test_db_get_providers_matches_names_and_provides();
+
+    printf("All 164 tests passed.\n");
     return 0;
 }
