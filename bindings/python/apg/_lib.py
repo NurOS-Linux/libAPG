@@ -236,6 +236,24 @@ db_verify = _sig(
     "db_verify", c_void_p, [c_void_p, c_char_p, ctypes.POINTER(c_int)]
 )
 db_verify_free = _sig("db_verify_free", None, [c_void_p, c_int])
+db_verify_against_archive = _sig(
+    "db_verify_against_archive",
+    c_bool,
+    [
+        c_void_p,
+        c_char_p,
+        c_char_p,
+        c_char_p,
+        ctypes.POINTER(c_void_p),
+        ctypes.POINTER(c_int),
+    ],
+)
+db_content_free = _sig("db_content_free", None, [c_void_p, c_int])
+db_content_issue_at = _sig(
+    "db_content_issue_at", c_void_p, [c_void_p, c_int, c_int]
+)
+db_content_issue_kind = _sig("db_content_issue_kind", c_int, [c_void_p])
+db_content_issue_path = _sig("db_content_issue_path", c_char_p, [c_void_p])
 db_check = _sig("db_check", c_void_p, [c_void_p, ctypes.POINTER(c_int)])
 db_check_free = _sig("db_check_free", None, [c_void_p, c_int])
 db_check_issue_at = _sig("db_check_issue_at", c_void_p, [c_void_p, c_int, c_int])

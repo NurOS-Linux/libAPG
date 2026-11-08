@@ -226,6 +226,15 @@ def test_audit_log(tmp_path):
     db.close()
 
 
+def test_verify_against_archive_errors(tmp_path):
+    with apg.Database.open(str(tmp_path)) as db:
+        with pytest.raises(apg.ApgError):
+            db.verify_against_archive(
+                "missing", str(tmp_path / "none.tar"), str(tmp_path)
+            )
+    assert apg.DbContentKind.MODE_CHANGED == 3
+
+
 def test_db_check(tmp_path):
     with apg.Database.open(str(tmp_path)) as db:
         pkg = make_pkg("checked")
