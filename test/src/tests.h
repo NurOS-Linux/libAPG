@@ -180,3 +180,6 @@ void test_package_list_files_edge_cases(void);
 
 void test_trans_step_required_by_follows_dependency_chain(void);
 void test_trans_step_required_by_is_unset_for_other_steps(void);
+
+void test_trans_commit_hooks_run_around_commit(void);
+void test_trans_commit_hooks_report_failures_and_skip_dry_runs(void);

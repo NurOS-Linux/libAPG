@@ -185,6 +185,9 @@ main(void)
     test_trans_step_required_by_follows_dependency_chain();
     test_trans_step_required_by_is_unset_for_other_steps();
 
-    printf("All 158 tests passed.\n");
+    test_trans_commit_hooks_run_around_commit();
+    test_trans_commit_hooks_report_failures_and_skip_dry_runs();
+
+    printf("All 160 tests passed.\n");
     return 0;
 }

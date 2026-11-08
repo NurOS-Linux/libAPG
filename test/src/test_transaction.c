@@ -481,3 +481,137 @@ test_trans_step_required_by_is_unset_for_other_steps(void)
     fs_close_db(db, path);
     printf("test_trans_step_required_by_is_unset_for_other_steps: PASS\n");
 }
+
+struct hook_log
+{
+    int events[16];
+    int count;
+    int plan_seen;
+    trans_error_t result;
+    void *userdata_seen;
+};
+
+enum
+{
+    EVENT_PRE = 1,
+    EVENT_STEP = 2,
+    EVENT_POST = 3,
+};
+
+static void
+log_pre(const struct apg_trans *trans, void *userdata)
+{
+    struct hook_log *log = userdata;
+    log->events[log->count++] = EVENT_PRE;
+    log->plan_seen = (int)trans_plan_count(trans);
+    log->userdata_seen = userdata;
+}
+
+static void
+log_step(const struct trans_step *step, size_t index, size_t total,
+         void *userdata)
+{
+    (void)step;
+    (void)index;
+    (void)total;
+    struct hook_log *log = userdata;
+    log->events[log->count++] = EVENT_STEP;
+}
+
+static void
+log_post(const struct apg_trans *trans, trans_error_t result, void *userdata)
+{
+    (void)trans;
+    struct hook_log *log = userdata;
+    log->events[log->count++] = EVENT_POST;
+    log->result = result;
+}
+
+void
+test_trans_commit_hooks_run_around_commit(void)
+{
+    char path[PATH_MAX];
+    struct db_handle *db = fs_open_db(path);
+    assert(db);
+    char *root = fs_mktmp("hooks-root");
+
+    store(db, plain("first", "1.0"));
+    store(db, plain("second", "1.0"));
+
+    struct hook_log log = {0};
+    struct apg_trans *trans = trans_new(db);
+    trans_set_commit_hooks(trans, log_pre, log_post, &log);
+    trans_set_progress_cb(trans, log_step, &log);
+    assert(trans_add_remove(trans, "first") == TRANS_OK);
+    assert(trans_add_remove(trans, "second") == TRANS_OK);
+
+    assert(trans_commit(trans, root) == TRANS_ERR_NOT_PREPARED);
+    assert(log.count == 0);
+
+    assert(trans_prepare(trans) == TRANS_OK);
+    assert(trans_commit(trans, root) == TRANS_OK);
+    assert(log.count == 4);
+    assert(log.events[0] == EVENT_PRE);
+    assert(log.events[1] == EVENT_STEP && log.events[2] == EVENT_STEP);
+    assert(log.events[3] == EVENT_POST);
+    assert(log.result == TRANS_OK);
+    assert(log.plan_seen == 2);
+    assert(log.userdata_seen == &log);
+
+    assert(trans_commit(trans, root) == TRANS_ERR_ALREADY_COMMITTED);
+    assert(log.count == 4);
+    assert(db_get(db, "first") == NULL);
+
+    trans_free(trans);
+    fs_rmtree(root);
+    free(root);
+    fs_close_db(db, path);
+    printf("test_trans_commit_hooks_run_around_commit: PASS\n");
+}
+
+void
+test_trans_commit_hooks_report_failures_and_skip_dry_runs(void)
+{
+    char path[PATH_MAX];
+    struct db_handle *db = fs_open_db(path);
+    assert(db);
+
+    struct package *unsigned_pkg = plain("unsigned", "1.0");
+    struct hook_log log = {0};
+    struct apg_trans *trans = trans_new(db);
+    trans_set_commit_hooks(trans, log_pre, log_post, &log);
+    assert(trans_add_install(trans, unsigned_pkg) == TRANS_OK);
+    assert(trans_prepare(trans) == TRANS_OK);
+
+    install_policy policy = {.require_signature = true,
+                             .keyring_dir = "/nonexistent/keys"};
+    trans_set_policy(trans, &policy);
+
+    trans_set_dry_run(trans, true);
+    assert(trans_commit(trans, "/tmp") == TRANS_ERR_UNSIGNED);
+    assert(log.count == 0);
+
+    trans_set_dry_run(trans, false);
+    assert(trans_commit(trans, "/tmp") == TRANS_ERR_UNSIGNED);
+    assert(log.count == 2);
+    assert(log.events[0] == EVENT_PRE && log.events[1] == EVENT_POST);
+    assert(log.result == TRANS_ERR_UNSIGNED);
+
+    trans_set_commit_hooks(trans, NULL, log_post, &log);
+    assert(trans_commit(trans, "/tmp") == TRANS_ERR_UNSIGNED);
+    assert(log.count == 3 && log.events[2] == EVENT_POST);
+
+    trans_set_commit_hooks(trans, log_pre, NULL, &log);
+    assert(trans_commit(trans, "/tmp") == TRANS_ERR_UNSIGNED);
+    assert(log.count == 4 && log.events[3] == EVENT_PRE);
+
+    trans_set_commit_hooks(trans, NULL, NULL, NULL);
+    assert(trans_commit(trans, "/tmp") == TRANS_ERR_UNSIGNED);
+    assert(log.count == 4);
+
+    trans_set_commit_hooks(NULL, log_pre, log_post, &log);
+    trans_free(trans);
+    package_free(unsigned_pkg);
+    fs_close_db(db, path);
+    printf("test_trans_commit_hooks_report_failures_and_skip_dry_runs: PASS\n");
+}
