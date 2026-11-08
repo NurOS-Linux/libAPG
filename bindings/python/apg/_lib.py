@@ -212,6 +212,11 @@ db_get_orphans = _sig(
     ctypes.POINTER(c_void_p),
     [c_void_p, ctypes.POINTER(c_int)],
 )
+db_get_orphans_transitive = _sig(
+    "db_get_orphans_transitive",
+    ctypes.POINTER(c_void_p),
+    [c_void_p, ctypes.POINTER(c_int)],
+)
 db_search = _sig(
     "db_search",
     ctypes.POINTER(PackagePtr),
@@ -219,6 +224,11 @@ db_search = _sig(
 )
 db_get_dependents = _sig(
     "db_get_dependents",
+    ctypes.POINTER(c_void_p),
+    [c_void_p, c_char_p, ctypes.POINTER(c_int)],
+)
+db_get_dependents_transitive = _sig(
+    "db_get_dependents_transitive",
     ctypes.POINTER(c_void_p),
     [c_void_p, c_char_p, ctypes.POINTER(c_int)],
 )

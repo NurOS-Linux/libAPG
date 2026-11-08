@@ -90,6 +90,13 @@ class Database:
             return []
         return take_str_array(raw, count.value)
 
+    def get_orphans_transitive(self):
+        count = _lib.c_int(0)
+        raw = _lib.db_get_orphans_transitive(self._ptr, ctypes.byref(count))
+        if not raw:
+            return []
+        return take_str_array(raw, count.value)
+
     def search(self, query):
         count = _lib.c_int(0)
         raw = _lib.db_search(
@@ -106,6 +113,15 @@ class Database:
     def get_dependents(self, pkg_name):
         count = _lib.c_int(0)
         raw = _lib.db_get_dependents(
+            self._ptr, pkg_name.encode(), ctypes.byref(count)
+        )
+        if not raw:
+            return []
+        return take_str_array(raw, count.value)
+
+    def get_dependents_transitive(self, pkg_name):
+        count = _lib.c_int(0)
+        raw = _lib.db_get_dependents_transitive(
             self._ptr, pkg_name.encode(), ctypes.byref(count)
         )
         if not raw:

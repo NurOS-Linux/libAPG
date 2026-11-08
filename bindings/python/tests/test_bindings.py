@@ -219,3 +219,25 @@ def test_audit_log(tmp_path):
     trans.close()
     pkg.close()
     db.close()
+
+
+def test_transitive_dependents_and_orphans(tmp_path):
+    with apg.Database.open(str(tmp_path)) as db:
+        core = make_pkg("core")
+        lib = make_pkg("lib")
+        lib.metadata.set_dependencies([apg.dep_constraint_parse("core")])
+        app = make_pkg("app")
+        app.metadata.set_dependencies([apg.dep_constraint_parse("lib")])
+        app.installed_by_hand = True
+        for pkg in (core, lib, app):
+            assert db.add(pkg)
+        assert db.set_installed_by_hand("core", False)
+        assert db.set_installed_by_hand("lib", False)
+
+        assert sorted(db.get_dependents_transitive("core")) == ["app", "lib"]
+        assert db.get_dependents("core") == ["lib"]
+        assert db.get_orphans_transitive() == []
+
+        assert db.remove("app")
+        assert db.get_orphans() == ["lib"]
+        assert sorted(db.get_orphans_transitive()) == ["core", "lib"]
