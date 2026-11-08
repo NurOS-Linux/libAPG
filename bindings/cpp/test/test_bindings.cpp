@@ -78,6 +78,8 @@ test_database_roundtrip()
     assert(db.set_hold("cppxx-pkg", true));
     assert(db.set_installed_by_hand("cppxx-pkg", false));
 
+    assert(db.check().empty());
+
     apg::DbStats stats = db.stats();
     assert(stats.package_count >= 1);
 

@@ -25,6 +25,14 @@ struct DbVerifyIssue
     std::vector<std::string> missing_files;
 };
 
+struct DbCheckIssue
+{
+    db_check_kind_t kind;
+    std::string pkg_name;
+    std::string path;
+    std::string other;
+};
+
 class Database
 {
   public:
@@ -181,6 +189,29 @@ class Database
             result.push_back(std::move(out));
         }
         ::db_verify_free(issues, count);
+        return result;
+    }
+
+    std::vector<DbCheckIssue>
+    check()
+    {
+        int count = 0;
+        struct db_check_issue *issues = ::db_check(db_.get(), &count);
+
+        auto text = [](const char *s)
+        { return s ? std::string(s) : std::string(); };
+        std::vector<DbCheckIssue> result;
+        result.reserve(static_cast<std::size_t>(count));
+        for (int i = 0; i < count; ++i)
+        {
+            const struct db_check_issue *issue =
+                ::db_check_issue_at(issues, count, i);
+            result.push_back({::db_check_issue_kind(issue),
+                              text(::db_check_issue_pkg_name(issue)),
+                              text(::db_check_issue_path(issue)),
+                              text(::db_check_issue_other(issue))});
+        }
+        ::db_check_free(issues, count);
         return result;
     }
 
