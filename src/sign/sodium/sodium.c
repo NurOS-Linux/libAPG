@@ -10,104 +10,75 @@
 
 static const char *key_path = APG_KEYS_DIR "/";
 
-// libsodium uses Ed25519, which is ECC. allow_rsa has no effect here but is
-// kept for interface compatibility.
-bool
-sign_verify(const char *pkg_path, const char *sig_path, bool allow_rsa)
+static bool
+read_exact(const char *path, unsigned char *out, size_t len)
 {
-    (void)allow_rsa;
-
-    if (sodium_init() < 0)
+    FILE *f = fopen(path, "rb");
+    if (!f)
         return false;
+    bool ok = fread(out, 1, len, f) == len;
+    (void)fclose(f);
+    return ok;
+}
 
-    FILE *sig_f = fopen(sig_path, "rb");
-    if (!sig_f)
-        return false;
-
-    unsigned char signature[crypto_sign_BYTES];
-    if (fread(signature, 1, crypto_sign_BYTES, sig_f) != crypto_sign_BYTES)
-    {
-        (void)fclose(sig_f);
-        return false;
-    }
-    (void)fclose(sig_f);
-
-    char key_file[PATH_MAX];
-    (void)snprintf(key_file, sizeof(key_file), "%spublic.key", key_path);
-
-    FILE *key_f = fopen(key_file, "rb");
-    if (!key_f)
-        return false;
-
-    unsigned char public_key[crypto_sign_PUBLICKEYBYTES];
-    if (fread(public_key, 1, crypto_sign_PUBLICKEYBYTES, key_f) !=
-        crypto_sign_PUBLICKEYBYTES)
-    {
-        (void)fclose(key_f);
-        return false;
-    }
-    (void)fclose(key_f);
-
-    crypto_sign_state state;
-    crypto_sign_init(&state);
-
-    FILE *pkg_f = fopen(pkg_path, "rb");
-    if (!pkg_f)
+static bool
+hash_file(const char *path, crypto_sign_state *state)
+{
+    FILE *f = fopen(path, "rb");
+    if (!f)
         return false;
 
     unsigned char buffer[4096];
     size_t bytes_read;
-    while ((bytes_read = fread(buffer, 1, sizeof(buffer), pkg_f)) > 0)
-        crypto_sign_update(&state, buffer, bytes_read);
-    if (ferror(pkg_f))
-    {
-        (void)fclose(pkg_f);
+    while ((bytes_read = fread(buffer, 1, sizeof(buffer), f)) > 0)
+        crypto_sign_update(state, buffer, bytes_read);
+    bool ok = !ferror(f);
+    (void)fclose(f);
+    return ok;
+}
+
+bool
+sign_verify_with_key(const char *pkg_path, const char *sig_path,
+                     const char *public_key_path)
+{
+    if (!pkg_path || !sig_path || !public_key_path)
         return false;
-    }
-    (void)fclose(pkg_f);
+    if (sodium_init() < 0)
+        return false;
+
+    unsigned char signature[crypto_sign_BYTES];
+    if (!read_exact(sig_path, signature, sizeof(signature)))
+        return false;
+
+    unsigned char public_key[crypto_sign_PUBLICKEYBYTES];
+    if (!read_exact(public_key_path, public_key, sizeof(public_key)))
+        return false;
+
+    crypto_sign_state state;
+    crypto_sign_init(&state);
+    if (!hash_file(pkg_path, &state))
+        return false;
 
     return crypto_sign_final_verify(&state, signature, public_key) == 0;
 }
 
 bool
-sign_file(const char *pkg_path, const char *sig_path)
+sign_file_with_key(const char *pkg_path, const char *sig_path,
+                   const char *secret_key_path)
 {
+    if (!pkg_path || !sig_path || !secret_key_path)
+        return false;
     if (sodium_init() < 0)
         return false;
 
-    char key_file[PATH_MAX];
-    (void)snprintf(key_file, sizeof(key_file), "%ssecret.key", key_path);
-
-    FILE *key_f = fopen(key_file, "rb");
-    if (!key_f)
-        return false;
-
     unsigned char secret_key[crypto_sign_SECRETKEYBYTES];
-    if (fread(secret_key, 1, crypto_sign_SECRETKEYBYTES, key_f) !=
-        crypto_sign_SECRETKEYBYTES)
-    {
-        (void)fclose(key_f);
+    if (!read_exact(secret_key_path, secret_key, sizeof(secret_key)))
         return false;
-    }
-    (void)fclose(key_f);
 
     crypto_sign_state state;
     crypto_sign_init(&state);
-
-    FILE *pkg_f = fopen(pkg_path, "rb");
-    if (!pkg_f)
+    if (!hash_file(pkg_path, &state))
         return false;
-
-    unsigned char buffer[4096];
-    size_t bytes_read;
-    while ((bytes_read = fread(buffer, 1, sizeof(buffer), pkg_f)) > 0)
-        crypto_sign_update(&state, buffer, bytes_read);
-    if (ferror(pkg_f))
-    {
-        (void)fclose(pkg_f);
-        return false;
-    }
-    (void)fclose(pkg_f);
 
     unsigned char signature[crypto_sign_BYTES];
     if (crypto_sign_final_create(&state, signature, NULL, secret_key) != 0)
@@ -122,4 +93,24 @@ sign_file(const char *pkg_path, const char *sig_path)
     if (fclose(sig_f) != 0)
         ok = false;
     return ok;
+}
+
+// libsodium uses Ed25519, which is ECC. allow_rsa has no effect here but is
+// kept for interface compatibility.
+bool
+sign_verify(const char *pkg_path, const char *sig_path, bool allow_rsa)
+{
+    (void)allow_rsa;
+
+    char key_file[PATH_MAX];
+    (void)snprintf(key_file, sizeof(key_file), "%spublic.key", key_path);
+    return sign_verify_with_key(pkg_path, sig_path, key_file);
+}
+
+bool
+sign_file(const char *pkg_path, const char *sig_path)
+{
+    char key_file[PATH_MAX];
+    (void)snprintf(key_file, sizeof(key_file), "%ssecret.key", key_path);
+    return sign_file_with_key(pkg_path, sig_path, key_file);
 }
