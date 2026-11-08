@@ -3,12 +3,14 @@
 
 #include <assert.h>
 #include <lmdb.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
 
+#include <apg/audit.h>
 #include <apg/db.h>
 #include <apg/journal.h>
 #include <apg/package.h>
@@ -275,4 +277,132 @@ test_journal_removing_missing_package_is_not_recorded_as_ok(void)
     fs_rmtree(path);
     printf("test_journal_removing_missing_package_is_not_recorded_as_ok: "
            "PASS\n");
+}
+
+static void
+put_journal_record(MDB_txn *txn, MDB_dbi dbi, uint64_t ts, uint32_t seq,
+                   const char *value)
+{
+    unsigned char key[12];
+    for (int i = 0; i < 8; i++)
+        key[i] = (unsigned char)(ts >> (56 - 8 * i));
+    for (int i = 0; i < 4; i++)
+        key[8 + i] = (unsigned char)(seq >> (24 - 8 * i));
+    MDB_val k = {sizeof(key), key};
+    MDB_val v = {strlen(value), (void *)value};
+    assert(mdb_put(txn, dbi, &k, &v, 0) == MDB_SUCCESS);
+}
+
+static struct db_handle *
+db_with_dated_journal(char *path)
+{
+    struct db_handle *db = fs_open_db(path);
+    assert(db);
+    db_close(db);
+
+    MDB_env *env = open_env(path);
+    MDB_txn *txn;
+    MDB_dbi dbi;
+    assert(mdb_txn_begin(env, NULL, 0, &txn) == MDB_SUCCESS);
+    assert(mdb_dbi_open(txn, "journal", MDB_CREATE, &dbi) == MDB_SUCCESS);
+    put_journal_record(txn, dbi, 100, 0, "install|alpha|1.0|ok|0|1");
+    put_journal_record(txn, dbi, 200, 1, "install|beta|2.0|ok|0|1");
+    put_journal_record(txn, dbi, 300, 2, "remove|alpha|1.0|ok|0|1");
+    put_journal_record(txn, dbi, 400, 3, "install|alphabet|3.0|ok|0|1");
+    put_journal_record(txn, dbi, 500, 4, "install|-|-|failed|0|1");
+    assert(mdb_txn_commit(txn) == MDB_SUCCESS);
+    mdb_env_close(env);
+
+    db = db_open(path);
+    assert(db);
+    return db;
+}
+
+void
+test_audit_read_since_filters_by_timestamp(void)
+{
+    char path[PATH_MAX];
+    struct db_handle *db = db_with_dated_journal(path);
+
+    int count = 0;
+    struct journal_entry **all = audit_read_since(db, 0, &count);
+    assert(all && count == 5);
+    journal_free_all(all, count);
+
+    struct journal_entry **list = audit_read_since(db, 200, &count);
+    assert(list && count == 4);
+    assert(journal_entry_timestamp(list[0]) == 200);
+    assert(strcmp(journal_entry_pkg_name(list[0]), "beta") == 0);
+    assert(journal_entry_timestamp(list[3]) == 500);
+    journal_free_all(list, count);
+
+    list = audit_read_since(db, 201, &count);
+    assert(list && count == 3);
+    assert(journal_entry_timestamp(list[0]) == 300);
+    journal_free_all(list, count);
+
+    list = audit_read_since(db, 501, &count);
+    assert(list == NULL && count == 0);
+
+    assert(audit_read_since(NULL, 0, &count) == NULL && count == 0);
+    assert(audit_read_since(db, 0, NULL) == NULL);
+
+    fs_close_db(db, path);
+    printf("test_audit_read_since_filters_by_timestamp: PASS\n");
+}
+
+void
+test_audit_read_for_package_matches_exact_names(void)
+{
+    char path[PATH_MAX];
+    struct db_handle *db = db_with_dated_journal(path);
+
+    int count = 0;
+    struct journal_entry **list = audit_read_for_package(db, "alpha", &count);
+    assert(list && count == 2);
+    assert(journal_entry_op(list[0]) == JOURNAL_INSTALL);
+    assert(journal_entry_timestamp(list[0]) == 100);
+    assert(journal_entry_op(list[1]) == JOURNAL_REMOVE);
+    assert(journal_entry_timestamp(list[1]) == 300);
+    journal_free_all(list, count);
+
+    list = audit_read_for_package(db, "alphabet", &count);
+    assert(list && count == 1);
+    assert(strcmp(journal_entry_pkg_version(list[0]), "3.0") == 0);
+    journal_free_all(list, count);
+
+    list = audit_read_for_package(db, "-", &count);
+    assert(list == NULL && count == 0);
+    list = audit_read_for_package(db, "unknown", &count);
+    assert(list == NULL && count == 0);
+    list = audit_read_for_package(db, NULL, &count);
+    assert(list == NULL && count == 0);
+    assert(audit_read_for_package(NULL, "alpha", &count) == NULL && count == 0);
+
+    db_close(db);
+    db = db_open_readonly(path);
+    assert(db);
+    list = audit_read_for_package(db, "beta", &count);
+    assert(list && count == 1);
+    journal_free_all(list, count);
+
+    fs_close_db(db, path);
+    printf("test_audit_read_for_package_matches_exact_names: PASS\n");
+}
+
+void
+test_audit_filters_on_database_without_journal(void)
+{
+    char path[PATH_MAX];
+    struct db_handle *db = fs_open_db(path);
+    assert(db);
+
+    int count = -1;
+    assert(audit_read_since(db, 0, &count) == NULL && count == 0);
+    count = -1;
+    assert(audit_read_for_package(db, "anything", &count) == NULL &&
+           count == 0);
+
+    fs_close_db(db, path);
+    printf("test_audit_filters_on_database_without_journal: PASS\n");
 }

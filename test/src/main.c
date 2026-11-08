@@ -188,6 +188,10 @@ main(void)
     test_trans_commit_hooks_run_around_commit();
     test_trans_commit_hooks_report_failures_and_skip_dry_runs();
 
-    printf("All 160 tests passed.\n");
+    test_audit_read_since_filters_by_timestamp();
+    test_audit_read_for_package_matches_exact_names();
+    test_audit_filters_on_database_without_journal();
+
+    printf("All 163 tests passed.\n");
     return 0;
 }

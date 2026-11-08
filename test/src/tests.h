@@ -183,3 +183,7 @@ void test_trans_step_required_by_is_unset_for_other_steps(void);
 
 void test_trans_commit_hooks_run_around_commit(void);
 void test_trans_commit_hooks_report_failures_and_skip_dry_runs(void);
+
+void test_audit_read_since_filters_by_timestamp(void);
+void test_audit_read_for_package_matches_exact_names(void);
+void test_audit_filters_on_database_without_journal(void);
