@@ -47,6 +47,27 @@ extern "C"
                             const char *root_path);
 
     /**
+     * @brief Run a lifecycle script, refusing to run it without namespace
+     *        isolation.
+     *
+     * Behaves like run_script(), except that failing to set up the
+     * namespaces is an error: the script is not executed and the call
+     * returns false, with apg_last_error() describing the cause. This
+     * includes the cases where run_script() silently continues (@c EPERM or
+     * @c EINVAL from @c unshare(), for example when unprivileged user
+     * namespaces are disabled). On systems other than Linux no namespace
+     * isolation exists, so a script that is present is never run. A missing
+     * script, as for run_script(), is not an error.
+     *
+     * @param pkg_dir   Path to the extracted package directory.
+     * @param name      Script filename (without path) to execute.
+     * @param root_path Target filesystem root path, or NULL/"/" for live root.
+     * @return true if the script succeeded or does not exist, false otherwise.
+     */
+    APG_API bool run_script_strict(const char *pkg_dir, const char *name,
+                                   const char *root_path);
+
+    /**
      * @brief Compute the persistent storage path for a package's scripts/
      *        directory.
      *

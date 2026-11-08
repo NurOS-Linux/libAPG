@@ -25,6 +25,7 @@
 #include "../../include/apg/copy.h"
 #include "../../include/apg/util.h"
 #include "../error_priv.h"
+#include "../script_priv.h"
 
 #ifndef PATH_MAX
 #define PATH_MAX 4096
@@ -45,9 +46,35 @@ normalize(const char *src, char *dst, size_t dst_size)
 
 static _Atomic uint64_t g_script_seq = 0;
 
-static bool
-exec_script(const char *path, const char *name, const char *root_path)
+#ifdef __linux__
+enum child_stage
 {
+    STAGE_UNSHARE,
+    STAGE_CHROOT,
+    STAGE_EXEC,
+};
+
+struct child_failure
+{
+    int stage;
+    int err;
+};
+#endif
+
+static bool
+exec_script(const char *path, const char *name, const char *root_path,
+            bool strict)
+{
+#ifndef __linux__
+    if (strict)
+    {
+        apg_set_error("%s script was not run: namespace isolation is not "
+                      "available on this platform",
+                      name);
+        return false;
+    }
+#endif
+
     bool do_chroot = (root_path != NULL && strcmp(root_path, "/") != 0 &&
                       *root_path != '\0');
     char *exec_path = NULL;
@@ -148,37 +175,38 @@ exec_script(const char *path, const char *name, const char *root_path)
     {
         close(pipefd[0]);
 
+        struct child_failure failure = {STAGE_UNSHARE, 0};
         if (unshare(CLONE_NEWUSER | CLONE_NEWNET | CLONE_NEWNS | CLONE_NEWUTS |
-                    CLONE_NEWIPC) < 0)
+                    CLONE_NEWIPC) < 0 &&
+            (strict || (errno != EPERM && errno != EINVAL)))
         {
-            if (errno != EPERM && errno != EINVAL)
-            {
-                int err = errno;
-                (void)write(pipefd[1], &err, sizeof(err));
-                close(pipefd[1]);
-                _exit(1);
-            }
+            failure.err = errno;
+            (void)write(pipefd[1], &failure, sizeof(failure));
+            close(pipefd[1]);
+            _exit(1);
         }
 
         if (do_chroot && (chroot(root_path) < 0 || chdir("/") < 0))
         {
-            int err = errno;
-            (void)write(pipefd[1], &err, sizeof(err));
+            failure.stage = STAGE_CHROOT;
+            failure.err = errno;
+            (void)write(pipefd[1], &failure, sizeof(failure));
             close(pipefd[1]);
             _exit(1);
         }
 
         (void)fcntl(pipefd[1], F_SETFD, FD_CLOEXEC);
         execl("/bin/sh", "sh", exec_path, (char *)NULL);
-        int err = errno;
-        (void)write(pipefd[1], &err, sizeof(err));
+        failure.stage = STAGE_EXEC;
+        failure.err = errno;
+        (void)write(pipefd[1], &failure, sizeof(failure));
         close(pipefd[1]);
         _exit(1);
     }
 
     close(pipefd[1]);
-    int child_err = 0;
-    ssize_t n = read(pipefd[0], &child_err, sizeof(child_err));
+    struct child_failure child_failure = {STAGE_EXEC, 0};
+    ssize_t n = read(pipefd[0], &child_failure, sizeof(child_failure));
     close(pipefd[0]);
 
     bool success = false;
@@ -195,8 +223,12 @@ exec_script(const char *path, const char *name, const char *root_path)
     }
     else if (n > 0)
     {
-        apg_set_error("%s script could not be started: %s", name,
-                      strerror(child_err));
+        if (strict && child_failure.stage == STAGE_UNSHARE)
+            apg_set_error("%s script was not run: cannot isolate it: %s", name,
+                          strerror(child_failure.err));
+        else
+            apg_set_error("%s script could not be started: %s", name,
+                          strerror(child_failure.err));
         waitpid(pid, NULL, 0);
     }
 
@@ -294,7 +326,8 @@ exec_script(const char *path, const char *name, const char *root_path)
 }
 
 bool
-run_script(const char *pkg_dir, const char *name, const char *root_path)
+apg_run_script(const char *pkg_dir, const char *name, const char *root_path,
+               bool strict)
 {
     char *scripts_dir = concat_dirs(pkg_dir, "scripts");
     if (!scripts_dir)
@@ -340,9 +373,21 @@ run_script(const char *pkg_dir, const char *name, const char *root_path)
         return true;
     }
 
-    bool ok = exec_script(found, name, root_path);
+    bool ok = exec_script(found, name, root_path, strict);
     free(found);
     return ok;
+}
+
+bool
+run_script(const char *pkg_dir, const char *name, const char *root_path)
+{
+    return apg_run_script(pkg_dir, name, root_path, false);
+}
+
+bool
+run_script_strict(const char *pkg_dir, const char *name, const char *root_path)
+{
+    return apg_run_script(pkg_dir, name, root_path, true);
 }
 
 static void
