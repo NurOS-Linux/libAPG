@@ -176,3 +176,5 @@ void test_package_list_files_edge_cases(void);
 
 void test_parse_package_and_collect_files_do_not_extract(void);
 void test_parse_package_reports_unreadable_archives(void);
+void test_db_record_and_journal_share_one_commit(void);
+void test_trans_commit_uses_one_commit_per_step(void);

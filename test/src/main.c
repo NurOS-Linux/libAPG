@@ -181,6 +181,10 @@ main(void)
     test_parse_package_and_collect_files_do_not_extract();
     test_parse_package_reports_unreadable_archives();
 
-    printf("All 155 tests passed.\n");
+    test_db_record_and_journal_share_one_commit();
+
+    test_trans_commit_uses_one_commit_per_step();
+
+    printf("All 157 tests passed.\n");
     return 0;
 }

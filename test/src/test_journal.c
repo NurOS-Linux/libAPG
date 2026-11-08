@@ -12,6 +12,7 @@
 #include <apg/db.h>
 #include <apg/journal.h>
 #include <apg/package.h>
+#include <apg/transaction.h>
 
 #include "fs_helpers.h"
 
@@ -275,4 +276,184 @@ test_journal_removing_missing_package_is_not_recorded_as_ok(void)
     fs_rmtree(path);
     printf("test_journal_removing_missing_package_is_not_recorded_as_ok: "
            "PASS\n");
+}
+
+static size_t
+last_txnid(const char *path)
+{
+    MDB_env *env = NULL;
+    assert(mdb_env_create(&env) == MDB_SUCCESS);
+    assert(mdb_env_set_maxdbs(env, 4) == MDB_SUCCESS);
+    assert(mdb_env_open(env, path, MDB_RDONLY, 0644) == MDB_SUCCESS);
+    MDB_envinfo info;
+    assert(mdb_env_info(env, &info) == MDB_SUCCESS);
+    mdb_env_close(env);
+    return info.me_last_txnid;
+}
+
+void
+test_db_record_and_journal_share_one_commit(void)
+{
+    char path[PATH_MAX];
+    struct db_handle *db = fs_open_db(path);
+    assert(db);
+    db_close(db);
+    size_t base = last_txnid(path);
+
+    db = db_open(path);
+    db_close(db);
+    assert(last_txnid(path) == base);
+
+    db = db_open(path);
+    struct package *pkg = fs_make_package("one-commit", "1.0", NULL, NULL, 0,
+                                          NULL, 0, NULL, 0, true);
+    assert(db_add(db, pkg));
+    db_close(db);
+    size_t after_add = last_txnid(path);
+    assert(after_add == base + 1);
+
+    db = db_open(path);
+    assert(db_set_hold(db, "one-commit", true));
+    db_close(db);
+    size_t after_hold = last_txnid(path);
+    assert(after_hold == after_add + 1);
+
+    db = db_open(path);
+    assert(db_remove(db, "one-commit"));
+    db_close(db);
+    size_t after_remove = last_txnid(path);
+    assert(after_remove == after_hold + 1);
+
+    db = db_open(path);
+    assert(!db_remove(db, "one-commit"));
+    db_close(db);
+    assert(last_txnid(path) == after_remove + 1);
+
+    package_free(pkg);
+
+    MDB_env *env = open_env(path);
+    int count = 0;
+    struct journal_entry **list = journal_read_all(env, &count);
+    assert(list && count == 3);
+    assert(journal_entry_op(list[0]) == JOURNAL_INSTALL);
+    assert(journal_entry_status(list[0]) == JOURNAL_STATUS_OK);
+    assert(strcmp(journal_entry_pkg_version(list[0]), "1.0") == 0);
+    assert(journal_entry_op(list[1]) == JOURNAL_REMOVE);
+    assert(journal_entry_status(list[1]) == JOURNAL_STATUS_OK);
+    assert(strcmp(journal_entry_pkg_version(list[1]), "1.0") == 0);
+    assert(journal_entry_op(list[2]) == JOURNAL_REMOVE);
+    assert(journal_entry_status(list[2]) == JOURNAL_STATUS_FAILED);
+    journal_free_all(list, count);
+    mdb_env_close(env);
+
+    fs_rmtree(path);
+    printf("test_db_record_and_journal_share_one_commit: PASS\n");
+}
+
+static char *
+build_plain_archive(const char *name)
+{
+    char *src = fs_mktmp("commit-count-src");
+    char *data = fs_join(src, "data/usr/share");
+    fs_mkdir_p(data);
+    char *meta = fs_join(src, "metadata.json");
+    char json[256];
+    snprintf(json, sizeof(json),
+             "{\"name\": \"%s\", \"version\": \"1.0.0\", \"type\": \"app\"}",
+             name);
+    fs_write(meta, json);
+    char *file = fs_join(data, "payload");
+    fs_write(file, "payload");
+
+    char *archive = fs_join(src, "pkg.tar.gz");
+    char cmd[PATH_MAX * 2];
+    snprintf(cmd, sizeof(cmd), "tar -czf '%s' -C '%s' metadata.json data",
+             archive, src);
+    assert(system(cmd) == 0);
+
+    free(data);
+    free(meta);
+    free(file);
+    free(src);
+    return archive;
+}
+
+void
+test_trans_commit_uses_one_commit_per_step(void)
+{
+    char path[PATH_MAX];
+    struct db_handle *db = fs_open_db(path);
+    assert(db);
+    char *root = fs_mktmp("commit-count-root");
+    char *archive = build_plain_archive("counted");
+
+    for (int i = 0; i < 3; i++)
+    {
+        char name[16];
+        snprintf(name, sizeof(name), "old%d", i);
+        struct package *pkg =
+            fs_make_package(name, "1.0", NULL, NULL, 0, NULL, 0, NULL, 0, true);
+        assert(db_add(db, pkg));
+        package_free(pkg);
+    }
+    db_close(db);
+    size_t base = last_txnid(path);
+
+    db = db_open(path);
+    struct apg_trans *trans = trans_new(db);
+    for (int i = 0; i < 3; i++)
+    {
+        char name[16];
+        snprintf(name, sizeof(name), "old%d", i);
+        assert(trans_add_remove(trans, name) == TRANS_OK);
+    }
+    assert(trans_prepare(trans) == TRANS_OK);
+    assert(trans_commit(trans, root) == TRANS_OK);
+    trans_free(trans);
+    db_close(db);
+    size_t after_removals = last_txnid(path);
+    assert(after_removals == base + 3);
+
+    db = db_open(path);
+    struct package *pkg = parse_package(archive, root);
+    assert(pkg);
+    trans = trans_new(db);
+    assert(trans_add_install(trans, pkg) == TRANS_OK);
+    assert(trans_prepare(trans) == TRANS_OK);
+    assert(trans_commit(trans, root) == TRANS_OK);
+    trans_free(trans);
+    package_free(pkg);
+    db_close(db);
+    assert(last_txnid(path) == after_removals + 1);
+
+    MDB_env *env = open_env(path);
+    int count = 0;
+    struct journal_entry **list = journal_read_all(env, &count);
+    assert(list && count == 3 + 3 + 1);
+    int removals_ok = 0;
+    int installs_ok = 0;
+    for (int i = 0; i < count; i++)
+    {
+        if (journal_entry_status(list[i]) != JOURNAL_STATUS_OK)
+            continue;
+        if (journal_entry_op(list[i]) == JOURNAL_REMOVE &&
+            journal_entry_explicit(list[i]))
+            removals_ok++;
+        if (journal_entry_op(list[i]) == JOURNAL_INSTALL &&
+            strcmp(journal_entry_pkg_name(list[i]), "counted") == 0 &&
+            journal_entry_explicit(list[i]))
+            installs_ok++;
+    }
+    assert(removals_ok == 3 && installs_ok == 1);
+    journal_free_all(list, count);
+    mdb_env_close(env);
+
+    char *slash = strrchr(archive, '/');
+    *slash = '\0';
+    fs_rmtree(archive);
+    free(archive);
+    fs_rmtree(root);
+    free(root);
+    fs_rmtree(path);
+    printf("test_trans_commit_uses_one_commit_per_step: PASS\n");
 }
