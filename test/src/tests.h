@@ -133,6 +133,7 @@ void test_keyring_verify_large_and_empty_packages(void);
 void test_keyring_add_key_requires_endorsement(void);
 void test_keyring_add_key_with_any_filename_is_loadable(void);
 void test_sign_file_and_verify_roundtrip(void);
+void test_sign_with_key_roundtrip_and_failures(void);
 
 void test_journal_read_without_journal_is_empty(void);
 void test_journal_write_read_roundtrip(void);

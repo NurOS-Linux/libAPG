@@ -385,6 +385,7 @@ test_sign_file_and_verify_roundtrip(void)
     assert(sign_file(pkg, sig));
     assert(sign_verify(pkg, sig, false));
     assert(sign_verify(pkg, sig, true));
+    assert(sign_verify_with_key(pkg, sig, pub));
 
     char *kdir = make_keyring_dir(&kp, 1);
     struct keyring *kr = keyring_load(kdir);
@@ -428,4 +429,85 @@ test_sign_file_and_verify_roundtrip(void)
     free(work);
     free(kdir);
     printf("test_sign_file_and_verify_roundtrip: PASS\n");
+}
+
+void
+test_sign_with_key_roundtrip_and_failures(void)
+{
+    assert(sodium_init() >= 0);
+    struct keypair kp, other;
+    crypto_sign_keypair(kp.pk, kp.sk);
+    crypto_sign_keypair(other.pk, other.sk);
+
+    char *work = fs_mktmp("sign-key");
+    char *pub = fs_join(work, "public.key");
+    char *sec = fs_join(work, "secret.key");
+    char *other_pub = fs_join(work, "other-public.key");
+    char *pkg = fs_join(work, "pkg.bin");
+    char *sig = fs_join(work, "pkg.sig");
+    char *expected = fs_join(work, "expected.sig");
+    write_bytes(pub, kp.pk, sizeof(kp.pk));
+    write_bytes(sec, kp.sk, sizeof(kp.sk));
+    write_bytes(other_pub, other.pk, sizeof(other.pk));
+    fs_write(pkg, "content signed with explicit keys");
+
+    assert(sign_file_with_key(pkg, sig, sec));
+    assert(sign_verify_with_key(pkg, sig, pub));
+    assert(!sign_verify_with_key(pkg, sig, other_pub));
+
+    sign_stream(kp.sk, pkg, expected);
+    char *a = fs_read(sig);
+    char *b = fs_read(expected);
+    assert(a && b && memcmp(a, b, crypto_sign_BYTES) == 0);
+    free(a);
+    free(b);
+
+    char *kdir = make_keyring_dir(&kp, 1);
+    struct keyring *kr = keyring_load(kdir);
+    assert(kr);
+    assert(keyring_verify(kr, pkg, sig));
+    keyring_free(kr);
+
+    fs_write(pkg, "tampered");
+    assert(!sign_verify_with_key(pkg, sig, pub));
+    fs_write(pkg, "");
+    assert(sign_file_with_key(pkg, sig, sec));
+    assert(sign_verify_with_key(pkg, sig, pub));
+
+    char *missing = fs_join(work, "missing");
+    assert(!sign_file_with_key(missing, sig, sec));
+    assert(!sign_file_with_key(pkg, sig, missing));
+    assert(!sign_verify_with_key(missing, sig, pub));
+    assert(!sign_verify_with_key(pkg, missing, pub));
+    assert(!sign_verify_with_key(pkg, sig, missing));
+
+    char *bad_out = fs_join(work, "nodir/out.sig");
+    assert(!sign_file_with_key(pkg, bad_out, sec));
+
+    char *short_key = fs_join(work, "short.key");
+    write_bytes(short_key, kp.sk, 10);
+    assert(!sign_file_with_key(pkg, sig, short_key));
+    assert(!sign_verify_with_key(pkg, sig, short_key));
+
+    assert(!sign_file_with_key(NULL, sig, sec));
+    assert(!sign_file_with_key(pkg, NULL, sec));
+    assert(!sign_file_with_key(pkg, sig, NULL));
+    assert(!sign_verify_with_key(NULL, sig, pub));
+    assert(!sign_verify_with_key(pkg, NULL, pub));
+    assert(!sign_verify_with_key(pkg, sig, NULL));
+
+    free(missing);
+    free(bad_out);
+    free(short_key);
+    free(pub);
+    free(sec);
+    free(other_pub);
+    free(pkg);
+    free(sig);
+    free(expected);
+    fs_rmtree(work);
+    fs_rmtree(kdir);
+    free(work);
+    free(kdir);
+    printf("test_sign_with_key_roundtrip_and_failures: PASS\n");
 }

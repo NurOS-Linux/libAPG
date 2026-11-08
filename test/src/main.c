@@ -137,6 +137,7 @@ main(void)
     test_keyring_add_key_requires_endorsement();
     test_keyring_add_key_with_any_filename_is_loadable();
     test_sign_file_and_verify_roundtrip();
+    test_sign_with_key_roundtrip_and_failures();
 
     test_journal_read_without_journal_is_empty();
     test_journal_write_read_roundtrip();
@@ -160,6 +161,6 @@ main(void)
     test_trans_commit_state_machine();
     test_trans_remove_of_unknown_package_does_not_corrupt_db();
 
-    printf("All 139 tests passed.\n");
+    printf("All 140 tests passed.\n");
     return 0;
 }
