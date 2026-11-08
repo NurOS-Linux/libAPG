@@ -147,6 +147,12 @@ c_int = ctypes.c_int
 c_bool = ctypes.c_bool
 
 
+PRE_COMMIT_FN = ctypes.CFUNCTYPE(None, ctypes.c_void_p, ctypes.c_void_p)
+POST_COMMIT_FN = ctypes.CFUNCTYPE(
+    None, ctypes.c_void_p, ctypes.c_int, ctypes.c_void_p
+)
+
+
 def _sig(name, restype, argtypes):
     fn = getattr(lib, name)
     fn.restype = restype
@@ -365,6 +371,11 @@ trans_estimate_space = _sig(
         ctypes.POINTER(ctypes.c_uint64),
         ctypes.POINTER(ctypes.c_uint64),
     ],
+)
+trans_set_commit_hooks = _sig(
+    "trans_set_commit_hooks",
+    None,
+    [c_void_p, PRE_COMMIT_FN, POST_COMMIT_FN, c_void_p],
 )
 trans_set_policy = _sig(
     "trans_set_policy", None, [c_void_p, ctypes.POINTER(InstallPolicy)]

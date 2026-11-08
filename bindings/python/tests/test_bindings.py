@@ -264,6 +264,28 @@ def test_archive_inspection(tmp_path):
         apg.archive.list_files(str(tmp_path / "missing.tar"))
 
 
+def test_commit_hooks(tmp_path):
+    with apg.Database.open(str(tmp_path)) as db:
+        pkg = make_pkg("hooked")
+        assert db.add(pkg)
+        events = []
+        with apg.Transaction(db) as trans:
+            trans.set_commit_hooks(
+                pre=lambda: events.append("pre"),
+                post=lambda result: events.append(("post", result)),
+            )
+            assert trans.add_remove("hooked") == apg.TransError.OK
+            assert trans.prepare() == apg.TransError.OK
+            root = tmp_path / "root"
+            root.mkdir()
+            assert trans.commit(str(root)) == apg.TransError.OK
+            assert events == ["pre", ("post", apg.TransError.OK)]
+
+            trans.set_commit_hooks()
+            assert trans.commit(str(root)) == apg.TransError.ALREADY_COMMITTED
+            assert len(events) == 2
+
+
 def test_step_required_by(tmp_path):
     with apg.Database.open(str(tmp_path)) as db:
         app = make_pkg("app")
