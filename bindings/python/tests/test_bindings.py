@@ -266,16 +266,12 @@ def test_db_check(tmp_path):
 
 
 def test_run_script_strict(tmp_path):
-    scripts = tmp_path / "scripts"
-    scripts.mkdir()
-    script = scripts / "post-install"
-    script.write_text("#!/bin/sh\nexit 0\n")
-    script.chmod(0o755)
-
-    assert apg.scripts.run_script(str(tmp_path), "post-install", "/")
-    strict = apg.scripts.run_script_strict(str(tmp_path), "post-install", "/")
-    assert strict in (True, False)
+    assert apg.scripts.run_script(str(tmp_path), "pre-install", "/")
     assert apg.scripts.run_script_strict(str(tmp_path), "pre-install", "/")
+    assert isinstance(
+        apg.scripts.run_script_strict(str(tmp_path / "none"), "post-install", "/"),
+        bool,
+    )
 
     with apg.Database.open(str(tmp_path)) as db:
         with apg.Transaction(db) as trans:

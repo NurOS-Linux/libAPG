@@ -9,17 +9,28 @@ if get_option('python_bindings').enabled()
   sanitize = get_option('b_sanitize')
   cc = meson.get_compiler('c')
   if sanitize != 'none' and cc.get_id() == 'clang'
-    rt_dir = run_command(cc.cmd_array()[0], '-print-runtime-dir',
-                         check: true).stdout().strip()
-    preload = []
+    fs = import('fs')
+    clang = cc.cmd_array()[0]
+    rt_dir = run_command(clang, '-print-runtime-dir', check: true).stdout().strip()
+    runtimes = []
     if sanitize.contains('address')
-      preload += rt_dir / 'libclang_rt.asan-' + host_machine.cpu_family() + '.so'
+      runtimes += 'asan'
       test_env.set('LSAN_OPTIONS',
         'suppressions=' + meson.current_source_dir() / 'lsan-suppressions.txt')
     endif
     if sanitize.contains('thread')
-      preload += rt_dir / 'libclang_rt.tsan-' + host_machine.cpu_family() + '.so'
+      runtimes += 'tsan'
     endif
+    preload = []
+    foreach runtime : runtimes
+      rt_file = 'libclang_rt.' + runtime + '-' + host_machine.cpu_family() + '.so'
+      rt_path = run_command(clang, '-print-file-name=' + rt_file,
+                            check: true).stdout().strip()
+      if not fs.exists(rt_path)
+        rt_path = rt_dir / rt_file
+      endif
+      preload += rt_path
+    endforeach
     if preload.length() > 0
       test_env.set('LD_PRELOAD', ':'.join(preload))
     endif

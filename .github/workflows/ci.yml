@@ -148,7 +148,7 @@ jobs:
 
       - name: Run fuzzers
         run: |
-          export LD_PRELOAD="$(clang -print-runtime-dir)/libclang_rt.asan-x86_64.so"
+          export LD_PRELOAD="$(clang -print-file-name=libclang_rt.asan-x86_64.so)"
           for target in package-json dep-constraint sat-model sat-model-vars candidate-set db install-data-dir transaction-prepare unarchive keyring; do
             ./build-fuzz/fuzz/fuzz-$target -max_total_time=30 fuzz/corpus/$target
           done
