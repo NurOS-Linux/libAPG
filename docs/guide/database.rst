@@ -63,6 +63,11 @@ Queries
 ``db_get_dependents()`` lists installed packages that depend on a name,
 including dependencies that name a ``provides`` entry of the package.
 
+``db_get_providers()`` lists the installed packages that can satisfy a
+dependency on a name: the package called that, and every package that has the
+name in its ``provides`` entries. For a virtual name it shows all installed
+implementations.
+
 ``db_get_orphans()`` lists packages that are not marked ``installed_by_hand``
 and that no installed package depends on, directly or through ``provides``.
 The check is not transitive: a chain of automatically installed packages
