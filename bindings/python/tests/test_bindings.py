@@ -226,6 +226,16 @@ def test_audit_log(tmp_path):
     db.close()
 
 
+def test_db_check(tmp_path):
+    with apg.Database.open(str(tmp_path)) as db:
+        pkg = make_pkg("checked")
+        assert db.add(pkg)
+        assert db.check() == []
+
+    kinds = apg.DbCheckKind
+    assert kinds.OWNER_NOT_LISTED == 6
+
+
 def test_run_script_strict(tmp_path):
     scripts = tmp_path / "scripts"
     scripts.mkdir()

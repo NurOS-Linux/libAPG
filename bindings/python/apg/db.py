@@ -2,6 +2,7 @@
 # SPDX-FileCopyrightText: 2026 AnmiTaliDev <anmitalidev@nuros.org>
 
 import ctypes
+import enum
 
 from . import _lib
 from .error import ApgError
@@ -18,6 +19,31 @@ class DbVerifyIssue:
         return (
             f"DbVerifyIssue(pkg_name={self.pkg_name!r}, "
             f"missing_files={self.missing_files!r})"
+        )
+
+
+class DbCheckKind(enum.IntEnum):
+    CORRUPT_RECORD = 0
+    NAME_MISMATCH = 1
+    FILES_WITHOUT_PACKAGE = 2
+    FILE_NOT_OWNED = 3
+    FILE_OWNED_BY_OTHER = 4
+    OWNER_WITHOUT_PACKAGE = 5
+    OWNER_NOT_LISTED = 6
+
+
+class DbCheckIssue:
+    def __init__(self, kind, pkg_name, path, other):
+        self.kind = kind
+        self.pkg_name = pkg_name
+        self.path = path
+        self.other = other
+
+    def __repr__(self):
+        return (
+            f"DbCheckIssue(kind={self.kind.name}, "
+            f"pkg_name={self.pkg_name!r}, path={self.path!r}, "
+            f"other={self.other!r})"
         )
 
 
@@ -144,6 +170,23 @@ class Database:
             ]
             result.append(DbVerifyIssue(pkg_name, missing))
         _lib.db_verify_free(issues, count.value)
+        return result
+
+    def check(self):
+        count = _lib.c_int(0)
+        issues = _lib.db_check(self._ptr, ctypes.byref(count))
+        result = []
+        for i in range(count.value):
+            issue = _lib.db_check_issue_at(issues, count.value, i)
+            result.append(
+                DbCheckIssue(
+                    DbCheckKind(_lib.db_check_issue_kind(issue)),
+                    decode(_lib.db_check_issue_pkg_name(issue)),
+                    decode(_lib.db_check_issue_path(issue)),
+                    decode(_lib.db_check_issue_other(issue)),
+                )
+            )
+        _lib.db_check_free(issues, count.value)
         return result
 
     def close(self):

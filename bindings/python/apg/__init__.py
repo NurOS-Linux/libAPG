@@ -3,7 +3,7 @@
 
 from . import archive, audit, copy, install, keyring, scripts, sign
 from .config import InstallPolicy
-from .db import Database, DbVerifyIssue
+from .db import Database, DbCheckIssue, DbCheckKind, DbVerifyIssue
 from .error import ApgError
 from .graph import DependencyGraph
 from .journal import JournalEntry, JournalOp, JournalStatus
@@ -24,6 +24,8 @@ __all__ = [
     "ApgError",
     "InstallPolicy",
     "Database",
+    "DbCheckIssue",
+    "DbCheckKind",
     "DbVerifyIssue",
     "DependencyGraph",
     "JournalEntry",

@@ -236,6 +236,13 @@ db_verify = _sig(
     "db_verify", c_void_p, [c_void_p, c_char_p, ctypes.POINTER(c_int)]
 )
 db_verify_free = _sig("db_verify_free", None, [c_void_p, c_int])
+db_check = _sig("db_check", c_void_p, [c_void_p, ctypes.POINTER(c_int)])
+db_check_free = _sig("db_check_free", None, [c_void_p, c_int])
+db_check_issue_at = _sig("db_check_issue_at", c_void_p, [c_void_p, c_int, c_int])
+db_check_issue_kind = _sig("db_check_issue_kind", c_int, [c_void_p])
+db_check_issue_pkg_name = _sig("db_check_issue_pkg_name", c_char_p, [c_void_p])
+db_check_issue_path = _sig("db_check_issue_path", c_char_p, [c_void_p])
+db_check_issue_other = _sig("db_check_issue_other", c_char_p, [c_void_p])
 db_verify_issue_at = _sig(
     "db_verify_issue_at", c_void_p, [c_void_p, c_int, c_int]
 )
