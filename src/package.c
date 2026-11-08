@@ -197,35 +197,16 @@ apg_install_package_in_root(struct package *pkg, const char *root_path,
 bool
 package_collect_files(struct package *pkg, const char *root_path)
 {
+    (void)root_path;
     apg_clear_error();
 
     if (!pkg || !pkg->pkg_path)
         return false;
 
-    char *real_tmp = unique_tmp_dir(root_path);
-    if (!real_tmp)
-        return false;
-
-    if (!unarchive_package_in_root(pkg, real_tmp))
-    {
-        remove_dir_recursive(real_tmp);
-        free(real_tmp);
-        return false;
-    }
-
-    char *data_src = concat_dirs(real_tmp, "data");
-    if (!data_src)
-    {
-        remove_dir_recursive(real_tmp);
-        free(real_tmp);
-        return false;
-    }
-
+    char **files = NULL;
     int file_count = 0;
-    char **files = collect_files(data_src, &file_count);
-    free(data_src);
-    remove_dir_recursive(real_tmp);
-    free(real_tmp);
+    if (!package_list_files(pkg->pkg_path, &files, &file_count))
+        return false;
 
     str_list_free(&pkg->package_files);
     pkg->package_files.items = files;
@@ -236,6 +217,7 @@ package_collect_files(struct package *pkg, const char *root_path)
 struct package *
 parse_package(const char *path, const char *root_path)
 {
+    (void)root_path;
     apg_clear_error();
 
     struct package *pkg = package_new();
@@ -244,36 +226,15 @@ parse_package(const char *path, const char *root_path)
 
     pkg->pkg_path = realpath(path, NULL);
 
-    char *real_tmp = unique_tmp_dir(root_path);
-    if (!real_tmp)
+    struct package_metadata *meta =
+        package_read_metadata(pkg->pkg_path ? pkg->pkg_path : path);
+    if (!meta)
     {
         package_free(pkg);
         return NULL;
     }
-
-    if (!unarchive_package_in_root(pkg, real_tmp))
-    {
-        remove_dir_recursive(real_tmp);
-        free(real_tmp);
-        package_free(pkg);
-        return NULL;
-    }
-
-    char *meta_path = concat_dirs(real_tmp, "metadata.json");
 
     package_metadata_free(pkg->meta);
-    pkg->meta = meta_path ? package_metadata_from_file(meta_path) : NULL;
-    free(meta_path);
-
-    remove_dir_recursive(real_tmp);
-    free(real_tmp);
-
-    if (!pkg->meta)
-    {
-        apg_set_error("'%s' has a missing or invalid metadata.json", path);
-        package_free(pkg);
-        return NULL;
-    }
-
+    pkg->meta = meta;
     return pkg;
 }
