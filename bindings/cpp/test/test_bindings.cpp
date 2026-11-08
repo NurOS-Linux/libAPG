@@ -259,6 +259,27 @@ test_commit_hooks()
 }
 
 void
+test_audit_filters()
+{
+    std::string db_path = make_tmp_dir("apgxx-audit");
+    apg::Database db = apg::Database::open(db_path);
+    apg::Package first = make_simple_package("audit-a");
+    apg::Package second = make_simple_package("audit-b");
+    assert(db.add(first));
+    assert(db.add(second));
+    assert(db.remove("audit-a"));
+
+    assert(apg::audit_read_for_package(db, "audit-a").size() == 2);
+    assert(apg::audit_read_for_package(db, "audit-b").size() == 1);
+    assert(apg::audit_read_for_package(db, "missing").empty());
+    assert(apg::audit_read_since(db, 0).size() == 3);
+    assert(apg::audit_read_since(db, static_cast<time_t>(1) << 40).empty());
+
+    remove_tmp_db(db_path);
+    printf("test_audit_filters: PASS\n");
+}
+
+void
 test_dependency_graph()
 {
     apg::PackageMetadata base = apg::PackageMetadata::create();
@@ -321,6 +342,7 @@ main()
     test_archive_inspection();
     test_step_required_by();
     test_commit_hooks();
+    test_audit_filters();
     test_dependency_graph();
     test_transaction_policy();
     printf("All C++ binding tests passed.\n");
