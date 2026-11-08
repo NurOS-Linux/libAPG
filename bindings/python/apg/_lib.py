@@ -323,6 +323,7 @@ trans_step_op = _sig("trans_step_op", c_int, [c_void_p])
 trans_step_pkg_name = _sig("trans_step_pkg_name", c_char_p, [c_void_p])
 trans_step_pkg_version = _sig("trans_step_pkg_version", c_char_p, [c_void_p])
 trans_step_explicit = _sig("trans_step_explicit", c_bool, [c_void_p])
+trans_step_required_by = _sig("trans_step_required_by", c_char_p, [c_void_p])
 
 trans_conflict_pkg_name = _sig("trans_conflict_pkg_name", c_char_p, [c_void_p])
 trans_conflict_conflicts_with = _sig(
@@ -375,6 +376,7 @@ trans_prefer_provider = _sig(
 trans_new = _sig("trans_new", c_void_p, [c_void_p])
 trans_free = _sig("trans_free", None, [c_void_p])
 trans_add_install = _sig("trans_add_install", c_int, [c_void_p, PackagePtr])
+trans_add_candidate = _sig("trans_add_candidate", c_int, [c_void_p, PackagePtr])
 trans_add_remove = _sig("trans_add_remove", c_int, [c_void_p, c_char_p])
 trans_add_upgrade = _sig("trans_add_upgrade", c_int, [c_void_p, PackagePtr])
 trans_prepare = _sig("trans_prepare", c_int, [c_void_p])

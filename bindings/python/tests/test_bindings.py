@@ -264,6 +264,20 @@ def test_archive_inspection(tmp_path):
         apg.archive.list_files(str(tmp_path / "missing.tar"))
 
 
+def test_step_required_by(tmp_path):
+    with apg.Database.open(str(tmp_path)) as db:
+        app = make_pkg("app")
+        app.metadata.set_dependencies([apg.dep_constraint_parse("lib")])
+        lib = make_pkg("lib")
+        with apg.Transaction(db) as trans:
+            assert trans.add_install(app) == apg.TransError.OK
+            assert trans.add_candidate(lib) == apg.TransError.OK
+            assert trans.prepare() == apg.TransError.OK
+            steps = {step.pkg_name: step for step in trans.plan}
+            assert steps["app"].required_by is None
+            assert steps["lib"].required_by == "app"
+
+
 def test_db_check(tmp_path):
     with apg.Database.open(str(tmp_path)) as db:
         pkg = make_pkg("checked")

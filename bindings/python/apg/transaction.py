@@ -52,6 +52,10 @@ class TransStepView:
     def is_explicit(self):
         return bool(_lib.trans_step_explicit(self._ptr))
 
+    @property
+    def required_by(self):
+        return decode(_lib.trans_step_required_by(self._ptr))
+
 
 class TransConflictView:
     def __init__(self, ptr):
@@ -153,6 +157,9 @@ class Transaction:
 
     def add_install(self, pkg):
         return TransError(_lib.trans_add_install(self._ptr, pkg.raw))
+
+    def add_candidate(self, pkg):
+        return TransError(_lib.trans_add_candidate(self._ptr, pkg.raw))
 
     def add_remove(self, pkg_name):
         return TransError(_lib.trans_add_remove(self._ptr, pkg_name.encode()))
