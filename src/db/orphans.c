@@ -85,3 +85,84 @@ db_get_orphans(struct db_handle *db, int *count)
     *count = result.count;
     return result.items;
 }
+
+static bool
+provides_name(const struct package *p, const char *name)
+{
+    if (strcmp(p->meta->name, name) == 0)
+        return true;
+    for (int i = 0; i < p->meta->provides.count; i++)
+        if (strcmp(p->meta->provides.items[i], name) == 0)
+            return true;
+    return false;
+}
+
+char **
+db_get_orphans_transitive(struct db_handle *db, int *count)
+{
+    *count = 0;
+    if (!db)
+        return NULL;
+
+    int all_count = 0;
+    struct package **all = db_list(db, &all_count);
+    if (!all)
+        return NULL;
+
+    bool *reached = calloc((size_t)all_count + 1, sizeof(*reached));
+    int *queue = malloc(((size_t)all_count + 1) * sizeof(*queue));
+    struct str_vec result = {0};
+    if (!reached || !queue)
+        goto done;
+
+    int head = 0;
+    int tail = 0;
+    for (int i = 0; i < all_count; i++)
+    {
+        struct package *p = all[i];
+        if (!p->meta || !p->meta->name)
+            continue;
+        if (p->installed_by_hand)
+        {
+            reached[i] = true;
+            queue[tail++] = i;
+        }
+    }
+
+    while (head < tail)
+    {
+        const struct dep_constraint_list *deps =
+            &all[queue[head++]]->meta->dependencies;
+        for (int d = 0; d < deps->count; d++)
+        {
+            for (int i = 0; i < all_count; i++)
+            {
+                struct package *p = all[i];
+                if (reached[i] || !p->meta || !p->meta->name)
+                    continue;
+                if (!provides_name(p, deps->items[d].name))
+                    continue;
+                reached[i] = true;
+                queue[tail++] = i;
+            }
+        }
+    }
+
+    for (int i = 0; i < all_count; i++)
+    {
+        struct package *p = all[i];
+        if (reached[i] || !p->meta || !p->meta->name)
+            continue;
+        if (!str_vec_push(&result, p->meta->name))
+            break;
+    }
+
+done:
+    free(reached);
+    free(queue);
+    for (int i = 0; i < all_count; i++)
+        package_free(all[i]);
+    free(all);
+    *count = result.count;
+    return result.items;
+}

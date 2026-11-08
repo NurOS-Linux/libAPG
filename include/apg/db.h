@@ -225,6 +225,25 @@ extern "C"
     APG_API char **db_get_orphans(struct db_handle *db, int *count);
 
     /**
+     * @brief Find every installed package that is no longer needed, following
+     *        dependency chains.
+     *
+     * Packages marked @c installed_by_hand are roots. A package is kept when
+     * a root, or a package reachable from a root, lists its name (or any of
+     * its @c provides entries) as a dependency. All other packages are
+     * returned, including chains and cycles of auto-installed packages that
+     * only depend on each other. The held flag is ignored, as in
+     * db_get_orphans(). The result contains everything db_get_orphans()
+     * reports.
+     *
+     * @param db    Database handle.
+     * @param count Output parameter set to the number of packages found.
+     * @return Heap-allocated array of heap-allocated package name strings, or
+     * NULL on failure. Caller must free() each element and the array itself.
+     */
+    APG_API char **db_get_orphans_transitive(struct db_handle *db, int *count);
+
+    /**
      * @brief Search installed packages by name or description substring.
      *
      * Matching is case-insensitive. An empty @p query returns NULL.
@@ -256,6 +275,27 @@ extern "C"
      */
     APG_API char **db_get_dependents(struct db_handle *db, const char *pkg_name,
                                      int *count);
+
+    /**
+     * @brief Find all installed packages that depend on a given package,
+     *        directly or through other packages.
+     *
+     * Follows dependency chains until no new package is found. A dependency
+     * on the package name or on any of its @c provides entries counts, at
+     * every level. The queried package is never part of the result, also when
+     * it takes part in a dependency cycle. The result contains everything
+     * db_get_dependents() reports.
+     *
+     * @param db       Database handle.
+     * @param pkg_name Name of the package being queried.
+     * @param count    Output parameter set to the number of dependents found.
+     * @return Heap-allocated array of heap-allocated package name strings, or
+     * NULL on failure. Caller must free() each element and the array itself.
+     *         @p *count is set to 0 when no dependents are found.
+     */
+    APG_API char **db_get_dependents_transitive(struct db_handle *db,
+                                                const char *pkg_name,
+                                                int *count);
 
     /**
      * @brief A single package integrity issue found by db_verify().
