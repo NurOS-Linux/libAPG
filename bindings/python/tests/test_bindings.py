@@ -226,6 +226,25 @@ def test_audit_log(tmp_path):
     db.close()
 
 
+def test_audit_filters(tmp_path):
+    with apg.Database.open(str(tmp_path)) as db:
+        first = make_pkg("filter-a")
+        second = make_pkg("filter-b")
+        assert db.add(first)
+        assert db.add(second)
+        assert db.remove("filter-a")
+
+        history = apg.audit.read_for_package(db, "filter-a")
+        assert [e.pkg_name for e in history] == ["filter-a", "filter-a"]
+        assert [e.op for e in history] == [
+            apg.JournalOp.INSTALL,
+            apg.JournalOp.REMOVE,
+        ]
+        assert apg.audit.read_for_package(db, "missing") == []
+        assert len(apg.audit.read_since(db, 0)) == 3
+        assert apg.audit.read_since(db, 2**40) == []
+
+
 def test_verify_against_archive_errors(tmp_path):
     with apg.Database.open(str(tmp_path)) as db:
         with pytest.raises(apg.ApgError):

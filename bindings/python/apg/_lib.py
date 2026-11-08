@@ -428,6 +428,16 @@ journal_entry_status = _sig("journal_entry_status", c_int, [c_void_p])
 journal_entry_uid = _sig("journal_entry_uid", ctypes.c_uint, [c_void_p])
 journal_entry_explicit = _sig("journal_entry_explicit", c_bool, [c_void_p])
 
+audit_read_since = _sig(
+    "audit_read_since",
+    ctypes.POINTER(c_void_p),
+    [c_void_p, ctypes.c_long, ctypes.POINTER(c_int)],
+)
+audit_read_for_package = _sig(
+    "audit_read_for_package",
+    ctypes.POINTER(c_void_p),
+    [c_void_p, c_char_p, ctypes.POINTER(c_int)],
+)
 audit_read_all = _sig(
     "audit_read_all",
     ctypes.POINTER(c_void_p),
