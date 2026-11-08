@@ -40,7 +40,12 @@ Contents
      - ``op|name|version|status|uid|explicit`` text record. ``|`` and ``%``
        inside name and version are written as ``%7C`` and ``%25``.
 
-The ``journal`` database is created by the first journal write. The main
+The ``journal`` database is created by the first journal write. When
+``db_add()`` and ``db_remove()`` succeed, and when ``trans_commit()`` records an
+install, upgrade or removal, the journal entry is written in the same LMDB
+transaction as the package record, so the two are stored together or not at
+all. A failed operation is journaled separately as ``failed``. If the journal
+entry itself cannot be written, the operation fails. The main
 database also holds the entries of the named databases, so it is not a plain
 list of packages. Use ``db_list()`` and ``db_stats()`` instead of reading it
 directly.
