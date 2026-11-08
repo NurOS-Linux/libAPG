@@ -173,3 +173,6 @@ void test_package_read_metadata_reads_archive(void);
 void test_package_read_metadata_reports_failures(void);
 void test_package_list_files_matches_install(void);
 void test_package_list_files_edge_cases(void);
+
+void test_parse_package_and_collect_files_do_not_extract(void);
+void test_parse_package_reports_unreadable_archives(void);

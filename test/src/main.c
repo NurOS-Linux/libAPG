@@ -178,6 +178,9 @@ main(void)
     test_package_list_files_matches_install();
     test_package_list_files_edge_cases();
 
-    printf("All 153 tests passed.\n");
+    test_parse_package_and_collect_files_do_not_extract();
+    test_parse_package_reports_unreadable_archives();
+
+    printf("All 155 tests passed.\n");
     return 0;
 }

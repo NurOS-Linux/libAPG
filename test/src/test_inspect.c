@@ -2,6 +2,7 @@
 // SPDX-FileCopyrightText: 2026 AnmiTaliDev <anmitalidev@nuros.org>
 
 #include <assert.h>
+#include <dirent.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -230,4 +231,82 @@ test_package_list_files_edge_cases(void)
     fs_rmtree(dir);
     free(dir);
     printf("test_package_list_files_edge_cases: PASS\n");
+}
+
+static int
+count_entries(const char *dir)
+{
+    DIR *d = opendir(dir);
+    assert(d);
+    int count = 0;
+    struct dirent *entry;
+    while ((entry = readdir(d)) != NULL)
+        if (strcmp(entry->d_name, ".") != 0 && strcmp(entry->d_name, "..") != 0)
+            count++;
+    closedir(d);
+    return count;
+}
+
+void
+test_parse_package_and_collect_files_do_not_extract(void)
+{
+    char *archive = build_archive(full_metadata);
+    char *root = fs_mktmp("inspect-noextract");
+
+    struct package *pkg = parse_package(archive, root);
+    assert(pkg);
+    assert(strcmp(pkg->meta->name, "inspect") == 0);
+    assert(pkg->pkg_path && strstr(pkg->pkg_path, "pkg.tar.gz"));
+    assert(count_entries(root) == 0);
+
+    assert(package_collect_files(pkg, root));
+    assert(pkg->package_files.count == 4);
+    assert(count_entries(root) == 0);
+
+    assert(package_collect_files(pkg, root));
+    assert(pkg->package_files.count == 4);
+
+    package_free(pkg);
+    fs_rmtree(root);
+    free(root);
+    remove_archive(archive);
+    printf("test_parse_package_and_collect_files_do_not_extract: PASS\n");
+}
+
+void
+test_parse_package_reports_unreadable_archives(void)
+{
+    char *dir = fs_mktmp("inspect-unreadable");
+
+    char *missing = fs_join(dir, "missing.tar.gz");
+    assert(parse_package(missing, dir) == NULL);
+    assert(apg_last_error() && strstr(apg_last_error(), "missing.tar.gz"));
+
+    char *garbage = fs_join(dir, "garbage.tar.gz");
+    fs_write(garbage, "not an archive");
+    assert(parse_package(garbage, dir) == NULL);
+
+    char *no_meta = fs_join(dir, "no-meta.tar");
+    FILE *f = fopen(no_meta, "wb");
+    assert(f);
+    fs_write_tar_entry(f, "data/file", "x");
+    char end[1024] = {0};
+    fwrite(end, 1, sizeof(end), f);
+    fclose(f);
+    assert(parse_package(no_meta, dir) == NULL);
+    assert(apg_last_error() && strstr(apg_last_error(), "metadata.json"));
+
+    struct package *pkg = package_new();
+    assert(pkg);
+    assert(!package_collect_files(pkg, dir));
+    pkg->pkg_path = strdup(missing);
+    assert(!package_collect_files(pkg, dir));
+    package_free(pkg);
+
+    free(missing);
+    free(garbage);
+    free(no_meta);
+    fs_rmtree(dir);
+    free(dir);
+    printf("test_parse_package_reports_unreadable_archives: PASS\n");
 }
