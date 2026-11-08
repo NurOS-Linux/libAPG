@@ -156,6 +156,44 @@ extern "C"
     APG_API struct package *parse_package(const char *path,
                                           const char *root_path);
 
+    /**
+     * @brief Read the metadata of a package archive without extracting it.
+     *
+     * Reads only the @c metadata.json entry. Nothing is written to disk. The
+     * entry must be at most 1 MiB.
+     *
+     * @param archive_path Path to the package archive.
+     * @return Heap-allocated metadata, or NULL if the archive cannot be read,
+     *         has no @c metadata.json, or the file cannot be parsed;
+     *         apg_last_error() describes the cause. Free with
+     *         package_metadata_free().
+     */
+    APG_API struct package_metadata *
+    package_read_metadata(const char *archive_path);
+
+    /**
+     * @brief List the files a package archive would install, without
+     *        extracting it.
+     *
+     * Returns every entry under the archive's @c data/ tree that is not a
+     * directory (regular files, symbolic links, hard links), as paths that
+     * start with @c / and are relative to the install root, for example
+     * @c /usr/bin/tool. These are the paths package_collect_files() and
+     * install_package_in_root() record in @c package_files. The archive is
+     * read once and nothing is written to disk. An entry whose path contains a
+     * @c .. component makes the call fail.
+     *
+     * @param archive_path Path to the package archive.
+     * @param files        Output: heap-allocated array of heap-allocated path
+     *                     strings, NULL when the archive has no files. Caller
+     *                     must free() each element and the array.
+     * @param count        Output: number of paths.
+     * @return true if the archive was read (also when it has no files), false
+     *         on error, with apg_last_error() describing it.
+     */
+    APG_API bool package_list_files(const char *archive_path, char ***files,
+                                    int *count);
+
 #ifdef __cplusplus
 }
 #endif

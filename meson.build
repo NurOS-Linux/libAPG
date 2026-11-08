@@ -15,6 +15,7 @@ libapg_sources = files(
   'src/package.c',
   'src/util.c',
   'src/archive.c',
+  'src/archive_inspect.c',
   'src/error.c',
   'src/install/copy.c',
   'src/install/install.c',
