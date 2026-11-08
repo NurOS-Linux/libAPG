@@ -143,7 +143,10 @@ test_scripts_strict_and_sandbox_flag()
     apg::Database db = apg::Database::open(db_path);
     apg::Transaction trans(db);
     trans.set_require_sandbox(true);
+    assert(!trans.estimate_space(db_path).has_value());
     assert(trans.prepare() == TRANS_OK);
+    auto space = trans.estimate_space(db_path);
+    assert(space.has_value() && space->first == 0 && space->second > 0);
     remove_tmp_db(db_path);
     printf("test_scripts_strict_and_sandbox_flag: PASS\n");
 }

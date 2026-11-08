@@ -10,8 +10,11 @@
 
 #include <apg/transaction.h>
 
+#include <cstdint>
 #include <memory>
+#include <optional>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace apg
@@ -116,6 +119,17 @@ public:
     }
 
     void clear_policy() { ::trans_set_policy(trans_.get(), nullptr); }
+
+    std::optional<std::pair<uint64_t, uint64_t>>
+    estimate_space(const std::string &root_path) const
+    {
+        uint64_t needed = 0;
+        uint64_t available = 0;
+        if (!::trans_estimate_space(trans_.get(), root_path.c_str(), &needed,
+                                    &available))
+            return std::nullopt;
+        return std::make_pair(needed, available);
+    }
 
     void set_require_sandbox(bool require_sandbox)
     {
