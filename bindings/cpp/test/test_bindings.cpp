@@ -89,6 +89,33 @@ test_database_roundtrip()
 }
 
 void
+test_database_transitive_queries()
+{
+    std::string db_path = make_tmp_dir("apgxx-trans-q");
+    apg::Database db = apg::Database::open(db_path);
+
+    apg::Package core = make_simple_package("core");
+    apg::Package lib = make_simple_package("lib");
+    lib.get()->meta->dependencies.count = 1;
+    lib.get()->meta->dependencies.items = static_cast<struct dep_constraint *>(
+        malloc(sizeof(struct dep_constraint)));
+    lib.get()->meta->dependencies.items[0] = dep_constraint_parse("core");
+    lib.get()->installed_by_hand = false;
+    core.get()->installed_by_hand = false;
+    assert(db.add(core));
+    assert(db.add(lib));
+
+    auto dependents = db.get_dependents_transitive("core");
+    assert(dependents.size() == 1 && dependents[0] == "lib");
+
+    auto orphans = db.get_orphans_transitive();
+    assert(orphans.size() == 2);
+
+    remove_tmp_db(db_path);
+    printf("test_database_transitive_queries: PASS\n");
+}
+
+void
 test_dependency_graph()
 {
     apg::PackageMetadata base = apg::PackageMetadata::create();
@@ -145,6 +172,7 @@ main()
 {
     test_version();
     test_database_roundtrip();
+    test_database_transitive_queries();
     test_dependency_graph();
     test_transaction_policy();
     printf("All C++ binding tests passed.\n");

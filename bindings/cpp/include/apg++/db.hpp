@@ -125,6 +125,14 @@ class Database
         return detail::take_c_string_array(raw, count);
     }
 
+    std::vector<std::string>
+    get_orphans_transitive()
+    {
+        int count = 0;
+        char **raw = ::db_get_orphans_transitive(db_.get(), &count);
+        return detail::take_c_string_array(raw, count);
+    }
+
     std::vector<Package>
     search(const std::string &query)
     {
@@ -138,6 +146,15 @@ class Database
     {
         int count = 0;
         char **raw = ::db_get_dependents(db_.get(), pkg_name.c_str(), &count);
+        return detail::take_c_string_array(raw, count);
+    }
+
+    std::vector<std::string>
+    get_dependents_transitive(const std::string &pkg_name)
+    {
+        int count = 0;
+        char **raw = ::db_get_dependents_transitive(db_.get(), pkg_name.c_str(),
+                                                    &count);
         return detail::take_c_string_array(raw, count);
     }
 
