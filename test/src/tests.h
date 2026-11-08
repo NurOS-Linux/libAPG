@@ -172,3 +172,8 @@ void test_db_check_reports_record_inconsistencies(void);
 void test_verify_against_archive_accepts_clean_install(void);
 void test_verify_against_archive_reports_differences(void);
 void test_verify_against_archive_rejects_bad_requests(void);
+
+void test_package_read_metadata_reads_archive(void);
+void test_package_read_metadata_reports_failures(void);
+void test_package_list_files_matches_install(void);
+void test_package_list_files_edge_cases(void);

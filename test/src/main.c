@@ -177,6 +177,11 @@ main(void)
     test_verify_against_archive_reports_differences();
     test_verify_against_archive_rejects_bad_requests();
 
-    printf("All 152 tests passed.\n");
+    test_package_read_metadata_reads_archive();
+    test_package_read_metadata_reports_failures();
+    test_package_list_files_matches_install();
+    test_package_list_files_edge_cases();
+
+    printf("All 156 tests passed.\n");
     return 0;
 }
