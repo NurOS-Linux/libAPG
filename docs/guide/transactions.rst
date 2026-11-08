@@ -159,6 +159,24 @@ restored. The code returned is ``TRANS_ERR_INSTALL_FAILED``,
 ``TRANS_ERR_REMOVE_FAILED`` or ``TRANS_ERR_DB``, and ``apg_last_error()`` names
 the package and the cause.
 
+Commit hooks
+------------
+
+``trans_set_commit_hooks(trans, pre, post, userdata)`` registers two callbacks
+that run around ``trans_commit()``, for work that belongs to the whole
+transaction rather than to one step, such as refreshing a cache after a
+successful commit. ``pre`` runs once before the first step. ``post`` runs once
+at the end, after any rollback, and receives the result code that
+``trans_commit()`` returns.
+
+Hooks run only for a commit that actually starts: a call that fails with
+``TRANS_ERR_NOT_PREPARED`` or ``TRANS_ERR_ALREADY_COMMITTED`` does not call
+them, and neither does a dry run, which performs no actions. They are called on
+the calling thread and receive the transaction read-only, so they can read the
+plan. They must not change the transaction or commit it again. Either callback
+may be NULL, and passing NULL for both removes them. They are off by default.
+The progress callback, unlike the hooks, is also called in dry-run mode.
+
 Dry run
 -------
 
