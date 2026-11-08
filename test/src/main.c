@@ -173,6 +173,10 @@ main(void)
     test_db_check_reports_ownership_inconsistencies();
     test_db_check_reports_record_inconsistencies();
 
-    printf("All 149 tests passed.\n");
+    test_verify_against_archive_accepts_clean_install();
+    test_verify_against_archive_reports_differences();
+    test_verify_against_archive_rejects_bad_requests();
+
+    printf("All 152 tests passed.\n");
     return 0;
 }

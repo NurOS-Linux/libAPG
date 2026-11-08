@@ -168,3 +168,7 @@ void test_trans_estimate_space_edge_cases(void);
 void test_db_check_reports_nothing_for_consistent_database(void);
 void test_db_check_reports_ownership_inconsistencies(void);
 void test_db_check_reports_record_inconsistencies(void);
+
+void test_verify_against_archive_accepts_clean_install(void);
+void test_verify_against_archive_reports_differences(void);
+void test_verify_against_archive_rejects_bad_requests(void);
