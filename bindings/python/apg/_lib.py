@@ -327,6 +327,16 @@ trans_blocked_remove_dependent_at = _sig(
 trans_set_require_sandbox = _sig(
     "trans_set_require_sandbox", None, [c_void_p, c_bool]
 )
+trans_estimate_space = _sig(
+    "trans_estimate_space",
+    c_bool,
+    [
+        c_void_p,
+        c_char_p,
+        ctypes.POINTER(ctypes.c_uint64),
+        ctypes.POINTER(ctypes.c_uint64),
+    ],
+)
 trans_set_policy = _sig(
     "trans_set_policy", None, [c_void_p, ctypes.POINTER(InstallPolicy)]
 )

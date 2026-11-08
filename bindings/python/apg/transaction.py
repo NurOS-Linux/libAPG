@@ -130,6 +130,19 @@ class Transaction:
     def clear_policy(self):
         _lib.trans_set_policy(self._ptr, None)
 
+    def estimate_space(self, root_path):
+        needed = ctypes.c_uint64(0)
+        available = ctypes.c_uint64(0)
+        ok = _lib.trans_estimate_space(
+            self._ptr,
+            root_path.encode(),
+            ctypes.byref(needed),
+            ctypes.byref(available),
+        )
+        if not ok:
+            return None
+        return needed.value, available.value
+
     def set_require_sandbox(self, require_sandbox):
         _lib.trans_set_require_sandbox(self._ptr, bool(require_sandbox))
 

@@ -244,6 +244,16 @@ def test_run_script_strict(tmp_path):
             assert trans.prepare() == apg.TransError.OK
 
 
+def test_transaction_estimate_space(tmp_path):
+    with apg.Database.open(str(tmp_path)) as db:
+        with apg.Transaction(db) as trans:
+            assert trans.estimate_space(str(tmp_path)) is None
+            assert trans.prepare() == apg.TransError.OK
+            needed, available = trans.estimate_space(str(tmp_path))
+            assert needed == 0
+            assert available > 0
+
+
 def make_keypair():
     name = ctypes.util.find_library("sodium")
     if not name:
