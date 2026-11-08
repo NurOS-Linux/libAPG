@@ -21,4 +21,20 @@ inline bool sign_file(const std::string &pkg_path, const std::string &sig_path)
     return ::sign_file(pkg_path.c_str(), sig_path.c_str());
 }
 
+inline bool sign_verify_with_key(const std::string &pkg_path,
+                                  const std::string &sig_path,
+                                  const std::string &public_key_path)
+{
+    return ::sign_verify_with_key(pkg_path.c_str(), sig_path.c_str(),
+                                  public_key_path.c_str());
+}
+
+inline bool sign_file_with_key(const std::string &pkg_path,
+                               const std::string &sig_path,
+                               const std::string &secret_key_path)
+{
+    return ::sign_file_with_key(pkg_path.c_str(), sig_path.c_str(),
+                                secret_key_path.c_str());
+}
+
 } // namespace apg

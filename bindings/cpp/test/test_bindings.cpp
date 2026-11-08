@@ -116,6 +116,25 @@ test_database_transitive_queries()
 }
 
 void
+test_sign_with_explicit_keys()
+{
+    std::string dir = make_tmp_dir("apgxx-sign");
+    std::string pkg = dir + "/pkg.bin";
+    std::string sig = dir + "/pkg.sig";
+    FILE *f = fopen(pkg.c_str(), "wb");
+    assert(f);
+    fputs("payload", f);
+    fclose(f);
+
+    assert(!apg::sign_file_with_key(pkg, sig, dir + "/missing.key"));
+    assert(!apg::sign_verify_with_key(pkg, sig, dir + "/missing.key"));
+
+    unlink(pkg.c_str());
+    remove_tmp_db(dir);
+    printf("test_sign_with_explicit_keys: PASS\n");
+}
+
+void
 test_dependency_graph()
 {
     apg::PackageMetadata base = apg::PackageMetadata::create();
@@ -173,6 +192,7 @@ main()
     test_version();
     test_database_roundtrip();
     test_database_transitive_queries();
+    test_sign_with_explicit_keys();
     test_dependency_graph();
     test_transaction_policy();
     printf("All C++ binding tests passed.\n");
