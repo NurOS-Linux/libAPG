@@ -84,6 +84,17 @@ trans_set_require_sandbox(struct apg_trans *trans, bool require_sandbox)
 }
 
 void
+trans_set_commit_hooks(struct apg_trans *trans, trans_pre_commit_fn pre,
+                       trans_post_commit_fn post, void *userdata)
+{
+    if (!trans)
+        return;
+    trans->pre_commit_cb = pre;
+    trans->post_commit_cb = post;
+    trans->commit_hook_userdata = userdata;
+}
+
+void
 trans_set_dry_run(struct apg_trans *trans, bool dry_run)
 {
     if (!trans)

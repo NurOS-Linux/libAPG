@@ -107,4 +107,8 @@ struct apg_trans
 
     trans_progress_fn progress_cb;
     void *progress_userdata;
+
+    trans_pre_commit_fn pre_commit_cb;
+    trans_post_commit_fn post_commit_cb;
+    void *commit_hook_userdata;
 };

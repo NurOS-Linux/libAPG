@@ -328,6 +328,50 @@ extern "C"
     APG_API void trans_set_dry_run(struct apg_trans *trans, bool dry_run);
 
     /**
+     * @brief Callback invoked by trans_commit() before the first step runs.
+     *
+     * @param trans    The transaction being committed, for read-only access
+     *                 to the plan.
+     * @param userdata Pointer passed to trans_set_commit_hooks().
+     */
+    typedef void (*trans_pre_commit_fn)(const struct apg_trans *trans,
+                                        void *userdata);
+
+    /**
+     * @brief Callback invoked by trans_commit() after the last step, or after
+     *        a failed step has been rolled back.
+     *
+     * @param trans    The transaction that was committed.
+     * @param result   The value trans_commit() is about to return.
+     * @param userdata Pointer passed to trans_set_commit_hooks().
+     */
+    typedef void (*trans_post_commit_fn)(const struct apg_trans *trans,
+                                         trans_error_t result, void *userdata);
+
+    /**
+     * @brief Register callbacks that run around trans_commit().
+     *
+     * @p pre is called once when a commit starts, @p post once when it ends,
+     * with the result code, on the calling thread. They are called only for a
+     * commit that gets as far as running: not when trans_commit() rejects the
+     * call because the transaction is not prepared or was already committed,
+     * and not in dry-run mode, which performs no actions. The post hook is
+     * called after any rollback, whether the commit succeeded or not. The
+     * hooks must not call functions that change the transaction or commit it
+     * again. Either pointer may be NULL; passing NULL for both removes the
+     * hooks. Hooks are off by default.
+     *
+     * @param trans    Transaction to configure.
+     * @param pre      Called before the first step, or NULL.
+     * @param post     Called after the commit finished, or NULL.
+     * @param userdata Opaque pointer forwarded to both callbacks.
+     */
+    APG_API void trans_set_commit_hooks(struct apg_trans *trans,
+                                        trans_pre_commit_fn pre,
+                                        trans_post_commit_fn post,
+                                        void *userdata);
+
+    /**
      * @brief Register a callback that reports commit progress.
      *
      * trans_commit() calls @p cb once before executing each step of the
