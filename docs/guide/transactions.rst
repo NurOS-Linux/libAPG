@@ -106,6 +106,24 @@ in ``trans_prepare()``:
 Policy values are copied by ``trans_set_policy()``. Passing NULL clears the
 policy.
 
+Disk space
+----------
+
+``trans_estimate_space()`` returns an estimate of the space a prepared
+transaction needs and the space available, so a caller can refuse to commit
+when ``needed`` exceeds ``available``. It reads the archives of the queued
+installs and upgrades but writes nothing.
+
+The estimate adds, for each install and upgrade, the files of the ``data/``
+and ``scripts/`` trees; the temporary extraction of the largest archive; and,
+for upgrades, a backup of the installed version's files and persisted scripts.
+Every file is rounded up to 4096 bytes. It is deliberately conservative:
+files replaced by an upgrade are counted twice, removals free nothing in the
+estimate, and the ``home/`` tree, which is installed outside the root, is not
+counted. When the temporary area and the root are on different file systems,
+the pair with the smaller margin is reported. The result is an estimate, not
+a guarantee: other processes may use the space before the commit.
+
 Commit
 ------
 
