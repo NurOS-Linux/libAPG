@@ -98,6 +98,10 @@ void test_db_orphans_respect_dependencies_and_flags(void);
 void test_db_set_hold_persists_and_validates(void);
 void test_db_hooks_fire_on_add_and_remove(void);
 void test_db_owner_follows_add_and_remove(void);
+void test_db_dependents_transitive_follows_chains(void);
+void test_db_dependents_transitive_handles_cycles(void);
+void test_db_orphans_transitive_follows_chains(void);
+void test_db_orphans_transitive_handles_cycles_and_provides(void);
 
 void test_copy_file_preserves_content_and_mode(void);
 void test_copy_file_large_file(void);

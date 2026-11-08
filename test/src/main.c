@@ -102,6 +102,10 @@ main(void)
     test_db_set_hold_persists_and_validates();
     test_db_hooks_fire_on_add_and_remove();
     test_db_owner_follows_add_and_remove();
+    test_db_dependents_transitive_follows_chains();
+    test_db_dependents_transitive_handles_cycles();
+    test_db_orphans_transitive_follows_chains();
+    test_db_orphans_transitive_handles_cycles_and_provides();
 
     test_copy_file_preserves_content_and_mode();
     test_copy_file_large_file();
@@ -156,6 +160,6 @@ main(void)
     test_trans_commit_state_machine();
     test_trans_remove_of_unknown_package_does_not_corrupt_db();
 
-    printf("All 135 tests passed.\n");
+    printf("All 139 tests passed.\n");
     return 0;
 }

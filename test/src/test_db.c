@@ -355,3 +355,191 @@ test_db_owner_follows_add_and_remove(void)
     fs_close_db(db, path);
     printf("test_db_owner_follows_add_and_remove: PASS\n");
 }
+
+void
+test_db_dependents_transitive_follows_chains(void)
+{
+    char path[PATH_MAX];
+    struct db_handle *db = fs_open_db(path);
+    assert(db);
+
+    const char *dep_a[] = {"a"};
+    const char *dep_b[] = {"b"};
+    const char *dep_c[] = {"c"};
+    const char *dep_virt[] = {"virt"};
+    const char *prov_virt[] = {"virt"};
+    const char *dep_ab[] = {"a", "b"};
+    add_pkg(db,
+            fs_make_package("a", "1", NULL, NULL, 0, NULL, 0, NULL, 0, true));
+    add_pkg(db,
+            fs_make_package("b", "1", NULL, dep_a, 1, NULL, 0, NULL, 0, true));
+    add_pkg(db,
+            fs_make_package("c", "1", NULL, dep_b, 1, NULL, 0, NULL, 0, true));
+    add_pkg(db,
+            fs_make_package("d", "1", NULL, dep_c, 1, NULL, 0, NULL, 0, true));
+    add_pkg(db, fs_make_package("diamond", "1", NULL, dep_ab, 2, NULL, 0, NULL,
+                                0, true));
+    add_pkg(db, fs_make_package("lonely", "1", NULL, NULL, 0, NULL, 0, NULL, 0,
+                                true));
+    add_pkg(db, fs_make_package("prov", "1", NULL, NULL, 0, prov_virt, 1, NULL,
+                                0, true));
+    add_pkg(db, fs_make_package("user-virt", "1", NULL, dep_virt, 1, NULL, 0,
+                                NULL, 0, true));
+
+    int count = 0;
+    char **res = db_get_dependents_transitive(db, "a", &count);
+    assert(count == 4);
+    assert(fs_has_name(res, count, "b"));
+    assert(fs_has_name(res, count, "c"));
+    assert(fs_has_name(res, count, "d"));
+    assert(fs_has_name(res, count, "diamond"));
+    assert(!fs_has_name(res, count, "a"));
+    fs_free_names(res, count);
+
+    int direct = 0;
+    char **direct_res = db_get_dependents(db, "a", &direct);
+    assert(direct == 2);
+    fs_free_names(direct_res, direct);
+
+    res = db_get_dependents_transitive(db, "d", &count);
+    assert(count == 0);
+    free(res);
+
+    res = db_get_dependents_transitive(db, "lonely", &count);
+    assert(count == 0);
+    free(res);
+
+    res = db_get_dependents_transitive(db, "prov", &count);
+    assert(count == 1 && strcmp(res[0], "user-virt") == 0);
+    fs_free_names(res, count);
+
+    res = db_get_dependents_transitive(db, "missing", &count);
+    assert(count == 0);
+    free(res);
+
+    res = db_get_dependents_transitive(db, NULL, &count);
+    assert(res == NULL && count == 0);
+    res = db_get_dependents_transitive(NULL, "a", &count);
+    assert(res == NULL && count == 0);
+
+    fs_close_db(db, path);
+    printf("test_db_dependents_transitive_follows_chains: PASS\n");
+}
+
+void
+test_db_dependents_transitive_handles_cycles(void)
+{
+    char path[PATH_MAX];
+    struct db_handle *db = fs_open_db(path);
+    assert(db);
+
+    const char *dep_y[] = {"y"};
+    const char *dep_x[] = {"x"};
+    const char *dep_z[] = {"z"};
+    add_pkg(db,
+            fs_make_package("x", "1", NULL, dep_y, 1, NULL, 0, NULL, 0, true));
+    add_pkg(db,
+            fs_make_package("y", "1", NULL, dep_x, 1, NULL, 0, NULL, 0, true));
+    add_pkg(db,
+            fs_make_package("z", "1", NULL, dep_z, 1, NULL, 0, NULL, 0, true));
+
+    int count = 0;
+    char **res = db_get_dependents_transitive(db, "x", &count);
+    assert(count == 1 && strcmp(res[0], "y") == 0);
+    fs_free_names(res, count);
+
+    res = db_get_dependents_transitive(db, "z", &count);
+    assert(count == 0);
+    free(res);
+
+    fs_close_db(db, path);
+    printf("test_db_dependents_transitive_handles_cycles: PASS\n");
+}
+
+void
+test_db_orphans_transitive_follows_chains(void)
+{
+    char path[PATH_MAX];
+    struct db_handle *db = fs_open_db(path);
+    assert(db);
+
+    const char *dep_lib_a[] = {"lib-a"};
+    const char *dep_lib_b[] = {"lib-b"};
+    add_pkg(db, fs_make_package("app", "1", NULL, dep_lib_a, 1, NULL, 0, NULL,
+                                0, true));
+    add_pkg(db, fs_make_package("lib-a", "1", NULL, dep_lib_b, 1, NULL, 0, NULL,
+                                0, false));
+    add_pkg(db, fs_make_package("lib-b", "1", NULL, NULL, 0, NULL, 0, NULL, 0,
+                                false));
+
+    int count = 0;
+    char **orph = db_get_orphans_transitive(db, &count);
+    assert(count == 0);
+    free(orph);
+
+    assert(db_remove(db, "app"));
+
+    int direct = 0;
+    char **direct_res = db_get_orphans(db, &direct);
+    assert(direct == 1 && strcmp(direct_res[0], "lib-a") == 0);
+    fs_free_names(direct_res, direct);
+
+    orph = db_get_orphans_transitive(db, &count);
+    assert(count == 2);
+    assert(fs_has_name(orph, count, "lib-a"));
+    assert(fs_has_name(orph, count, "lib-b"));
+    fs_free_names(orph, count);
+
+    assert(db_set_installed_by_hand(db, "lib-a", true));
+    orph = db_get_orphans_transitive(db, &count);
+    assert(count == 0);
+    free(orph);
+
+    assert(!db_get_orphans_transitive(NULL, &count) && count == 0);
+
+    fs_close_db(db, path);
+    printf("test_db_orphans_transitive_follows_chains: PASS\n");
+}
+
+void
+test_db_orphans_transitive_handles_cycles_and_provides(void)
+{
+    char path[PATH_MAX];
+    struct db_handle *db = fs_open_db(path);
+    assert(db);
+
+    const char *dep_c2[] = {"c2"};
+    const char *dep_c1[] = {"c1"};
+    const char *dep_virt[] = {"virt"};
+    const char *prov_virt[] = {"virt"};
+    add_pkg(db, fs_make_package("c1", "1", NULL, dep_c2, 1, NULL, 0, NULL, 0,
+                                false));
+    add_pkg(db, fs_make_package("c2", "1", NULL, dep_c1, 1, NULL, 0, NULL, 0,
+                                false));
+    add_pkg(db, fs_make_package("manual", "1", NULL, dep_virt, 1, NULL, 0, NULL,
+                                0, true));
+    add_pkg(db, fs_make_package("provider", "1", NULL, NULL, 0, prov_virt, 1,
+                                NULL, 0, false));
+    int count = 0;
+    char **orph = db_get_orphans_transitive(db, &count);
+    assert(count == 2);
+    assert(fs_has_name(orph, count, "c1"));
+    assert(fs_has_name(orph, count, "c2"));
+    fs_free_names(orph, count);
+
+    int direct = 0;
+    char **direct_res = db_get_orphans(db, &direct);
+    for (int i = 0; i < direct; i++)
+    {
+        int found = 0;
+        orph = db_get_orphans_transitive(db, &count);
+        found = fs_has_name(orph, count, direct_res[i]);
+        fs_free_names(orph, count);
+        assert(found);
+    }
+    fs_free_names(direct_res, direct);
+
+    fs_close_db(db, path);
+    printf("test_db_orphans_transitive_handles_cycles_and_provides: "
+           "PASS\n");
+}
